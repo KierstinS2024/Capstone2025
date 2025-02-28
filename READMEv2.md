@@ -2,7 +2,7 @@
 
 ## 1. Tech Stack
 
-For this project, I will utilize the **MERN** (MongoDB, Express, React, Node.js) tech stack, enhanced with **Vite** for a faster and more efficient frontend development experience. Specifically:
+For this project, I will utilize the **MERN** (MongoDB, Express, React, Node.js) tech stack (that we have been learning), enhanced with **Vite** for a faster and more efficient frontend development experience. Specifically:
 
 - **Frontend**: **React.js** with **Vite** will be used to build a dynamic and interactive user interface for the app. Vite will replace traditional bundlers like Webpack, providing faster development builds and optimized production bundling.
 - **Backend**: **Node.js** with **Express** will handle API requests, manage backend logic, and interact with the MongoDB database.
@@ -19,7 +19,7 @@ This will be an evenly focused full-stack application, with both the frontend an
 
 ## 3. Platform
 
-The app will be developed initially as a **web app** using **React** with **Vite** for a smooth development workflow and optimized production builds. The app will be tested on both desktop and mobile browsers. If the scope allows, I will later transition the app into a **mobile app** using **React Native** for cross-platform (iOS and Android) compatibility.
+The app will be developed as a **web app** using **React** with **Vite**. The app will be optimized for desktop and mobile browsers, ensuring a smooth experience across all screen sizes. 
 
 ## 4. Project Goal
 
