@@ -141,11 +141,73 @@ Here is an explanation of the database schema used in the app:
 
 ---
 
-### **Relationships:**
+### **Relationships: (Followed by ERD)**
+![ERD Diagram]()
 - One recipe can be included in many meal plans (one-to-many relationship between **Recipes** and **Meal Plans**).
 - One recipe can be included in many shopping lists (one-to-many relationship between **Recipes** and **Shopping List**).
 - One meal plan can include many recipes (many-to-one relationship between **Meal Plans** and **Recipes**).
 - One shopping list can include ingredients for many recipes (many-to-one relationship between **Shopping List** and **Recipes**).
+
+
+---
+
+### **Explanation of the ERD for Recipe & Meal Planner App**
+
+This Entity-Relationship Diagram (ERD) represents the structure of the database for the **Recipe & Meal Planner App**, detailing how different entities are connected and how they interact. The app is designed to help users plan their meals, generate shopping lists, and track their nutritional intake. The ERD includes the following key entities:
+
+---
+
+### **Entities and Relationships**:
+
+1. **User**:
+   - The **User** entity represents individuals using the app. Each user can create multiple **Meal Plans** and **Shopping Lists**. The user's preferences, such as dietary restrictions (e.g., vegan, gluten-free), are stored here and are used to personalize meal suggestions. Users can also log their food intake to track their nutritional consumption.
+   - **Cardinality**: One **User** can have many **Meal Plans** and **Shopping Lists** (1-to-Many).
+
+2. **Recipe**:
+   - The **Recipe** entity contains the details of each recipe available in the app. This includes attributes such as the recipe's ingredients, instructions, serving sizes, and nutritional information (e.g., calories, protein, fats, carbs). Recipes are fetched from external APIs like **Spoonacular** or **Edamam** and are available for users to browse, save, or add to their meal plans.
+   - **Cardinality**: A **Recipe** can be included in many **Meal Plans** (Many-to-Many) and can appear in many **Shopping Lists**.
+
+3. **Ingredient**:
+   - The **Ingredient** entity tracks the individual components used in **Recipes**. This includes basic ingredient information such as name, description, and nutritional details (calories, protein, fats, carbs). Ingredients are fetched from external sources like the **Open Food Facts API** and are linked to recipes and shopping lists.
+   - **Cardinality**: An **Ingredient** can be used in many **Recipes** and appear in many **Shopping Lists**.
+
+4. **Meal Plan**:
+   - A **Meal Plan** is a collection of recipes planned for different meals throughout the day (e.g., breakfast, lunch, dinner, snacks). A **Meal Plan** is created by a **User** and can contain multiple recipes across different meal times. Users can generate their own meal plans or use suggested plans.
+   - **Cardinality**: One **Meal Plan** can contain many **Recipes** (via the junction table **MealPlan_Recipes**). A **User** can create many **Meal Plans** (1-to-Many).
+
+5. **Shopping List**:
+   - A **Shopping List** is generated from a **Meal Plan** and includes the ingredients needed to prepare the recipes in the plan. Each ingredient is listed with its quantity and unit of measurement. **Shopping Lists** are linked to a **User** and a **Meal Plan**.
+   - **Cardinality**: One **Shopping List** can be associated with one **Meal Plan**, but a **User** can generate multiple **Shopping Lists** over time (1-to-Many).
+
+6. **Food Intake**:
+   - The **Food Intake** entity tracks the individual meals a **User** logs after consuming recipes from their meal plan. It stores information about the date of consumption, quantity, and nutritional data (e.g., calories, protein, fat). This helps users monitor their daily nutritional intake based on their meal plans.
+   - **Cardinality**: Each **Food Intake** entry is associated with one **Recipe** (Many-to-One) and one **User** (Many-to-One).
+
+---
+
+### **Many-to-Many Relationships**:
+
+- **Recipe - Meal Plan**:
+   - A **Recipe** can appear in many **Meal Plans**, and a **Meal Plan** can contain many **Recipes**. This is managed through the **MealPlan_Recipes** junction table.
+  
+- **Recipe - Ingredient**:
+   - A **Recipe** can include many **Ingredients**, and an **Ingredient** can be part of many **Recipes**. This is managed through the **Recipe_Ingredients** junction table, which also stores the quantity and unit of each ingredient used in the recipe.
+
+- **Shopping List - Ingredient**:
+   - A **Shopping List** contains many **Ingredients**, and an **Ingredient** can appear in many **Shopping Lists**. This relationship is managed through the **ShoppingList_Ingredients** junction table, which also stores the quantity and unit of each ingredient in the shopping list.
+
+---
+
+### **Purpose of the ERD**:
+The ERD helps organize and structure the relationships between various components of the **Recipe & Meal Planner App**. It outlines how users interact with the app to:
+- Create and manage meal plans,
+- Browse and save recipes,
+- Generate shopping lists with ingredients,
+- Track nutritional intake based on meal consumption.
+
+The relationships are designed to ensure data consistency, easy access to related information (like recipes, ingredients, and nutritional data), and a seamless user experience in meal planning and tracking.
+
+---
 
 ## **9. Breaking Down Your Project**
 
