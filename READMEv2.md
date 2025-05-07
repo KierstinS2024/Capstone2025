@@ -142,7 +142,8 @@ Here is an explanation of the database schema used in the app:
 ---
 
 ### **Relationships: ERD included**
-![Capstone_ERD](https://github.com/user-attachments/assets/527b2a12-093a-4598-b15d-1acd8f0cbfcb)
+![Capstone_ERD2](https://github.com/user-attachments/assets/dcb95792-6790-4331-a7fd-2013e6fba1da)
+
 
 - One recipe can be included in many meal plans (one-to-many relationship between **Recipes** and **Meal Plans**).
 - One recipe can be included in many shopping lists (one-to-many relationship between **Recipes** and **Shopping List**).
