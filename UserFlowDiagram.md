@@ -1,4 +1,5 @@
 # User Flow Diagram
+![SIMPLE LARGE_diagram-export-5-7-2025-8_58_09-AM](https://github.com/user-attachments/assets/a800f74b-2d53-49b5-8ca2-6a0a66ff2b41)
 
 ## [1] Landing Page
 - Explore as Guest  
