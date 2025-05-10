@@ -191,7 +191,7 @@ The app follows a logical, intuitive flow:
 
 ## 📖 Story-Driven UX
 
-The app is built around **Sarah**, a fictional user who explores, signs up, plans meals, shops, logs nutrition, and personalizes her experience—illustrating each major feature and its value.
+I found it more engaging to pretend someone was using the app: Sarah signs up, plans meals, shops, logs nutrition, and personalizes her experience, illustrating each major feature and its value.
 
 > [📖 See Full Story Walkthrough](https://github.com/KierstinS2024/Capstone2025/blob/main/UserFlowDiagram.md)
 
@@ -210,11 +210,4 @@ The app is built around **Sarah**, a fictional user who explores, signs up, plan
 | Nutrition Engine   | Calculate macro totals per meal/day             |
 | Stretch Features   | Reminders, recipe sharing, pantry, dark mode    |
 
----
 
-## 📁 Setup & Installation
-
-1. **Clone Repo**
-```bash
-git clone https://github.com/KierstinS2024/Capstone2025.git
-cd Capstone2025
