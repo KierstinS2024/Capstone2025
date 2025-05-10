@@ -165,7 +165,7 @@ To help users plan healthy meals efficiently while:
 - Many-to-many: Recipes ↔ Ingredients, MealPlans ↔ Recipes
 - Shopping lists aggregate ingredients from meal plans
 
-![REVISED_ERD](https://github.com/user-attachments/assets/d23e7716-11c2-4e06-ab38-ff2b64f4d8fb)
+![Revised_CrowFoot_ERD](https://github.com/user-attachments/assets/f5e280a2-cc62-4b4c-8d9d-6af7d5be1f2c)
 
 
 ---
