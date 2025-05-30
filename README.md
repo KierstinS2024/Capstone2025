@@ -1,6 +1,6 @@
 # 🍽️ Recipe & Meal Planner App (Capstone Project)
 
-A full-stack MERN application designed to help users simplify meal planning, manage grocery lists, and track nutrition through personalized recipes and intuitive weekly planners.
+A full-stack application designed to help users simplify meal planning, manage grocery lists, and track nutrition through personalized recipes and intuitive weekly planners.
 
 ---
 
@@ -25,11 +25,11 @@ This web application allows users to:
 
 **Backend**
 - Node.js + Express
-- MongoDB (Mongoose)
+- PostgreSQL (for relational data storage)
 
 **Authentication**
 - JWT (JSON Web Tokens)
-- Passport.js
+- bcrypt (for password hashing)
 
 **External APIs**
 - [Spoonacular](https://spoonacular.com/food-api)
@@ -101,72 +101,87 @@ To help users plan healthy meals efficiently while:
 
 ## 🧬 Database Schema (Detailed)
 
+This application leverages a relational database (PostgreSQL) to ensure data integrity, consistency, and efficient querying of complex relationships.
+
 ### User
-- `_id` (ObjectId)
+- `id` (Primary Key, e.g., UUID or Integer)
 - `email` (String, unique, required)
-- `passwordHash` (String, required)
-- `preferences` (Object)
-  - `dietType`, `allergies`, `calorieTarget`, etc.
-- `avatarUrl` (String)
-- `savedRecipes` (Array of ObjectId references)
+- `password_hash` (String, required)
+- `preferences` (JSONB, for flexible dietary/calorie targets)
+- `avatar_url` (String)
 
 ### Recipe
-- `_id` (ObjectId)
-- `name` (String)
+- `id` (Primary Key)
+- `name` (String, required)
 - `description` (String)
-- `ingredients` (Array of Ingredient subdocuments)
-- `instructions` (Array of strings)
-- `nutrition` (Object)
-  - `calories`, `protein`, `fat`, `carbs`
+- `instructions` (TEXT[], array of strings or JSONB for ordered steps)
+- `nutrition_info` (JSONB, containing calories, protein, fat, carbs)
 - `cuisine` (String)
-- `userSubmitted` (Boolean)
-- `createdBy` (User ObjectId, optional)
+- `user_submitted` (Boolean, default: false)
+- `created_by_user_id` (Foreign Key to User.id, optional)
 
 ### Ingredient
-- `_id` (ObjectId)
-- `name` (String)
-- `unit` (String)
-- `defaultQuantity` (Number)
-- `nutrition` (Object)
-  - `calories`, `protein`, `fat`, `carbs`
+- `id` (Primary Key)
+- `name` (String, required)
+- `unit` (String, e.g., 'grams', 'ml', 'pcs')
+- `default_quantity` (Numeric)
+- `nutrition_info` (JSONB, containing calories, protein, fat, carbs per unit)
+
+### RecipeIngredient (Join Table for Many-to-Many: Recipe ↔ Ingredient)
+- `recipe_id` (Foreign Key to Recipe.id)
+- `ingredient_id` (Foreign Key to Ingredient.id)
+- `quantity` (Numeric, amount of this ingredient in this recipe)
+- `unit` (String, unit for this specific ingredient in this recipe)
+- Primary Key: (`recipe_id`, `ingredient_id`)
 
 ### MealPlan
-- `_id` (ObjectId)
-- `userId` (ObjectId, required)
-- `weekStartDate` (Date)
-- `days` (Object)
-  - `monday` → `{ breakfast: [], lunch: [], dinner: [], snacks: [] }`
-  - `tuesday` → same structure …
+- `id` (Primary Key)
+- `user_id` (Foreign Key to User.id, required)
+- `week_start_date` (Date, e.g., Monday of the week)
 - `notes` (String)
 
+### MealPlanEntry (Join Table for Many-to-Many: MealPlan ↔ Recipe)
+- `id` (Primary Key)
+- `meal_plan_id` (Foreign Key to MealPlan.id)
+- `recipe_id` (Foreign Key to Recipe.id)
+- `day_of_week` (String, e.g., 'monday', 'tuesday')
+- `meal_type` (String, e.g., 'breakfast', 'lunch', 'dinner', 'snack')
+- `servings` (Numeric, number of servings of the recipe in this meal slot)
+- Primary Key: (`id`)
+
 ### ShoppingList
-- `_id` (ObjectId)
-- `userId` (ObjectId)
-- `mealPlanId` (ObjectId)
-- `items` (Array of objects)
-  - `ingredientId`, `quantity`, `unit`, `purchased`
+- `id` (Primary Key)
+- `user_id` (Foreign Key to User.id, required)
+- `meal_plan_id` (Foreign Key to MealPlan.id, optional, if generated from a specific plan)
+- `created_at` (Timestamp)
+
+### ShoppingListItem (One-to-Many: ShoppingList ↔ Item)
+- `id` (Primary Key)
+- `shopping_list_id` (Foreign Key to ShoppingList.id)
+- `ingredient_id` (Foreign Key to Ingredient.id)
+- `quantity` (Numeric)
+- `unit` (String)
+- `purchased` (Boolean, default: false)
+- Primary Key: (`id`)
 
 ### FoodIntake
-- `_id` (ObjectId)
-- `userId` (ObjectId)
-- `recipeId` (ObjectId)
-- `date` (Date)
-- `quantity` (Number)
-- `nutritionSnapshot` (Object)
+- `id` (Primary Key)
+- `user_id` (Foreign Key to User.id, required)
+- `recipe_id` (Foreign Key to Recipe.id, optional, if logging a recipe)
+- `ingredient_id` (Foreign Key to Ingredient.id, optional, if logging a single ingredient)
+- `date` (Date, or Timestamp)
+- `quantity` (Numeric, amount consumed)
+- `unit` (String, unit of quantity consumed)
+- `nutrition_snapshot` (JSONB, actual nutrition for the consumed portion)
 
 ### Optional: PantryItem (Stretch Feature)
-- `_id` (ObjectId)
-- `userId` (ObjectId)
-- `ingredientId` (ObjectId)
-- `quantity`, `unit`, `expirationDate`
-
-### Relationships
-- One user → many meal plans, food logs, and shopping lists
-- Many-to-many: Recipes ↔ Ingredients, MealPlans ↔ Recipes
-- Shopping lists aggregate ingredients from meal plans
-
-![Revised_CrowFoot_ERD](https://github.com/user-attachments/assets/f5e280a2-cc62-4b4c-8d9d-6af7d5be1f2c)
-
+- `id` (Primary Key)
+- `user_id` (Foreign Key to User.id, required)
+- `ingredient_id` (Foreign Key to Ingredient.id, required)
+- `quantity` (Numeric)
+- `unit` (String)
+- `expiration_date` (Date)
+- Primary Key: (`id`)
 
 ---
 
@@ -176,15 +191,15 @@ The app follows a logical, intuitive flow:
 - Guests can browse recipes before signing up
 - After signup/login, users land on the **dashboard**
 - From the dashboard, they can:
-  - Plan meals (via wizard)
-  - View existing plans
-  - Generate a shopping list
-  - Search recipes or add custom ones
-  - Track meals and nutrition
-  - Adjust profile/settings
+  - Plan meals (via wizard)
+  - View existing plans
+  - Generate a shopping list
+  - Search recipes or add custom ones
+  - Track meals and nutrition
+  - Adjust profile/settings
 - Users log food and monitor goals via the **nutrition tracker**
 
-📍 **User Flow Diagram**  
+📍 **User Flow Diagram**  
 [View Full Diagram](https://github.com/KierstinS2024/Capstone2025/blob/main/UserFlowDiagram.md)
 
 ---
@@ -199,15 +214,13 @@ I found it more engaging to pretend someone was using the app: Sarah signs up, p
 
 ## 🔨 Tasks Breakdown
 
-| Task               | Description                                     |
+| Task               | Description                                     |
 |--------------------|-------------------------------------------------|
-| Database Design    | Define schema for users, recipes, meals, logs   |
-| API Integration    | Connect to Spoonacular or Edamam                |
-| Frontend Setup     | Scaffold Vite + React + Router                  |
-| Backend Setup      | Create Express API with routes                  |
-| Auth System        | JWT + Passport login/signup                     |
-| Core Features      | Dashboard, planner, tracker, search             |
-| Nutrition Engine   | Calculate macro totals per meal/day             |
-| Stretch Features   | Reminders, recipe sharing, pantry, dark mode    |
-
-
+| Database Design    | Define schema for users, recipes, meals, logs   |
+| API Integration    | Connect to Spoonacular or Edamam                |
+| Frontend Setup     | Scaffold Vite + React + Router                  |
+| Backend Setup      | Create Express API with routes                  |
+| Auth System        | JWT + bcrypt login/signup                     |
+| Core Features      | Dashboard, planner, tracker, search             |
+| Nutrition Engine   | Calculate macro totals per meal/day             |
+| Stretch Features   | Reminders, recipe sharing, pantry, dark mode    |
