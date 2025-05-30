@@ -101,6 +101,9 @@ To help users plan healthy meals efficiently while:
 
 ## 🧬 Database Schema (Detailed)
 
+![Revised_CrowFoot_ERD](https://github.com/user-attachments/assets/366bb82c-5a73-4133-b378-f8c16baeff87)
+
+
 This application leverages a relational database (PostgreSQL) to ensure data integrity, consistency, and efficient querying of complex relationships.
 
 ### User
