@@ -227,3 +227,164 @@ I found it more engaging to pretend someone was using the app: Sarah signs up, p
 | Core Features      | Dashboard, planner, tracker, search             |
 | Nutrition Engine   | Calculate macro totals per meal/day             |
 | Stretch Features   | Reminders, recipe sharing, pantry, dark mode    |
+
+API Specification (tentative) -- Recipe & Meal Planner App
+
+Planned RESTful API endpoints for the backend service. These routes represent how the frontend communicates with the backend of this application.
+
+* * * * *
+
+Authentication
+
+-   POST  /auth/register → Registers a new user. (No authentication required)
+
+-   POST  /auth/login → Logs in a user and returns a JWT token. (No authentication required)
+
+-   GET  /me → Gets current user profile/details. (Requires token)
+
+-   PUT  /me → Updates user profile/preferences. (Requires token)
+
+* * * * *
+
+Recipes
+
+-   GET  /recipes → Browse/search recipes (supports filtering with query parameters). (No authentication required)
+
+-   GET  /recipes/:id → Retrieve a single recipe by ID. (No authentication required)
+
+-   POST  /recipes → Create/submit a new recipe. (Requires token)
+
+-   PUT  /recipes/:id → Update a recipe created by the user. (Requires token)
+
+-   DELETE  /recipes/:id → Delete a recipe created by the user. (Requires token)
+
+* * * * *
+
+Meal Planning
+
+-   POST  /meal-plans → Create a new weekly meal plan. (Requires token)
+
+-   GET  /meal-plans → List meal plans created by the current user. (Requires token)
+
+-   GET  /meal-plans/:id → Retrieve a specific meal plan by ID. (Requires token)
+
+-   POST  /meal-plans/:id/entries → Add a recipe to a day/meal slot in a plan. (Requires token)
+
+-   PUT  /meal-plans/entries/:entryId → Update a plan entry (servings, day, etc.). (Requires token)
+
+-   DELETE  /meal-plans/entries/:entryId → Remove a recipe from a plan. (Requires token)
+
+* * * * *
+
+Shopping Lists
+
+-   POST  /shopping-lists → Generate a list from a meal plan or create one manually. (Requires token)
+
+-   GET  /shopping-lists → List shopping lists for the user. (Requires token)
+
+-   GET  /shopping-lists/:id → Retrieve a single shopping list by ID. (Requires token)
+
+-   POST  /shopping-lists/:id/items → Manually add an item to a list. (Requires token)
+
+-   PATCH  /shopping-lists/items/:itemId → Update quantity or mark item as purchased. (Requires token)
+
+-   DELETE  /shopping-lists/items/:itemId → Remove an item from the list. (Requires token)
+
+* * * * *
+
+Nutrition / Food Intake
+
+-   POST  /food-intake → Log a consumed recipe/ingredient for a date. (Requires token)
+
+-   GET  /food-intake → Retrieve logged food intake (supports query by date). (Requires token)
+
+-   DELETE  /food-intake/:id → Remove a logged intake entry. (Requires token)
+
+* * * * *
+
+General / Misc
+
+-   GET  /health → Health check endpoint -- returns "OK".
+
+-   GET  / → Optional landing or welcome route.
+
+* * * * *
+
+Example Requests & Responses
+
+Register User\
+(POST /auth/register)
+
+Request\
+{ "email": "sarah@example.com", "password": "myStrongPassword" }
+
+Success Response (201)\
+{ "message": "User registered successfully" }
+
+Error Response (400)\
+{ "error": "Email is already in use" }
+
+* * * * *
+
+Login User\
+(POST /auth/login)
+
+Request\
+{ "email": "sarah@example.com", "password": "myStrongPassword" }
+
+Success (200)\
+{ "token": "eyJhbGci..." }
+
+Error (400)\
+{ "error": "Invalid login credentials" }
+
+* * * * *
+
+Create Recipe\
+(POST /recipes)
+
+Request\
+Authorization: Bearer <JWT>\
+{ "name": "Chicken Stir Fry", "description": "Quick dinner", "cuisine": "Asian", "ingredients":[{ "id":1,"quantity":200,"unit":"grams" }] }
+
+Success (201)\
+{ "message":"Recipe created", "recipeId":42 }
+
+* * * * *
+
+Create Meal Plan\
+(POST /meal-plans)
+
+Request\
+{ "week_start_date":"2025-03-03", "notes":"Meal prep week" }
+
+Success (201)\
+{ "mealPlanId": 23, "message": "Meal plan created" }
+
+* * * * *
+
+Generate Shopping List\
+(POST /shopping-lists)
+
+Request\
+{ "meal_plan_id": 23 }
+
+Success (201)\
+{ "listId":14, "message":"Shopping list generated" }
+
+* * * * *
+
+Log Food Intake\
+(POST /food-intake)
+
+Request\
+Authorization: Bearer <JWT>\
+{ "recipe_id":42,"date":"2025-03-04","quantity":1,"unit":"serving" }
+
+Success (201)\
+{ "message":"Intake logged" }
+
+* * * * *
+
+Note: Any route marked "Requires token" expects a header formatted as:\
+Authorization: Bearer <your-JWT-token-here>
