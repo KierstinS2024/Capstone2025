@@ -1,3 +1,4 @@
+//src/lib/db.js
 import mongoose from "mongoose";
 
 // This is my MongoDB connection string from my .env file

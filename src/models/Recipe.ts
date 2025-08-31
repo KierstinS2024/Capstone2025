@@ -1,3 +1,5 @@
+//src/models/Recipe.ts
+
 import mongoose from 'mongoose';
 
 // This is my Recipe schema: it stores recipes my users create or import
