@@ -1,20 +1,31 @@
-//src/lib/db.js
 import mongoose from "mongoose";
 
+// The connection string to your MongoDB database
 const MONGODB_URI = process.env.MONGODB_URI;
-//TODO: Make .env file and add to gitignore
-if (!MONGODB_URI) throw new Error("Please define MONGODB_URI in .env");
 
-let cached = global.mongoose;
-if (!cached) cached = global.mongoose = { conn: null, promise: null };
-
-async function dbConnect() {
-  if (cached.conn) return cached.conn;
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI).then((m) => m);
-  }
-  cached.conn = await cached.promise;
-  return cached.conn;
+if (!MONGODB_URI) {
+  throw new Error("Please define MONGODB_URI in your .env file");
 }
 
-export default dbConnect;
+// Keep track of the database connection
+// This avoids creating multiple connections in development (Next.js hot reloads)
+let mongoConnection = null;
+
+async function connectToDatabase() {
+  if (mongoConnection) {
+    // If we already have a connection, return it
+    return mongoConnection;
+  }
+
+  try {
+    // Connect to MongoDB
+    mongoConnection = await mongoose.connect(MONGODB_URI);
+    console.log("MongoDB connected");
+    return mongoConnection;
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    throw error;
+  }
+}
+
+export default connectToDatabase;
