@@ -1,3 +1,8 @@
+## Project Docs
+- [PROJECT_README.md](./PROJECT_README.md)
+- [Project_Ideas.md](./Project_Ideas.md)
+- [UserFlowDiagram.md](./UserFlowDiagram.md)
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
