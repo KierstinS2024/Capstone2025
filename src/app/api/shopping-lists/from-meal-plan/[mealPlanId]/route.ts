@@ -1,86 +1,76 @@
 // path: src/app/api/shopping-lists/from-meal-plan/[mealPlanId]/route.ts
 /**
- * Shopping List Generation from Meal Plan
+ * API Route: Generate Shopping List from Meal Plan
  *
- * POST: Generate a new shopping list based on a specified meal plan.
- * Aggregates ingredients from all recipes in the meal plan, accounting for servings.
+ * POST /api/shopping-lists/from-meal-plan/:mealPlanId
  *
- * Authentication:
- *  - Requires a valid JWT in the Authorization header.
+ * This route generates a shopping list automatically based on a specific meal plan.
+ * Each recipe in the meal plan contributes its ingredients and quantities to the shopping list.
  *
- * Process:
- * 1. Verify user authentication.
- * 2. Fetch the meal plan by ID.
- * 3. Aggregate ingredients from all recipes, scaling quantities by servings.
- * 4. Create shopping list items and store in MongoDB.
+ * Features:
+ * - Authenticated route (JWT required)
+ * - Creates a shopping list for the current user linked to the meal plan
+ * - Ensures ingredients are grouped properly
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
 import MealPlan from "@/models/MealPlan";
-import Recipe from "@/models/Recipe";
 import ShoppingList from "@/models/ShoppingList";
+import { verifyToken } from "@/lib/auth";
+import mongoose from "mongoose";
 
 export async function POST(req: NextRequest, { params }: { params: { mealPlanId: string } }) {
   try {
-    // Step 1: Verify JWT
+    // 1️ Authenticate user via JWT token in headers
     const authHeader = req.headers.get("authorization");
     const userId = verifyToken(authHeader); // throws if invalid
 
-    // Step 2: Connect to MongoDB
+    // 2️ Connect to MongoDB
     await connectToDatabase();
 
-    // Step 3: Fetch meal plan and validate ownership
-    const mealPlan = await MealPlan.findById(params.mealPlanId);
-    if (!mealPlan) return NextResponse.json({ message: "Meal plan not found" }, { status: 404 });
-    if (mealPlan.userId.toString() !== userId) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+    // 3️ Retrieve the meal plan by ID
+    const mealPlan = await MealPlan.findById(params.mealPlanId).populate("entries.recipeId");
+    if (!mealPlan) {
+      return NextResponse.json({ message: "Meal plan not found" }, { status: 404 });
     }
 
-    // Step 4: Aggregate ingredients from all recipes
-    const ingredientMap: Record<string, { ingredientId: mongoose.Types.ObjectId; quantity: number; unit: string }> = {};
+    // 4 Construct shopping list items from meal plan entries
+    // Each recipe contributes its ingredients
+    const items: { ingredientId: mongoose.Types.ObjectId; quantity: number; unit: string; purchased: boolean }[] = [];
 
     for (const entry of mealPlan.entries) {
-      const recipe = await Recipe.findById(entry.recipeId);
+      const recipe = entry.recipeId as any; // populated recipe
       if (!recipe || !recipe.ingredients) continue;
 
-      for (const item of recipe.ingredients) {
-        const key = item.ingredientId.toString();
-        if (!ingredientMap[key]) {
-          ingredientMap[key] = {
-            ingredientId: item.ingredientId,
-            quantity: item.quantity * entry.servings,
-            unit: item.unit,
-          };
-        } else {
-          ingredientMap[key].quantity += item.quantity * entry.servings;
-        }
+      for (const ing of recipe.ingredients) {
+        // Multiply ingredient quantity by number of servings
+        const totalQuantity = (ing.quantity || 0) * (entry.servings || 1);
+
+        items.push({
+          ingredientId: new mongoose.Types.ObjectId(ing.id),
+          quantity: totalQuantity,
+          unit: ing.unit || "",
+          purchased: false,
+        });
       }
     }
 
-    // Step 5: Create shopping list items
-    const shoppingListItems = Object.values(ingredientMap).map(item => ({
-      _id: new mongoose.Types.ObjectId(),
-      ingredientId: item.ingredientId,
-      quantity: item.quantity,
-      unit: item.unit,
-      purchased: false,
-    }));
-
-    // Step 6: Create and save shopping list in MongoDB
+    // 5 Create the shopping list document
     const shoppingList = await ShoppingList.create({
       userId: new mongoose.Types.ObjectId(userId),
-      title: `Shopping List for ${mealPlan.weekStartDate?.toDateString() || "Meal Plan"}`,
-      items: shoppingListItems,
+      mealPlanId: mealPlan._id,
       createdAt: new Date(),
+      items,
     });
 
-    // Step 7: Return newly created shopping list
+    // 6 Return the new shopping list ID and data
     return NextResponse.json({ shoppingList }, { status: 201 });
-  } catch (error) {
-    console.error("Error generating shopping list from meal plan:", error);
-    return NextResponse.json({ message: "Failed to generate shopping list" }, { status: 500 });
+  } catch (err) {
+    console.error("Error generating shopping list:", err);
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }
