@@ -1,6 +1,7 @@
 /* src/app/dashboard/shopping-lists/ShoppingListsPage.module.css */
+
 .container {
-  max-width: 1280px;
+  max-width: 1280px; /* same as Tailwind 7xl */
   margin: 0 auto;
   padding: 2rem 1.5rem;
 }
@@ -8,8 +9,8 @@
 .title {
   font-size: 2rem;
   font-weight: 700;
-  text-align: center;
   margin-bottom: 1.5rem;
+  text-align: center;
 }
 
 .newListButton {
@@ -17,10 +18,11 @@
   margin: 0 auto 1.5rem auto;
   padding: 0.5rem 1rem;
   background-color: #2563eb;
-  color: #fff;
+  color: white;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
 }
 
 .newListButton:hover {
