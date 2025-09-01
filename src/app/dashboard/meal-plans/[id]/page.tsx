@@ -2,18 +2,14 @@
 /**
  * MealPlanDetailPage
  *
- * Displays the details of a single meal plan including:
- * - Week start date
- * - Notes
- * - Entries (recipes, meal types, servings)
- * - Button to generate shopping list
- * - Displays generated shopping lists dynamically
+ * Displays a single meal plan with its entries, notes, and allows
+ * the user to generate a shopping list for that plan.
  *
  * Features:
- * - Fetches meal plan from API using JWT from localStorage
- * - Handles loading and error states
- * - Back navigation button
- * - Clean, intuitive UI structure with CSS modules
+ * - Fetches meal plan by ID
+ * - Displays entries and notes
+ * - Integrates GenerateShoppingListButton
+ * - Handles loading, error, and empty states
  */
 
 "use client";
@@ -22,15 +18,15 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import styles from "./MealPlanDetailPage.module.css";
 import GenerateShoppingListButton from "@/components/GenerateShoppingListButton";
-import ShoppingListCard from "@/components/ShoppingListCard";
 
-// TypeScript interfaces for clarity
+// Interface for a single entry in the meal plan
 interface MealPlanEntry {
   recipeName: string;
   mealType: string;
   servings: number;
 }
 
+// Interface for the meal plan data
 interface MealPlan {
   _id: string;
   weekStartDate: string;
@@ -38,42 +34,22 @@ interface MealPlan {
   entries?: MealPlanEntry[];
 }
 
-interface ShoppingListItem {
-  ingredientName: string;
-  quantity: number;
-  unit: string;
-  purchased: boolean;
-}
-
-interface ShoppingList {
-  _id: string;
-  createdAt: string;
-  items: ShoppingListItem[];
-}
-
 export default function MealPlanDetailPage() {
-  const { id } = useParams(); // meal plan ID from URL
+  const { id } = useParams(); // Get meal plan ID from URL
   const router = useRouter();
 
-  // State for meal plan
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // State for generated shopping lists
-  const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
-  const [loadingLists, setLoadingLists] = useState(false);
-
-  // Fetch meal plan details from API
+  // Fetch meal plan from API when component mounts or ID changes
   useEffect(() => {
     async function fetchMealPlan() {
-      setLoading(true);
-      setError(null);
-
       try {
         const token = localStorage.getItem("token");
         if (!token) {
           setError("You must be logged in to view this meal plan.");
+          setLoading(false);
           return;
         }
 
@@ -99,49 +75,37 @@ export default function MealPlanDetailPage() {
     fetchMealPlan();
   }, [id]);
 
-  // Fetch user's shopping lists to display
-  const fetchShoppingLists = async () => {
-    setLoadingLists(true);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const res = await fetch("/api/shopping-lists", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setShoppingLists(data.lists || []);
-      }
-    } catch (err) {
-      console.error("Error fetching shopping lists:", err);
-    } finally {
-      setLoadingLists(false);
-    }
+  // Callback after generating a shopping list to optionally navigate or refresh
+  const handleShoppingListCreated = (listId: string) => {
+    // Navigate to the shopping list page after creation
+    router.push(`/dashboard/shopping-lists/${listId}`);
   };
 
-  if (loading) return <p className={styles.message}>Loading meal plan...</p>;
+  // Render loading, error, or meal plan content
+  if (loading) return <p className={styles.message}>Loading...</p>;
   if (error) return <p className={styles.message}>Error: {error}</p>;
   if (!mealPlan) return <p className={styles.message}>Meal plan not found.</p>;
 
   return (
     <main className={styles.container}>
-      {/* Header */}
-      <h1 className={styles.title}>
-        Meal Plan for {new Date(mealPlan.weekStartDate).toLocaleDateString()}
-      </h1>
+      <h1 className={styles.title}>Meal Plan for {mealPlan.weekStartDate}</h1>
 
-      {/* Optional notes */}
+      {/* Display optional notes */}
       {mealPlan.notes && (
         <p className={styles.notes}>Notes: {mealPlan.notes}</p>
       )}
 
-      {/* Meal plan entries */}
+      {/* Button to generate shopping list for this meal plan */}
+      <GenerateShoppingListButton
+        mealPlanId={mealPlan._id}
+        onSuccess={handleShoppingListCreated}
+      />
+
+      {/* Display meal plan entries */}
       {mealPlan.entries && mealPlan.entries.length > 0 ? (
         <div className={styles.entriesGrid}>
-          {mealPlan.entries.map((entry, idx) => (
-            <div key={idx} className={styles.entryCard}>
+          {mealPlan.entries.map((entry, index) => (
+            <div key={index} className={styles.entryCard}>
               <h3 className={styles.recipeName}>{entry.recipeName}</h3>
               <p className={styles.detail}>
                 Meal: {entry.mealType} | Servings: {entry.servings}
@@ -153,31 +117,7 @@ export default function MealPlanDetailPage() {
         <p className={styles.message}>No entries yet for this week.</p>
       )}
 
-      {/* Button to generate shopping list */}
-      <div className="mt-6">
-        <GenerateShoppingListButton
-          mealPlanId={mealPlan._id}
-          onSuccess={fetchShoppingLists} // Refresh shopping lists after generation
-        />
-      </div>
-
-      {/* Display user's shopping lists */}
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold mb-2">Shopping Lists</h2>
-        {loadingLists ? (
-          <p>Loading shopping lists...</p>
-        ) : shoppingLists.length === 0 ? (
-          <p>No shopping lists generated yet.</p>
-        ) : (
-          <div className={styles.entriesGrid}>
-            {shoppingLists.map((list) => (
-              <ShoppingListCard key={list._id} shoppingList={list} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Back button */}
+      {/* Back button to navigate to previous page */}
       <button className={styles.backButton} onClick={() => router.back()}>
         ← Back
       </button>
