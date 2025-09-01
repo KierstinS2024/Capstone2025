@@ -1,22 +1,24 @@
 // path: src/app/api/auth/login/route.ts
 /**
  * POST /api/auth/login
- * Authenticates an existing user
- * - Verifies password
- * - Returns JWT for authentication
+ *
+ * Authenticate user.
+ * Steps:
+ * 1. Validate email/password
+ * 2. Find user
+ * 3. Compare password with bcrypt
+ * 4. Return JWT token and user info
  */
+
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
-
-const JWT_SECRET = process.env.JWT_SECRET || "";
+import bcrypt from "bcrypt";
+import { generateToken } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { email, password } = body;
+    const { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
@@ -26,21 +28,27 @@ export async function POST(req: NextRequest) {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
     }
 
-    // Compare password
-    const passwordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!passwordValid) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isValid) {
+      return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
     }
 
-    // Generate JWT
-    const token = jwt.sign({ userId: user._id.toString() }, JWT_SECRET, { expiresIn: "7d" });
+    const token = generateToken(user._id.toString());
 
-    return NextResponse.json({ token, user: { id: user._id, email: user.email } });
+    return NextResponse.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        preferences: user.preferences,
+        avatarUrl: user.avatarUrl,
+      },
+    });
   } catch (err) {
-    console.error("Error logging in user:", err);
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    console.error("Login error:", err);
+    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
   }
 }

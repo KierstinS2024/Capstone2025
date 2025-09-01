@@ -1,25 +1,31 @@
 // path: src/lib/db.ts
-/**
- * MongoDB database connection helper
- * Uses Mongoose to connect to MongoDB
- * Ensures single connection instance across hot reloads
+/**     
+ * MongoDB Database Connection
+ *
+ * Provides a reusable function to connect to MongoDB using Mongoose.
+ * Ensures a single connection is reused across serverless function calls
+ * to prevent multiple connections in development/production.
  */
+
 import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI || "";
 
 if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+  throw new Error("Please define the MONGODB_URI environment variable in .env");
 }
 
-let cached = global.mongoose;
+// Global cached connection to prevent multiple connections in dev
+let cached = (global as any).mongoose;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = (global as any).mongoose = { conn: null, promise: null };
 }
 
 async function connectToDatabase() {
-  if (cached.conn) return cached.conn;
+  if (cached.conn) {
+    return cached.conn;
+  }
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => mongoose);
