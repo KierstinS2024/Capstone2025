@@ -1,5 +1,5 @@
 // path: src/app/api/shopping-lists/from-meal-plan/[mealPlanId]/route.ts
-/** 
+/**
  * Shopping List Generation from Meal Plan
  *
  * POST: Generate a new shopping list based on a specified meal plan.
