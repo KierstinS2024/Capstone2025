@@ -1,0 +1,62 @@
+/* src/app/dashboard/DashboardLayout.module.css */
+/* Main wrapper for dashboard layout */
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9f9f9;
+}
+
+/* Header section */
+.header {
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Header title */
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Navigation links */
+.nav {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Navigation link styling */
+.navLink {
+  color: #2563eb;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.navLink:hover {
+  text-decoration: underline;
+}
+
+/* Logout button styling */
+.logout {
+  color: #dc2626; /* red */
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.logout:hover {
+  text-decoration: underline;
+}
+
+/* Main content area */
+.main {
+  flex: 1;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}

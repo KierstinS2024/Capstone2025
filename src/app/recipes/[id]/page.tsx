@@ -1,3 +1,4 @@
+// src/app/recipes/[id]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,7 +16,7 @@ interface Recipe {
 export default function RecipePage() {
   const router = useRouter();
   const params = useParams();
-  
+
   // Type-safe extraction of id
   const id = params && typeof params.id === "string" ? params.id : null;
 

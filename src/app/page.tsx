@@ -1,40 +1,26 @@
 // src/app/page.tsx
+
+import styles from "./page.module.css";
 import Link from "next/link";
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-8 p-8">
-      <h1 className="text-4xl font-bold">Welcome to Capstone 2025</h1>
-      <p className="text-lg text-center max-w-xl">
-        Manage your meals, recipes, and shopping lists all in one place.
-      </p>
-
-      <div className="flex flex-col sm:flex-row gap-4 mt-8">
-        <Link
-          href="/dashboard"
-          className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          Go to Dashboard
-        </Link>
-        <Link
-          href="/recipes"
-          className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition"
-        >
-          View Recipes
-        </Link>
-        <Link
-          href="/meal-plans"
-          className="px-6 py-3 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-        >
-          Meal Plans
-        </Link>
-        <Link
-          href="/shopping-lists"
-          className="px-6 py-3 bg-orange-600 text-white rounded hover:bg-orange-700 transition"
-        >
-          Shopping Lists
-        </Link>
+    <main className={styles.container}>
+      <div className={styles.content}>
+        <h1 className={styles.title}>Your Personal Meal Planner</h1>
+        <p className={styles.subtitle}>
+          Discover new recipes, create meal plans, and organize your shopping
+          lists — all in one place!
+        </p>
+        <div className={styles.actions}>
+          <Link href="/auth/signup" className={styles.primaryButton}>
+            Get Started
+          </Link>
+          <Link href="/auth/login" className={styles.secondaryButton}>
+            Log In
+          </Link>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -1,33 +1,50 @@
-// src/components/RecipeCard.tsx
+/* src/components/RecipeCard.tsx */
 import React from "react";
+import styles from "./RecipeCard.module.css";
+
+interface Recipe {
+  _id?: string;
+  id?: number;
+  name: string;
+  description?: string;
+  cuisine?: string;
+  userSubmitted?: boolean;
+}
 
 interface RecipeCardProps {
-  name: string;
-  cuisine?: string;
-  instructions: string[];
-  source?: string; // e.g., "Local" or "Spoonacular"
+  recipe: Recipe;
 }
 
-export default function RecipeCard({
-  name,
-  cuisine,
-  instructions,
-  source,
-}: RecipeCardProps) {
+const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
+  // Determine the URL based on whether it's user-submitted or external
+  const href =
+    recipe.userSubmitted === false
+      ? `/dashboard/recipes/external/${recipe.id}`
+      : `/dashboard/recipes/${recipe._id}`;
+
   return (
-    <div className="recipe-card border rounded-md p-4 shadow-sm mb-4 hover:shadow-md transition-shadow duration-200">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-lg font-semibold">{name}</h3>
-        <span className="text-sm text-gray-500">{source || "Local"}</span>
-      </div>
+    <a href={href} className={styles.card}>
+      {/* Recipe name */}
+      <h3 className={styles.title}>{recipe.name}</h3>
 
-      {cuisine && <p className="text-sm text-gray-600 mb-2">Cuisine: {cuisine}</p>}
+      {/* Optional cuisine */}
+      {recipe.cuisine && <p className={styles.cuisine}>{recipe.cuisine}</p>}
 
-      <ul className="list-decimal list-inside text-sm space-y-1">
-        {instructions.map((step, idx) => (
-          <li key={idx}>{step}</li>
-        ))}
-      </ul>
-    </div>
+      {/* Optional description */}
+      {recipe.description && (
+        <p className={styles.description}>{recipe.description}</p>
+      )}
+
+      {/* Badge showing if it's user-submitted or external */}
+      <span
+        className={`${styles.badge} ${
+          recipe.userSubmitted ? styles.userBadge : styles.externalBadge
+        }`}
+      >
+        {recipe.userSubmitted ? "Your Recipe" : "External"}
+      </span>
+    </a>
   );
-}
+};
+
+export default RecipeCard;

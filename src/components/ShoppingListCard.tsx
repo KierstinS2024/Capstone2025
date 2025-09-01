@@ -1,5 +1,6 @@
-// src/components/ShoppingListCard.tsx
+/* src/components/ShoppingListCard.tsx */
 import React from "react";
+import styles from "./ShoppingListCard.module.css";
 
 interface ShoppingListCardProps {
   id: string;
@@ -9,21 +10,26 @@ interface ShoppingListCardProps {
 }
 
 export default function ShoppingListCard({
-  id,
   createdAt,
   itemsCount,
   purchasedCount,
 }: ShoppingListCardProps) {
   return (
-    <div className="shopping-list-card border rounded-md p-4 shadow-sm mb-4 hover:shadow-md transition-shadow duration-200">
-      <h3 className="text-lg font-semibold mb-1">
+    <div className={styles.card}>
+      {/* Creation date */}
+      <h3 className={styles.createdAt}>
         Created: {new Date(createdAt).toLocaleDateString()}
       </h3>
 
-      {itemsCount !== undefined && <p className="text-sm">Total items: {itemsCount}</p>}
-      {purchasedCount !== undefined && <p className="text-sm">Purchased: {purchasedCount}</p>}
+      {/* Total items */}
+      {itemsCount !== undefined && (
+        <p className={styles.itemCount}>Total items: {itemsCount}</p>
+      )}
 
-      {/* TODO: Add buttons for view, edit, or delete this list */}
+      {/* Purchased items */}
+      {purchasedCount !== undefined && (
+        <p className={styles.purchasedCount}>Purchased: {purchasedCount}</p>
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+// src/app/recipes/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -84,7 +85,10 @@ export default function RecipesPage() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border p-2 mr-2"
         />
-        <button onClick={() => fetchRecipes(searchTerm)} className="p-2 bg-blue-500 text-white rounded">
+        <button
+          onClick={() => fetchRecipes(searchTerm)}
+          className="p-2 bg-blue-500 text-white rounded"
+        >
           Search
         </button>
       </div>
@@ -106,7 +110,10 @@ export default function RecipesPage() {
           className="border p-2 mb-2 w-full"
           rows={4}
         />
-        <button onClick={handleAddRecipe} className="p-2 bg-green-500 text-white rounded">
+        <button
+          onClick={handleAddRecipe}
+          className="p-2 bg-green-500 text-white rounded"
+        >
           Add Recipe
         </button>
       </div>
@@ -118,7 +125,8 @@ export default function RecipesPage() {
       <ul>
         {recipes.map((r, i) => (
           <li key={i} className="mb-4">
-            <strong>{r.name}</strong> {r.cuisine ? `(${r.cuisine})` : ""} {r.source ? `[${r.source}]` : "[Local]"}
+            <strong>{r.name}</strong> {r.cuisine ? `(${r.cuisine})` : ""}{" "}
+            {r.source ? `[${r.source}]` : "[Local]"}
             <ul className="ml-4 list-disc">
               {r.instructions.map((step, idx) => (
                 <li key={idx}>{step}</li>

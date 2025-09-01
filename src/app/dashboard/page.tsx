@@ -1,9 +1,11 @@
 // src/app/dashboard/page.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import styles from "./page.module.css";
 
 interface User {
   id: string;
@@ -18,7 +20,6 @@ interface MealPlanEntry {
 
 export default function DashboardPage() {
   const router = useRouter();
-
   const [user, setUser] = useState<User | null>(null);
   const [mealPlans, setMealPlans] = useState<MealPlanEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,14 +66,19 @@ export default function DashboardPage() {
   if (error) return <p>Error: {error}</p>;
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Welcome, {user?.email}</h1>
+    <div className={styles.dashboardPage}>
+      {/* Welcome header */}
+      <h1 className={styles.welcome}>Welcome, {user?.email}</h1>
 
-      <h2 className="text-xl font-semibold mb-4">Your Meal Plans</h2>
+      {/* Meal plans section */}
+      <h2 className={styles.sectionTitle}>Your Meal Plans</h2>
+
       {mealPlans.length === 0 ? (
-        <p>You haven't created any meal plans yet.</p>
+        <p className={styles.emptyMessage}>
+          You haven't created any meal plans yet.
+        </p>
       ) : (
-        <ul className="space-y-2">
+        <ul>
           {mealPlans.map((plan) => (
             <li key={plan._id}>
               <Link

@@ -1,0 +1,30 @@
+/* src/app/dashboard/page.module.css */
+
+/* Container for the dashboard page */
+.dashboardPage {
+  padding: 2rem;
+  font-family: "Inter", sans-serif;
+}
+
+/* Welcome message at top */
+.welcome {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: #111827; /* gray-900 */
+}
+
+/* Section title */
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #111827;
+}
+
+/* Message for empty state */
+.emptyMessage {
+  color: #6b7280; /* gray-500 */
+  font-size: 1rem;
+  margin-top: 1rem;
+}

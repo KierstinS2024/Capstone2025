@@ -1,11 +1,22 @@
-// src/context/ShoppingListContext.tsx
+/* src/context/ShoppingListContext.tsx */
 "use client";
+
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
+// Each ingredient/item in a shopping list
+export interface ShoppingListItem {
+  id: string; // unique ID for this item
+  ingredientId: string;
+  quantity: number;
+  unit: string;
+  purchased: boolean;
+}
+
+// Shopping list type
 export interface ShoppingList {
   id: string;
-  title: string;
-  items: string[];
+  createdAt: string;
+  items: ShoppingListItem[];
 }
 
 interface ShoppingListContextType {
@@ -14,17 +25,21 @@ interface ShoppingListContextType {
   addShoppingList: (list: ShoppingList) => void;
 }
 
-const ShoppingListContext = createContext<ShoppingListContextType | undefined>(undefined);
+const ShoppingListContext = createContext<ShoppingListContextType | undefined>(
+  undefined
+);
 
 export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
 
   const addShoppingList = (list: ShoppingList) => {
-    setShoppingLists((prev) => [...prev, list]);
+    setShoppingLists((prev) => [list, ...prev]);
   };
 
   return (
-    <ShoppingListContext.Provider value={{ shoppingLists, setShoppingLists, addShoppingList }}>
+    <ShoppingListContext.Provider
+      value={{ shoppingLists, setShoppingLists, addShoppingList }}
+    >
       {children}
     </ShoppingListContext.Provider>
   );
@@ -32,6 +47,9 @@ export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
 
 export const useShoppingListContext = () => {
   const context = useContext(ShoppingListContext);
-  if (!context) throw new Error("useShoppingListContext must be used within a ShoppingListProvider");
+  if (!context)
+    throw new Error(
+      "useShoppingListContext must be used within a ShoppingListProvider"
+    );
   return context;
 };

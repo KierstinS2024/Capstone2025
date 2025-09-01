@@ -1,0 +1,67 @@
+/* src/app/dashboard/layout.module.css */
+
+/* Container for the whole dashboard page */
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9fafb; /* light gray */
+  font-family: "Inter", sans-serif;
+}
+
+/* Header styling */
+.header {
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Header title */
+.headerTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Navigation links container */
+.nav {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Individual nav links */
+.navLink {
+  color: #2563eb; /* blue-600 */
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.navLink:hover {
+  text-decoration: underline;
+}
+
+/* Logout button */
+.logoutButton {
+  color: #dc2626; /* red-600 */
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.logoutButton:hover {
+  text-decoration: underline;
+}
+
+/* Main content area */
+.main {
+  flex: 1;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+}

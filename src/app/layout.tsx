@@ -7,13 +7,15 @@ export const metadata = {
   description: "Meal planning and recipe management app",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body>
-        <AppProviders>
-          {children}
-        </AppProviders>
+      <body className="bg-gray-50 text-gray-900 antialiased">
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

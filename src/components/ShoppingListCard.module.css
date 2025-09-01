@@ -1,0 +1,29 @@
+/* src/components/ShoppingListCard.module.css */
+
+/* Card container */
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+/* Creation date */
+.createdAt {
+  font-weight: 600;
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Items & purchased counts */
+.itemCount,
+.purchasedCount {
+  font-size: 0.875rem;
+  color: #6b7280;
+}

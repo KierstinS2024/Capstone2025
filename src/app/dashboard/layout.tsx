@@ -1,48 +1,44 @@
 // src/app/dashboard/layout.tsx
+
+"use client";
+
 import { ReactNode } from "react";
 import Link from "next/link";
-
-export const metadata = {
-  title: "Dashboard",
-  description: "Your meal planning dashboard",
-};
+import styles from "./DashboardLayout.module.css";
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/auth/login";
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">Meal Planner Dashboard</h1>
-          <nav className="space-x-4">
-            <Link href="/dashboard" className="text-blue-600 hover:underline">
-              Home
-            </Link>
-            <Link href="/dashboard/recipes" className="text-blue-600 hover:underline">
-              Recipes
-            </Link>
-            <Link href="/dashboard/shopping-lists" className="text-blue-600 hover:underline">
-              Shopping Lists
-            </Link>
-            <button
-              onClick={() => {
-                localStorage.removeItem("token");
-                window.location.href = "/auth/login";
-              }}
-              className="text-red-600 hover:underline"
-            >
-              Logout
-            </button>
-          </nav>
-        </div>
+    <div className={styles.container}>
+      {/* Header with navigation */}
+      <header className={styles.header}>
+        <h1 className={styles.title}>Meal Planner Dashboard</h1>
+        <nav className={styles.nav}>
+          <Link href="/dashboard" className={styles.navLink}>
+            Home
+          </Link>
+          <Link href="/dashboard/recipes" className={styles.navLink}>
+            Recipes
+          </Link>
+          <Link href="/dashboard/shopping-lists" className={styles.navLink}>
+            Shopping Lists
+          </Link>
+          <span onClick={handleLogout} className={styles.logout}>
+            Logout
+          </span>
+        </nav>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 py-6">{children}</main>
+      {/* Main content */}
+      <main className={styles.main}>{children}</main>
     </div>
   );
 }

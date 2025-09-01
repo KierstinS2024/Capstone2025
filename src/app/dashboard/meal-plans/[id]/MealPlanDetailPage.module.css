@@ -1,0 +1,65 @@
+/* src/app/dashboard/meal-plans/[id]/MealPlanDetailPage.module.css */
+
+.container {
+  max-width: 7xl;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.notes {
+  text-align: center;
+  font-style: italic;
+  margin-bottom: 2rem;
+  color: #555;
+}
+
+.entriesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.entryCard {
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.recipeName {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.detail {
+  color: #555;
+}
+
+.backButton {
+  display: block;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: #fff;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.backButton:hover {
+  background-color: #1e40af;
+}
+
+.message {
+  text-align: center;
+  margin-top: 2rem;
+  color: #666;
+}

@@ -1,0 +1,64 @@
+/* src/components/RecipeCard.module.css */
+
+/* Card container */
+.card {
+  display: block;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #eee;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Hover effect for card */
+.card:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Recipe name/title */
+.title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Cuisine info */
+.cuisine {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+/* Description text with ellipsis after 3 lines */
+.description {
+  color: #444;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Badge container */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+/* Badge for user-submitted recipes */
+.userBadge {
+  background: #d1fae5; /* green */
+  color: #065f46;
+}
+
+/* Badge for external recipes */
+.externalBadge {
+  background: #dbeafe; /* blue */
+  color: #1e40af;
+}
