@@ -404,30 +404,3 @@ Authorization: Bearer <JWT>
 Demonstrates value of core features, drag-and-drop planner, and nutrition tracking.
 
 > [Full Story Walkthrough](https://github.com/KierstinS2024/Capstone2025/blob/main/UserFlowDiagram.md?utm_source=chatgpt.com)
-
-## Tentative Folder Structure:
-
-```bash
-capstone2025/
-├─ src/
-│  ├─ components/      # React UI components
-│  ├─ pages/           # Next.js pages & API routes
-│  │  ├─ api/          # Backend API endpoints
-│  │  │  ├─ auth/
-│  │  │  ├─ recipes/
-│  │  │  ├─ meal-plans/
-│  │  │  ├─ shopping-lists/
-│  │  │  └─ food-intake/
-│  │  ├─ index.js      # Landing page
-│  │  ├─ dashboard.js
-│  │  ├─ login.js
-│  │  └─ signup.js
-│  ├─ context/         # React Context for state management
-│  ├─ lib/             # Helper functions (DB, auth)
-│  └─ models/          # Mongoose models
-├─ public/             # Static assets (images, icons)
-├─ styles/             # Global and component CSS
-├─ .env                # Environment variables (not committed)
-├─ package.json
-└─ README.md
-```
