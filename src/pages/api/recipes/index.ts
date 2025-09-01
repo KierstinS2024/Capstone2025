@@ -1,50 +1,49 @@
 // src/pages/api/recipes/index.ts
+
 import type { NextApiRequest, NextApiResponse } from "next";
 import connectToDatabase from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 import Recipe from "@/models/Recipe";
 
-// I handle listing recipes and creating a new recipe
+// Handles listing all recipes or creating a new recipe
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectToDatabase();
 
+  // GET /api/recipes → return all recipes
   if (req.method === "GET") {
-    // Optionally filter by query parameters
-    const { cuisine, ingredient } = req.query;
-    const filter: any = {};
-    if (cuisine) filter.cuisine = cuisine;
-    if (ingredient) filter["ingredients.name"] = ingredient;
-
-    const recipes = await Recipe.find(filter);
-    return res.status(200).json(recipes);
+    try {
+      const recipes = await Recipe.find({});
+      return res.status(200).json({ recipes });
+    } catch (err) {
+      return res.status(500).json({ message: "Error fetching recipes" });
+    }
   }
 
+  // POST /api/recipes → create a new recipe (requires authentication)
   if (req.method === "POST") {
     try {
-      // Verify JWT
-      const authHeader = req.headers.authorization;
-      const userId = verifyToken(authHeader);
+      const userId = verifyToken(req.headers.authorization);
 
       const { name, description, instructions, nutritionInfo, cuisine } = req.body;
-      if (!name || !instructions) {
-        return res.status(400).json({ message: "Name and instructions are required" });
-      }
+
+      if (!name) return res.status(400).json({ message: "Recipe name is required" });
 
       const newRecipe = await Recipe.create({
         name,
         description,
-        instructions,
-        nutritionInfo,
-        cuisine,
+        instructions: instructions || [],
+        nutritionInfo: nutritionInfo || {},
+        cuisine: cuisine || "",
         userSubmitted: true,
-        createdByUserId: userId
+        createdByUserId: userId,
       });
 
-      return res.status(201).json(newRecipe);
-    } catch (error: any) {
-      return res.status(401).json({ message: error.message });
+      return res.status(201).json({ recipe: newRecipe });
+    } catch (err: any) {
+      return res.status(401).json({ message: err.message });
     }
   }
 
+  // Reject any other methods
   return res.status(405).json({ message: "Method not allowed" });
 }
