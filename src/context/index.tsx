@@ -1,10 +1,14 @@
 // src/context/index.tsx
 
+import { AuthProvider } from "./AuthContext";
 import { MealPlanProvider } from "./MealPlanContext";
 import { ShoppingListProvider } from "./ShoppingListContext";
-import { AuthProvider } from "./AuthContext";
 
-export function AppProviders({ children }: { children: React.ReactNode }) {
+interface AppProvidersProps {
+  children: React.ReactNode;
+}
+
+export function AppProviders({ children }: AppProvidersProps) {
   return (
     <AuthProvider>
       <MealPlanProvider>

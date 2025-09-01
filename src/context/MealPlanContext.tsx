@@ -1,39 +1,38 @@
 // src/context/MealPlanContext.tsx
 "use client";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, ReactNode } from "react";
 
-interface MealPlan {
-  id: string;
+// Define the shape of a meal plan
+export interface MealPlan {
+  _id: string;
   weekStartDate: string;
   notes?: string;
-  entriesCount?: number;
+  entries?: any[];
 }
 
+// The context type
 interface MealPlanContextType {
   mealPlans: MealPlan[];
-  addMealPlan: (plan: MealPlan) => void;
+  setMealPlans: React.Dispatch<React.SetStateAction<MealPlan[]>>;
 }
 
+// Create the context
 const MealPlanContext = createContext<MealPlanContextType | undefined>(undefined);
 
-export function MealPlanProvider({ children }: { children: React.ReactNode }) {
+// Provider component
+export const MealPlanProvider = ({ children }: { children: ReactNode }) => {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
 
-  const addMealPlan = (plan: MealPlan) => {
-    setMealPlans((prev) => [...prev, plan]);
-  };
-
   return (
-    <MealPlanContext.Provider value={{ mealPlans, addMealPlan }}>
+    <MealPlanContext.Provider value={{ mealPlans, setMealPlans }}>
       {children}
     </MealPlanContext.Provider>
   );
-}
+};
 
-export function useMealPlans() {
-  const ctx = useContext(MealPlanContext);
-  if (!ctx) {
-    throw new Error("useMealPlans must be used within a MealPlanProvider");
-  }
-  return ctx;
-}
+// Custom hook to consume the context
+export const useMealPlanContext = () => {
+  const context = useContext(MealPlanContext);
+  if (!context) throw new Error("useMealPlanContext must be used within a MealPlanProvider");
+  return context;
+};

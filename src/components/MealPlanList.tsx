@@ -1,8 +1,10 @@
 // src/components/MealPlanList.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import axios from "axios";
 import MealPlanCard from "./MealPlanCard";
+import { useMealPlanContext } from "@/context/MealPlanContext";
 
+// Type for a meal plan
 interface MealPlan {
   _id: string;
   weekStartDate: string;
@@ -11,15 +13,18 @@ interface MealPlan {
 }
 
 export default function MealPlanList() {
-  const [plans, setPlans] = useState<MealPlan[]>([]);
+  const { mealPlans, setMealPlans } = useMealPlanContext();
 
   const fetchMealPlans = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) return;
+
       const response = await axios.get("/api/meal-plans", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setPlans(response.data.plans || []);
+
+      setMealPlans(response.data.plans || []);
     } catch (err) {
       console.error("Error fetching meal plans", err);
     }
@@ -29,9 +34,13 @@ export default function MealPlanList() {
     fetchMealPlans();
   }, []);
 
+  if (!mealPlans || mealPlans.length === 0) {
+    return <p className="text-gray-500 mt-4">No meal plans yet.</p>;
+  }
+
   return (
-    <div className="meal-plan-list">
-      {plans.map(plan => (
+    <div className="meal-plan-list grid gap-4">
+      {mealPlans.map((plan: MealPlan) => (
         <MealPlanCard
           key={plan._id}
           id={plan._id}

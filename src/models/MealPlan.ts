@@ -1,21 +1,38 @@
-//src/models/MealPlan.ts
+// src/models/MealPlan.ts
+import mongoose, { Document, Model, Schema } from "mongoose";
 
-import mongoose from 'mongoose';
+// TypeScript interface for a meal plan entry
+export interface MealPlanEntry {
+  recipeId: mongoose.Types.ObjectId;
+  dayOfWeek: string;   // 'Monday', 'Tuesday', etc.
+  mealType: string;    // 'breakfast', 'lunch', 'dinner', 'snack'
+  servings: number;
+}
 
-// This is my MealPlan schema: it stores weekly meal plans for each user
-const MealPlanSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  weekStartDate: Date,
-  notes: String,
+// TypeScript interface for the full MealPlan document
+export interface IMealPlan extends Document {
+  userId: mongoose.Types.ObjectId;
+  weekStartDate?: Date;
+  notes?: string;
+  entries: MealPlanEntry[];
+}
+
+const MealPlanSchema: Schema<IMealPlan> = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  weekStartDate: { type: Date },
+  notes: { type: String },
   entries: [
     {
-      recipeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Recipe' },
-      dayOfWeek: String, // 'Monday', 'Tuesday', etc.
-      mealType: String, // 'breakfast', 'lunch', 'dinner', 'snack'
-      servings: Number
+      recipeId: { type: Schema.Types.ObjectId, ref: "Recipe", required: true },
+      dayOfWeek: { type: String, required: true },
+      mealType: { type: String, required: true },
+      servings: { type: Number, required: true }
     }
   ]
 });
 
-// I export the model to manage meal plans in my API
-export default mongoose.models.MealPlan || mongoose.model('MealPlan', MealPlanSchema);
+// Use existing model if it exists, otherwise create a new one
+const MealPlan: Model<IMealPlan> =
+  mongoose.models.MealPlan || mongoose.model<IMealPlan>("MealPlan", MealPlanSchema);
+
+export default MealPlan;

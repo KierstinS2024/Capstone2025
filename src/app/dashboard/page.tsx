@@ -1,9 +1,10 @@
-// src/pages/dashboard.tsx
+// src/app/dashboard/page.tsx
+"use client";
+
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-// Types
 interface User {
   id: string;
   email: string;
@@ -15,7 +16,7 @@ interface MealPlanEntry {
   notes?: string;
 }
 
-export default function Dashboard() {
+export default function DashboardPage() {
   const router = useRouter();
 
   const [user, setUser] = useState<User | null>(null);
@@ -26,29 +27,29 @@ export default function Dashboard() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/login");
+      router.push("/auth/login");
       return;
     }
 
     async function loadData() {
       try {
-        // Get the user's profile
+        // Fetch user info
         const userRes = await fetch("/api/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const userData = await userRes.json();
         if (!userData.user) {
-          router.push("/login");
+          router.push("/auth/login");
           return;
         }
         setUser(userData.user);
 
-        // Get the meal plans
+        // Fetch meal plans
         const plansRes = await fetch("/api/meal-plans", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const plansData = await plansRes.json(); // now returns raw array
-        setMealPlans(plansData);
+        const plansData = await plansRes.json();
+        setMealPlans(plansData.plans || []);
       } catch (err) {
         console.error(err);
         setError("Could not load dashboard data");
@@ -64,17 +65,20 @@ export default function Dashboard() {
   if (error) return <p>Error: {error}</p>;
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>Welcome, {user?.email}</h1>
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-6">Welcome, {user?.email}</h1>
 
-      <h2>Your Meal Plans</h2>
+      <h2 className="text-xl font-semibold mb-4">Your Meal Plans</h2>
       {mealPlans.length === 0 ? (
         <p>You haven't created any meal plans yet.</p>
       ) : (
-        <ul>
+        <ul className="space-y-2">
           {mealPlans.map((plan) => (
             <li key={plan._id}>
-              <Link href={`/meal-plans/${plan._id}`}>
+              <Link
+                href={`/dashboard/meal-plans/${plan._id}`}
+                className="text-blue-600 hover:underline"
+              >
                 Week of {new Date(plan.weekStartDate).toLocaleDateString()}
                 {plan.notes ? ` - ${plan.notes}` : ""}
               </Link>

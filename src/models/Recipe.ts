@@ -1,17 +1,29 @@
-//src/models/Recipe.ts
+// src/models/Recipe.ts
+import mongoose, { Document, Model, Schema } from "mongoose";
 
-import mongoose from 'mongoose';
+// TypeScript interface for a Recipe document
+export interface IRecipe extends Document {
+  name: string;
+  description?: string;
+  instructions: string[];
+  nutritionInfo?: Record<string, any>; // calories, macros, etc.
+  cuisine?: string;
+  userSubmitted: boolean;
+  createdByUserId?: mongoose.Types.ObjectId;
+}
 
-// This is my Recipe schema: it stores recipes my users create or import
-const RecipeSchema = new mongoose.Schema({
+const RecipeSchema: Schema<IRecipe> = new Schema({
   name: { type: String, required: true },
-  description: String,
-  instructions: [String], // Each step of the recipe
-  nutritionInfo: Object, // Calories, macros, etc.
-  cuisine: String,
+  description: { type: String },
+  instructions: [{ type: String, required: true }],
+  nutritionInfo: { type: Object },
+  cuisine: { type: String },
   userSubmitted: { type: Boolean, default: false },
-  createdByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  createdByUserId: { type: Schema.Types.ObjectId, ref: "User" },
 });
 
-// I export it so I can create, read, update, delete recipes in my API
-export default mongoose.models.Recipe || mongoose.model('Recipe', RecipeSchema);
+// Use existing model if it exists, otherwise create a new one
+const Recipe: Model<IRecipe> =
+  mongoose.models.Recipe || mongoose.model<IRecipe>("Recipe", RecipeSchema);
+
+export default Recipe;

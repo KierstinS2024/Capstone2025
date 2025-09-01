@@ -1,14 +1,22 @@
-//src/models/User.ts
+// src/models/User.ts
+import mongoose, { Document, Model, Schema } from "mongoose";
 
-import mongoose from 'mongoose';
+// Interface representing a User document in MongoDB
+export interface IUser extends Document {
+  email: string;
+  passwordHash: string;
+  preferences: Record<string, any>;
+  avatarUrl?: string;
+}
 
-// This is my User schema: it defines how my user data looks in the database
-const UserSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true }, // I need email to log in
-  passwordHash: { type: String, required: true }, // I store hashed password
-  preferences: { type: Object, default: {} }, // I can save dietary preferences here
-  avatarUrl: { type: String } // Optional profile picture
+const UserSchema: Schema<IUser> = new Schema({
+  email: { type: String, required: true, unique: true },
+  passwordHash: { type: String, required: true },
+  preferences: { type: Object, default: {} },
+  avatarUrl: { type: String },
 });
 
-// I export the model so I can use it in my API routes
-export default mongoose.models.User || mongoose.model('User', UserSchema);
+// Use existing model if it exists, else create a new one
+const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+
+export default User;
