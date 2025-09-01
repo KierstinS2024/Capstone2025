@@ -1,65 +1,83 @@
-/* src/app/dashboard/meal-plans/[id]/MealPlanDetailPage.module.css */
+/* path: src/app/dashboard/meal-plans/[id]/MealPlanDetailPage.module.css */
 
+/* Container for the entire page */
 .container {
-  max-width: 7xl;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 2rem;
+  font-family: 'Inter', sans-serif;
 }
 
+/* Page title */
 .title {
   font-size: 2rem;
   font-weight: 700;
-  text-align: center;
   margin-bottom: 1rem;
+  color: #111827;
 }
 
+/* Notes section below the title */
 .notes {
-  text-align: center;
-  font-style: italic;
+  font-size: 1rem;
+  color: #4b5563;
   margin-bottom: 2rem;
-  color: #555;
 }
 
+/* Grid layout for meal plan entries */
 .entriesGrid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
+/* Individual meal plan entry card */
 .entryCard {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
   padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background-color: #fafafa;
+  transition: box-shadow 0.2s;
 }
 
+.entryCard:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Recipe name heading in entry card */
 .recipeName {
+  font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
+  color: #1f2937;
 }
 
+/* Detail text: meal type and servings */
 .detail {
-  color: #555;
+  font-size: 0.95rem;
+  color: #6b7280;
 }
 
+/* Back button at bottom of page */
 .backButton {
-  display: block;
-  margin: 0 auto;
+  display: inline-block;
+  background-color: #e5e7eb;
+  color: #111827;
   padding: 0.5rem 1rem;
-  background-color: #2563eb;
-  color: #fff;
-  border-radius: 6px;
-  font-weight: 600;
+  border-radius: 0.5rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .backButton:hover {
-  background-color: #1e40af;
+  background-color: #d1d5db;
 }
 
+/* General messages: loading, error, empty state */
 .message {
+  font-size: 1rem;
+  color: #6b7280;
   text-align: center;
   margin-top: 2rem;
-  color: #666;
 }
