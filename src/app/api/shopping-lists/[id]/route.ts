@@ -1,9 +1,9 @@
-// src/app/api/shopping-lists/[id]/route.ts
+/* src/app/api/shopping-lists/[id]/route.ts */
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
-import ShoppingList, { IShoppingList, ShoppingListItem } from "@/models/ShoppingList";
+import ShoppingList, { ShoppingListItem } from "@/models/ShoppingList";
 
 // Helper to extract userId from Authorization header
 function getUserId(req: NextRequest) {
@@ -15,7 +15,6 @@ function getUserId(req: NextRequest) {
 // GET: Retrieve a shopping list
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   await connectToDatabase();
-
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ message: "Invalid or missing token" }, { status: 401 });
 
@@ -26,10 +25,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ list });
 }
 
-// POST: Add a new item to the shopping list
+// POST: Add a new item
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   await connectToDatabase();
-
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ message: "Invalid or missing token" }, { status: 401 });
 
@@ -40,7 +38,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   try {
     const { ingredientId, quantity, unit } = await req.json();
 
-    // Ensure ingredientId is a Mongoose ObjectId
     const newItem: ShoppingListItem = {
       _id: new mongoose.Types.ObjectId(),
       ingredientId: new mongoose.Types.ObjectId(ingredientId),
@@ -51,6 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     list.items.push(newItem);
     await list.save();
+
     return NextResponse.json({ list }, { status: 201 });
   } catch (err) {
     console.error(err);
@@ -58,10 +56,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 }
 
-// PATCH: Update an item in the shopping list
+// PATCH: Update an item
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   await connectToDatabase();
-
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ message: "Invalid or missing token" }, { status: 401 });
 
@@ -71,7 +68,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   try {
     const { itemId, quantity, purchased } = await req.json();
-    const item = list.items.find(i => i._id.toString() === itemId);
+    const item = list.items.find((i) => i._id.toString() === itemId);
     if (!item) return NextResponse.json({ message: "Item not found" }, { status: 404 });
 
     if (quantity !== undefined) item.quantity = quantity;
@@ -85,10 +82,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-// DELETE: Remove an item from the shopping list
+// DELETE: Remove an item
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   await connectToDatabase();
-
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ message: "Invalid or missing token" }, { status: 401 });
 
@@ -98,10 +94,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   try {
     const { itemId } = await req.json();
-    const itemIndex = list.items.findIndex(i => i._id.toString() === itemId);
-    if (itemIndex === -1) return NextResponse.json({ message: "Item not found" }, { status: 404 });
+    const index = list.items.findIndex((i) => i._id.toString() === itemId);
+    if (index === -1) return NextResponse.json({ message: "Item not found" }, { status: 404 });
 
-    list.items.splice(itemIndex, 1);
+    list.items.splice(index, 1);
     await list.save();
     return NextResponse.json({ list });
   } catch (err) {
