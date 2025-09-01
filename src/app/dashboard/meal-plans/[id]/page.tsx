@@ -1,24 +1,24 @@
 // path: src/app/dashboard/meal-plans/[id]/page.tsx
-"use client";
 
-/**
- * MealPlanDetailPage
- *
- * Displays details of a specific meal plan, including its entries, notes,
- * and allows the user to generate a shopping list from this plan.
- */
+"use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import styles from "./MealPlanDetailPage.module.css";
 import GenerateShoppingListButton from "@/components/GenerateShoppingListButton";
 
+/**
+ * Represents a single meal plan entry
+ */
 interface MealPlanEntry {
   recipeName: string;
   mealType: string;
   servings: number;
 }
 
+/**
+ * Represents the full meal plan object returned from the backend
+ */
 interface MealPlan {
   _id: string;
   weekStartDate: string;
@@ -26,24 +26,34 @@ interface MealPlan {
   entries?: MealPlanEntry[];
 }
 
+/**
+ * MealPlanDetailPage
+ *
+ * Displays the details for a single meal plan including:
+ * - Week start date
+ * - Notes (if any)
+ * - Meal entries with recipe, meal type, and servings
+ * - Button to generate shopping list from this meal plan
+ */
 export default function MealPlanDetailPage() {
-  const { id } = useParams(); // Meal plan ID from URL
+  const { id } = useParams(); // Extract meal plan ID from URL
   const router = useRouter();
 
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch meal plan data from backend on component mount
+  /**
+   * Fetch meal plan details from the backend API
+   */
   useEffect(() => {
     async function fetchMealPlan() {
+      setLoading(true);
+      setError(null);
+
       try {
         const token = localStorage.getItem("token");
-        if (!token) {
-          setError("You must be logged in to view this meal plan.");
-          setLoading(false);
-          return;
-        }
+        if (!token) throw new Error("User not authenticated.");
 
         const res = await fetch(`/api/meal-plans/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -51,14 +61,16 @@ export default function MealPlanDetailPage() {
 
         const data = await res.json();
 
-        if (res.ok) {
-          setMealPlan(data);
-        } else {
-          setError(data.message || "Meal plan not found");
+        if (!res.ok) {
+          throw new Error(data.message || "Meal plan not found.");
         }
+
+        setMealPlan(data);
       } catch (err) {
         console.error(err);
-        setError("Failed to fetch meal plan");
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch meal plan."
+        );
       } finally {
         setLoading(false);
       }
@@ -67,9 +79,12 @@ export default function MealPlanDetailPage() {
     fetchMealPlan();
   }, [id]);
 
-  // Callback for when shopping list is generated
-  const handleShoppingListCreated = (shoppingListId: string) => {
-    // Redirect user to the newly created shopping list page
+  /**
+   * Callback when a shopping list is successfully generated
+   * @param shoppingListId - The newly created shopping list ID
+   */
+  const handleShoppingListGenerated = (shoppingListId: string) => {
+    // Redirect user to the generated shopping list page
     router.push(`/dashboard/shopping-lists/${shoppingListId}`);
   };
 
@@ -79,12 +94,21 @@ export default function MealPlanDetailPage() {
 
   return (
     <main className={styles.container}>
+      {/* Page title showing the week start date */}
       <h1 className={styles.title}>Meal Plan for {mealPlan.weekStartDate}</h1>
 
+      {/* Display optional notes */}
       {mealPlan.notes && (
         <p className={styles.notes}>Notes: {mealPlan.notes}</p>
       )}
 
+      {/* Generate Shopping List Button */}
+      <GenerateShoppingListButton
+        mealPlanId={mealPlan._id}
+        onSuccess={handleShoppingListGenerated}
+      />
+
+      {/* Display meal entries */}
       {mealPlan.entries && mealPlan.entries.length > 0 ? (
         <div className={styles.entriesGrid}>
           {mealPlan.entries.map((entry, index) => (
@@ -100,12 +124,7 @@ export default function MealPlanDetailPage() {
         <p className={styles.message}>No entries yet for this week.</p>
       )}
 
-      {/* Generate shopping list button */}
-      <GenerateShoppingListButton
-        mealPlanId={mealPlan._id}
-        onSuccess={handleShoppingListCreated}
-      />
-
+      {/* Back button */}
       <button className={styles.backButton} onClick={() => router.back()}>
         ← Back
       </button>
