@@ -1,22 +1,27 @@
-// src/models/User.ts
-import mongoose, { Document, Model, Schema } from "mongoose";
+// path: src/models/User.ts
+/**
+ * User model
+ * Stores user credentials, preferences, and avatar
+ */
+import mongoose, { Schema, Document } from "mongoose";
 
-// Interface representing a User document in MongoDB
 export interface IUser extends Document {
   email: string;
   passwordHash: string;
-  preferences: Record<string, any>;
+  preferences?: Record<string, any>; // e.g., dietary restrictions, favorite cuisines
   avatarUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const UserSchema: Schema<IUser> = new Schema({
-  email: { type: String, required: true, unique: true },
-  passwordHash: { type: String, required: true },
-  preferences: { type: Object, default: {} },
-  avatarUrl: { type: String },
-});
+const UserSchema = new Schema<IUser>(
+  {
+    email: { type: String, required: true, unique: true },
+    passwordHash: { type: String, required: true },
+    preferences: { type: Schema.Types.Mixed, default: {} },
+    avatarUrl: { type: String, default: "" },
+  },
+  { timestamps: true }
+);
 
-// Use existing model if it exists, else create a new one
-const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
-
-export default User;
+export default mongoose.models.User || mongoose.model<IUser>("User", UserSchema);

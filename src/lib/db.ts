@@ -1,31 +1,32 @@
-// src/lib/db.ts
+// path: src/lib/db.ts
+/**
+ * MongoDB database connection helper
+ * Uses Mongoose to connect to MongoDB
+ * Ensures single connection instance across hot reloads
+ */
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || "";
 
 if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI must be defined in .env.local");
+  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
 }
 
-// Declare a global variable to cache the connection in development
-declare global {
-  var _mongo: { database?: mongoose.Mongoose } | undefined;
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
 }
 
-let mongoGlobal = global._mongo || {};
-if (process.env.NODE_ENV === "development") {
-  global._mongo = mongoGlobal;
-}
+async function connectToDatabase() {
+  if (cached.conn) return cached.conn;
 
-export default async function connectToDatabase(): Promise<mongoose.Mongoose> {
-  if (mongoGlobal.database) {
-    return mongoGlobal.database;
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => mongoose);
   }
 
-  // Assert that MONGODB_URI is a string with !
-  const database = await mongoose.connect(MONGODB_URI!);
-
-  mongoGlobal.database = database;
-  console.log("MongoDB connected!");
-  return database;
+  cached.conn = await cached.promise;
+  return cached.conn;
 }
+
+export default connectToDatabase;

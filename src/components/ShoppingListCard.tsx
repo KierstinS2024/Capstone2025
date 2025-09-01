@@ -1,35 +1,49 @@
-/* src/components/ShoppingListCard.tsx */
+// path: src/components/ShoppingListCard.tsx
+/**
+ * ShoppingListCard Component
+ *
+ * Displays a preview of a shopping list with title, creation date, and total items.
+ * Clicking the card navigates to the shopping list detail page.
+ */
+
 import React from "react";
-import styles from "./ShoppingListCard.module.css";
+import { useRouter } from "next/navigation";
 
 interface ShoppingListCardProps {
-  id: string;
-  createdAt: string;
-  itemsCount?: number;
-  purchasedCount?: number;
+  list: {
+    _id: string;
+    title: string;
+    createdAt: string;
+    itemsCount: number;
+  };
 }
 
-export default function ShoppingListCard({
-  createdAt,
-  itemsCount,
-  purchasedCount,
-}: ShoppingListCardProps) {
+const ShoppingListCard: React.FC<ShoppingListCardProps> = ({ list }) => {
+  const router = useRouter();
+
+  const handleClick = () => {
+    router.push(`/dashboard/shopping-lists/${list._id}`);
+  };
+
   return (
-    <div className={styles.card}>
-      {/* Creation date */}
-      <h3 className={styles.createdAt}>
-        Created: {new Date(createdAt).toLocaleDateString()}
-      </h3>
-
-      {/* Total items */}
-      {itemsCount !== undefined && (
-        <p className={styles.itemCount}>Total items: {itemsCount}</p>
-      )}
-
-      {/* Purchased items */}
-      {purchasedCount !== undefined && (
-        <p className={styles.purchasedCount}>Purchased: {purchasedCount}</p>
-      )}
+    <div
+      onClick={handleClick}
+      style={{
+        border: "1px solid #ccc",
+        padding: "1rem",
+        marginBottom: "0.5rem",
+        borderRadius: "0.5rem",
+        cursor: "pointer",
+        backgroundColor: "#f9f9f9",
+      }}
+    >
+      <h3>{list.title}</h3>
+      <p>
+        Created: {new Date(list.createdAt).toLocaleDateString()} | Items:{" "}
+        {list.itemsCount}
+      </p>
     </div>
   );
-}
+};
+
+export default ShoppingListCard;

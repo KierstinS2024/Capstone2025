@@ -1,8 +1,9 @@
-// path: src/app/api/auth/login/route.ts
+// path: src/app/api/auth/signup/route.ts
 /**
- * POST /api/auth/login
- * Authenticates an existing user
- * - Verifies password
+ * POST /api/auth/signup
+ * Registers a new user
+ * - Hashes password with bcrypt
+ * - Stores user in MongoDB
  * - Returns JWT for authentication
  */
 import { NextRequest, NextResponse } from "next/server";
@@ -24,23 +25,24 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase();
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return NextResponse.json({ message: "User already exists" }, { status: 400 });
     }
 
-    // Compare password
-    const passwordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!passwordValid) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
-    }
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    // Generate JWT
+    // Create new user
+    const user = await User.create({ email, passwordHash });
+
+    // Create JWT
     const token = jwt.sign({ userId: user._id.toString() }, JWT_SECRET, { expiresIn: "7d" });
 
-    return NextResponse.json({ token, user: { id: user._id, email: user.email } });
+    return NextResponse.json({ token, user: { id: user._id, email: user.email } }, { status: 201 });
   } catch (err) {
-    console.error("Error logging in user:", err);
+    console.error("Error signing up user:", err);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }

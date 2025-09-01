@@ -1,29 +1,45 @@
-// src/models/Recipe.ts
-import mongoose, { Document, Model, Schema } from "mongoose";
+// path: src/models/Recipe.ts
+/**
+ * Recipe model
+ * Stores recipe details, ingredients, instructions, nutrition, and ownership
+ */
+import mongoose, { Schema, Document } from "mongoose";
 
-// TypeScript interface for a Recipe document
 export interface IRecipe extends Document {
   name: string;
-  description?: string;
+  description: string;
   instructions: string[];
-  nutritionInfo?: Record<string, any>; // calories, macros, etc.
   cuisine?: string;
   userSubmitted: boolean;
-  createdByUserId?: mongoose.Types.ObjectId;
+  createdByUserId?: mongoose.Types.ObjectId; // references User
+  ingredients: {
+    ingredientId: mongoose.Types.ObjectId;
+    quantity: number;
+    unit: string;
+  }[];
+  nutritionInfo?: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const RecipeSchema: Schema<IRecipe> = new Schema({
-  name: { type: String, required: true },
-  description: { type: String },
-  instructions: [{ type: String, required: true }],
-  nutritionInfo: { type: Object },
-  cuisine: { type: String },
-  userSubmitted: { type: Boolean, default: false },
-  createdByUserId: { type: Schema.Types.ObjectId, ref: "User" },
-});
+const RecipeSchema = new Schema<IRecipe>(
+  {
+    name: { type: String, required: true },
+    description: { type: String, required: true },
+    instructions: { type: [String], default: [] },
+    cuisine: { type: String },
+    userSubmitted: { type: Boolean, default: false },
+    createdByUserId: { type: Schema.Types.ObjectId, ref: "User" },
+    ingredients: [
+      {
+        ingredientId: { type: Schema.Types.ObjectId, ref: "Ingredient", required: true },
+        quantity: { type: Number, required: true },
+        unit: { type: String, required: true },
+      },
+    ],
+    nutritionInfo: { type: Schema.Types.Mixed, default: {} },
+  },
+  { timestamps: true }
+);
 
-// Use existing model if it exists, otherwise create a new one
-const Recipe: Model<IRecipe> =
-  mongoose.models.Recipe || mongoose.model<IRecipe>("Recipe", RecipeSchema);
-
-export default Recipe;
+export default mongoose.models.Recipe || mongoose.model<IRecipe>("Recipe", RecipeSchema);

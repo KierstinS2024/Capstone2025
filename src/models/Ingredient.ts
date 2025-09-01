@@ -1,23 +1,27 @@
-// src/models/Ingredient.ts
-import mongoose, { Document, Model, Schema } from "mongoose";
+// path: src/models/Ingredient.ts
+/**
+ * Ingredient model
+ * Represents an ingredient that can be used in recipes and shopping lists
+ */
+import mongoose, { Schema, Document } from "mongoose";
 
-// Define TypeScript interface for an ingredient document
 export interface IIngredient extends Document {
   name: string;
-  unit?: string; // grams, ml, pcs
-  defaultQuantity?: number;
-  nutritionInfo?: Record<string, any>;
+  unit: string; // e.g., grams, cups
+  defaultQuantity: number; // default quantity for recipes
+  nutritionInfo?: Record<string, any>; // e.g., calories, macros
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const IngredientSchema: Schema<IIngredient> = new Schema({
-  name: { type: String, required: true },
-  unit: { type: String },
-  defaultQuantity: { type: Number },
-  nutritionInfo: { type: Object }
-});
+const IngredientSchema = new Schema<IIngredient>(
+  {
+    name: { type: String, required: true },
+    unit: { type: String, required: true },
+    defaultQuantity: { type: Number, required: true, default: 1 },
+    nutritionInfo: { type: Schema.Types.Mixed, default: {} },
+  },
+  { timestamps: true }
+);
 
-// Use existing model if it exists, otherwise create new one
-const Ingredient: Model<IIngredient> =
-  mongoose.models.Ingredient || mongoose.model<IIngredient>("Ingredient", IngredientSchema);
-
-export default Ingredient;
+export default mongoose.models.Ingredient || mongoose.model<IIngredient>("Ingredient", IngredientSchema);

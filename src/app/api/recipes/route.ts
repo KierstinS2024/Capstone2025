@@ -1,89 +1,79 @@
-// src/app/api/recipes/route.ts
+// path: src/app/api/recipes/route.ts
+/**
+ * Recipe API
+ * Handles GET (list/search recipes) and POST (create recipe) requests.
+ * 
+ * GET: Fetch all recipes, optionally filtered by query parameters (e.g., cuisine, diet)
+ * POST: Create a new recipe (requires authentication)
+ */
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
 import Recipe from "@/models/Recipe";
-import axios from "axios";
+import { verifyToken } from "@/lib/auth";
+import mongoose from "mongoose";
 
-// Helper to extract userId from Authorization header
-function getUserIdFromRequest(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
-  return verifyToken(authHeader.split(" ")[1]);
-}
-
-// GET: List recipes (optionally search local DB + Spoonacular)
+// GET /api/recipes
 export async function GET(req: NextRequest) {
-  await connectToDatabase();
-
-  const url = new URL(req.url);
-  const search = url.searchParams.get("search");
-
   try {
-    let localRecipes = [];
-    let externalRecipes: any[] = [];
+    await connectToDatabase();
 
-    if (search) {
-      const query = encodeURIComponent(search);
+    const url = new URL(req.url);
+    const cuisine = url.searchParams.get("cuisine"); // optional filter
+    const name = url.searchParams.get("name");       // optional filter
 
-      // Fetch from Spoonacular
-      const spoonacularApiKey = process.env.SPOONACULAR_API_KEY;
-      if (spoonacularApiKey) {
-        const response = await axios.get(
-          `https://api.spoonacular.com/recipes/complexSearch?query=${query}&number=5&apiKey=${spoonacularApiKey}`
-        );
-        externalRecipes = response.data.results.map((r: any) => ({
-          title: r.title,
-          id: r.id,
-          source: "Spoonacular",
-        }));
-      }
+    const filter: any = {};
+    if (cuisine) filter.cuisine = cuisine;
+    if (name) filter.name = { $regex: name, $options: "i" };
 
-      // Fetch matching local recipes
-      localRecipes = await Recipe.find({
-        name: { $regex: search, $options: "i" },
-      }).limit(10);
+    // Fetch recipes from DB
+    const recipes = await Recipe.find(filter).sort({ createdAt: -1 });
 
-      return NextResponse.json({ localRecipes, externalRecipes });
-    }
-
-    // If no search term, return first 20 recipes
-    localRecipes = await Recipe.find().limit(20);
-    return NextResponse.json({ recipes: localRecipes });
+    return NextResponse.json({ recipes });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ message: "Error fetching recipes" }, { status: 500 });
+    console.error("Error fetching recipes:", err);
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }
 
-// POST: Create a new recipe (requires authentication)
+// POST /api/recipes
 export async function POST(req: NextRequest) {
-  await connectToDatabase();
-
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return NextResponse.json({ message: "Invalid or missing token" }, { status: 401 });
-
   try {
-    const body = await req.json();
-    const { name, description, instructions, nutritionInfo, cuisine } = body;
+    // Authenticate user
+    const authHeader = req.headers.get("authorization");
+    const userId = verifyToken(authHeader); // throws if invalid
 
-    if (!name || !instructions) {
-      return NextResponse.json({ message: "Recipe name and instructions are required" }, { status: 400 });
+    const { name, description, cuisine, instructions, ingredients } = await req.json();
+
+    if (!name || !description) {
+      return NextResponse.json({ message: "Name and description are required" }, { status: 400 });
     }
 
+    await connectToDatabase();
+
+    // Create recipe in DB
     const newRecipe = await Recipe.create({
       name,
       description,
-      instructions,
-      nutritionInfo,
-      cuisine,
+      cuisine: cuisine || "",
+      instructions: instructions || [],
       userSubmitted: true,
-      createdByUserId: userId,
+      createdByUserId: new mongoose.Types.ObjectId(userId),
+      ingredients: ingredients?.map((item: any) => ({
+        ingredientId: new mongoose.Types.ObjectId(item.ingredientId),
+        quantity: item.quantity,
+        unit: item.unit,
+      })) || [],
     });
 
     return NextResponse.json({ recipe: newRecipe }, { status: 201 });
-  } catch (err: any) {
-    console.error(err);
-    return NextResponse.json({ message: err.message }, { status: 500 });
+  } catch (err) {
+    console.error("Error creating recipe:", err);
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

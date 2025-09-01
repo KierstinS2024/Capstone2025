@@ -1,65 +1,58 @@
 // src/context/AuthContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+// Context for authentication: handles login, logout, and current user state
+import React, { createContext, useState, useEffect, ReactNode } from "react";
+import { useRouter } from "next/navigation";
 
-interface User {
-  id: string;
-  email: string;
-}
-
-interface AuthContextType {
-  user: User | null;
+interface AuthContextProps {
+  user: any | null;
   token: string | null;
-  isAuthenticated: boolean;
-  login: (user: User, token: string) => void;
+  login: (token: string, user: any) => void;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextProps>({
+  user: null,
+  token: null,
+  login: () => {},
+  logout: () => {},
+});
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<any | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const router = useRouter();
 
-  // Load user & token from localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
-
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
+    // On mount, restore saved session from localStorage
+    const savedToken = localStorage.getItem("token");
+    const savedUser = localStorage.getItem("user");
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
     }
   }, []);
 
-  const login = (user: User, token: string) => {
-    setUser(user);
+  const login = (token: string, user: any) => {
     setToken(token);
-    localStorage.setItem("user", JSON.stringify(user));
+    setUser(user);
     localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+    router.push("/dashboard");
   };
 
   const logout = () => {
-    setUser(null);
     setToken(null);
-    localStorage.removeItem("user");
+    setUser(null);
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/auth/login");
   };
 
-  const isAuthenticated = !!user && !!token;
-
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return ctx;
-}
+};

@@ -1,38 +1,39 @@
-// src/models/MealPlan.ts
-import mongoose, { Document, Model, Schema } from "mongoose";
+// path: src/models/MealPlan.ts
+/**
+ * MealPlan model
+ * Stores a user's weekly meal plan with entries for each day and meal
+ */
+import mongoose, { Schema, Document } from "mongoose";
 
-// TypeScript interface for a meal plan entry
-export interface MealPlanEntry {
-  recipeId: mongoose.Types.ObjectId;
-  dayOfWeek: string;   // 'Monday', 'Tuesday', etc.
-  mealType: string;    // 'breakfast', 'lunch', 'dinner', 'snack'
-  servings: number;
-}
-
-// TypeScript interface for the full MealPlan document
 export interface IMealPlan extends Document {
-  userId: mongoose.Types.ObjectId;
-  weekStartDate?: Date;
+  userId: mongoose.Types.ObjectId; // references User
+  weekStartDate: Date;
   notes?: string;
-  entries: MealPlanEntry[];
+  entries: {
+    recipeId: mongoose.Types.ObjectId;
+    dayOfWeek: string; // e.g., "Monday"
+    mealType: string; // e.g., "Breakfast", "Lunch", "Dinner"
+    servings: number;
+  }[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const MealPlanSchema: Schema<IMealPlan> = new Schema({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  weekStartDate: { type: Date },
-  notes: { type: String },
-  entries: [
-    {
-      recipeId: { type: Schema.Types.ObjectId, ref: "Recipe", required: true },
-      dayOfWeek: { type: String, required: true },
-      mealType: { type: String, required: true },
-      servings: { type: Number, required: true }
-    }
-  ]
-});
+const MealPlanSchema = new Schema<IMealPlan>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    weekStartDate: { type: Date, required: true },
+    notes: { type: String, default: "" },
+    entries: [
+      {
+        recipeId: { type: Schema.Types.ObjectId, ref: "Recipe", required: true },
+        dayOfWeek: { type: String, required: true },
+        mealType: { type: String, required: true },
+        servings: { type: Number, required: true, default: 1 },
+      },
+    ],
+  },
+  { timestamps: true }
+);
 
-// Use existing model if it exists, otherwise create a new one
-const MealPlan: Model<IMealPlan> =
-  mongoose.models.MealPlan || mongoose.model<IMealPlan>("MealPlan", MealPlanSchema);
-
-export default MealPlan;
+export default mongoose.models.MealPlan || mongoose.model<IMealPlan>("MealPlan", MealPlanSchema);

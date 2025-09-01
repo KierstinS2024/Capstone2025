@@ -1,34 +1,33 @@
-// src/lib/auth.ts
+// path: src/lib/auth.ts
+/**
+ * Authentication helpers
+ * - verifyToken: validates JWT and returns userId
+ * - can be extended with middleware for protected routes
+ */
 import jwt from "jsonwebtoken";
 
-// Read the JWT secret key from environment variables
-const secretEnv = process.env.JWT_SECRET;
-if (!secretEnv) {
-  throw new Error("JWT_SECRET must be defined in .env.local");
-}
-const secret: string = secretEnv;
+const JWT_SECRET = process.env.JWT_SECRET || "";
 
-/**
- * Create a JWT for a given user ID
- * Expires in 7 days
- */
-export function createToken(userId: string): string {
-  return jwt.sign({ userId }, secret, { expiresIn: "7d" });
+if (!JWT_SECRET) {
+  throw new Error("Please define JWT_SECRET in .env.local");
 }
 
 /**
- * Verify a JWT from the Authorization header
- * Returns userId if valid, otherwise null
+ * Verifies JWT token and returns the userId
+ * @param tokenString string | null from Authorization header
+ * @returns userId as string
  */
-export function verifyToken(authHeader?: string): string | null {
-  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+export function verifyToken(tokenString: string | null): string {
+  if (!tokenString) throw new Error("Missing Authorization header");
 
-  const token = authHeader.split(" ")[1];
+  // Expect header format: "Bearer <token>"
+  const token = tokenString.split(" ")[1];
+  if (!token) throw new Error("Invalid token format");
 
   try {
-    const decoded = jwt.verify(token, secret) as { userId: string };
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     return decoded.userId;
-  } catch {
-    return null;
+  } catch (err) {
+    throw new Error("Invalid or expired token");
   }
 }
