@@ -1,40 +1,45 @@
 // path: src/components/GenerateShoppingListButton.tsx
 /**
- * GenerateShoppingListButton Component
+ * GenerateShoppingListButton
  *
- * A reusable button component that triggers shopping list generation for a given meal plan.
- * - Calls the API route: POST /api/shopping-lists/from-meal-plan/[mealPlanId]
- * - Displays loading state and success/error messages.
- *
- * Props:
- * - mealPlanId: string - The ID of the meal plan to generate the shopping list from
- * - onSuccess?: (shoppingList) => void - Optional callback after successful creation
+ * Button component to generate a shopping list from a given meal plan.
+ * Features:
+ * - Sends a POST request to /api/shopping-lists/from-meal-plan/:mealPlanId
+ * - Shows loading and disables button while request is in progress
+ * - Handles success and error states gracefully
+ * - Optionally triggers a callback after creation to refresh UI
  */
 
 "use client";
 
-import React, { useState } from "react";
-import { useAuth } from "@/hooks/useAuth"; // Custom hook to get auth context
+import { useState } from "react";
 
 interface GenerateShoppingListButtonProps {
   mealPlanId: string;
-  onSuccess?: (shoppingList: any) => void;
+  onSuccess?: (newListId: string) => void; // Callback to refresh or navigate
 }
 
-const GenerateShoppingListButton: React.FC<GenerateShoppingListButtonProps> = ({
+export default function GenerateShoppingListButton({
   mealPlanId,
   onSuccess,
-}) => {
-  const { token } = useAuth(); // Get JWT token from auth context
+}: GenerateShoppingListButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Handler to generate shopping list
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("You must be logged in to generate a shopping list.");
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch(
         `/api/shopping-lists/from-meal-plan/${mealPlanId}`,
         {
           method: "POST",
@@ -45,34 +50,45 @@ const GenerateShoppingListButton: React.FC<GenerateShoppingListButtonProps> = ({
         }
       );
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to generate shopping list");
+      if (res.ok) {
+        // Call optional callback for UI refresh
+        if (onSuccess) {
+          onSuccess(data.list._id);
+        }
+        alert("Shopping list generated successfully!");
+      } else {
+        setError(data.message || "Failed to generate shopping list.");
       }
-
-      // Call optional success callback
-      if (onSuccess) onSuccess(data.shoppingList);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error generating shopping list:", err);
-      setError(err.message);
+      setError("Server error while generating shopping list.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
+    <div style={{ margin: "1rem 0" }}>
       <button
         onClick={handleGenerate}
         disabled={loading}
-        className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
+        style={{
+          padding: "0.5rem 1rem",
+          backgroundColor: "#4CAF50",
+          color: "#fff",
+          border: "none",
+          borderRadius: "5px",
+          cursor: loading ? "not-allowed" : "pointer",
+        }}
       >
         {loading ? "Generating..." : "Generate Shopping List"}
       </button>
-      {error && <p className="text-red-500 mt-2">{error}</p>}
+
+      {error && (
+        <p style={{ color: "red", marginTop: "0.5rem" }}>Error: {error}</p>
+      )}
     </div>
   );
-};
-
-export default GenerateShoppingListButton;
+}
