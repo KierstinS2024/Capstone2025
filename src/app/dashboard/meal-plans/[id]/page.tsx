@@ -1,12 +1,23 @@
 // src/app/dashboard/meal-plans/[id]/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+/**
+ * MealPlanDetailPage
+ *
+ * Displays a single meal plan in detail.
+ * Allows editing the plan's notes and weekStartDate.
+ * Lists entries with add/edit/delete capabilities using MealPlanEntryForm.
+ * Implements best practices for TypeScript and App Router.
+ */
+
+import { useState, useEffect, useContext } from "react";
+import { useParams } from "next/navigation";
+import { MealPlanContext } from "@/context/MealPlanContext";
+import MealPlanEntryForm from "@/components/MealPlanEntryForm";
 import styles from "./MealPlanDetailPage.module.css";
 
 interface MealPlanEntry {
-  _id?: string;
+  _id: string;
   recipeId: string;
   mealType: string;
   dayOfWeek: string;
@@ -15,357 +26,237 @@ interface MealPlanEntry {
 
 interface MealPlan {
   _id: string;
-  userId: string;
   weekStartDate: string;
   notes: string;
   entries: MealPlanEntry[];
 }
 
-// Options for dropdowns
-const mealTypes = ["Breakfast", "Lunch", "Dinner", "Snack"];
-const daysOfWeek = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
-
 export default function MealPlanDetailPage() {
-  const router = useRouter();
-  const { id } = useParams();
+  const params = useParams();
+  const { mealPlans, setMealPlans } = useContext(MealPlanContext);
 
-  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [notes, setNotes] = useState("");
-  const [newEntry, setNewEntry] = useState<MealPlanEntry>({
-    recipeId: "",
-    mealType: "Breakfast",
-    dayOfWeek: "Monday",
-    servings: 1,
-  });
-  const [actionLoading, setActionLoading] = useState(false);
+  // Narrow planId to string safely
+  const rawPlanId = params.id;
+  const planId = typeof rawPlanId === "string" ? rawPlanId : undefined;
 
+  if (!planId) {
+    return <p className={styles.error}>Invalid meal plan ID.</p>;
+  }
+
+  // Token from localStorage (client-side only)
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  if (!token) {
+    return (
+      <p className={styles.error}>You must be logged in to view this page.</p>
+    );
+  }
 
+  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [notes, setNotes] = useState("");
+  const [weekStartDate, setWeekStartDate] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+
+  // Fetch meal plan details
   useEffect(() => {
     async function fetchMealPlan() {
-      if (!token) return router.push("/auth/login");
       try {
         setLoading(true);
-        const res = await fetch(`/api/meal-plans/${id}`, {
+        setError(null);
+
+        const res = await fetch(`/api/meal-plans/${planId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
+
         if (!res.ok)
-          throw new Error(data.message || "Failed to load meal plan");
+          throw new Error(data.message || "Failed to fetch meal plan");
+
         setMealPlan(data.mealPlan);
         setNotes(data.mealPlan.notes || "");
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Error loading meal plan"
+        setWeekStartDate(
+          new Date(data.mealPlan.weekStartDate).toISOString().slice(0, 10)
         );
+      } catch (err: any) {
+        setError(err.message || "Error loading meal plan");
       } finally {
         setLoading(false);
       }
     }
-    fetchMealPlan();
-  }, [id, router, token]);
 
-  const handleUpdateNotes = async () => {
-    if (!token || !mealPlan) return;
+    fetchMealPlan();
+  }, [planId, token]);
+
+  // Update meal plan notes and weekStartDate
+  const handleUpdatePlan = async () => {
+    if (!mealPlan) return;
+
     try {
-      setActionLoading(true);
-      const res = await fetch(`/api/meal-plans/${id}`, {
+      const res = await fetch(`/api/meal-plans/${planId}`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ notes }),
+        body: JSON.stringify({ notes, weekStartDate }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to update notes");
+
+      if (!res.ok)
+        throw new Error(data.message || "Failed to update meal plan");
+
       setMealPlan(data.mealPlan);
-      alert("Notes updated!");
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Error updating notes");
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
-  const handleAddEntry = async () => {
-    if (!token || !mealPlan) return;
-    const { recipeId, mealType, dayOfWeek, servings } = newEntry;
-    if (!recipeId) return alert("Recipe ID is required");
-    try {
-      setActionLoading(true);
-      const res = await fetch(`/api/meal-plans/${id}/entries`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newEntry),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to add entry");
-      setMealPlan((prev) =>
-        prev ? { ...prev, entries: [...prev.entries, data.entry] } : prev
+      // Sync with global context
+      setMealPlans(
+        mealPlans.map((plan) => (plan._id === planId ? data.mealPlan : plan))
       );
-      setNewEntry({
-        recipeId: "",
-        mealType: "Breakfast",
-        dayOfWeek: "Monday",
-        servings: 1,
-      });
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Error adding entry");
-    } finally {
-      setActionLoading(false);
+
+      alert("Meal plan updated successfully!");
+    } catch (err: any) {
+      alert(err.message || "Error updating meal plan");
     }
   };
 
-  const handleUpdateEntry = async (entry: MealPlanEntry) => {
-    if (!token || !mealPlan || !entry._id) return;
-    try {
-      setActionLoading(true);
-      const res = await fetch(`/api/meal-plans/${id}/entries/${entry._id}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(entry),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to update entry");
-      setMealPlan((prev) =>
-        prev
-          ? {
-              ...prev,
-              entries: prev.entries.map((e) =>
-                e._id === entry._id ? data.entry : e
-              ),
-            }
-          : prev
-      );
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Error updating entry");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
+  // Delete a meal plan entry
   const handleDeleteEntry = async (entryId: string) => {
-    if (!token || !mealPlan) return;
+    if (!confirm("Are you sure you want to delete this entry?")) return;
+
     try {
-      setActionLoading(true);
-      const res = await fetch(`/api/meal-plans/${id}/entries/${entryId}`, {
+      const res = await fetch(`/api/meal-plans/${planId}/entries/${entryId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to delete entry");
-      setMealPlan((prev) =>
-        prev
-          ? { ...prev, entries: prev.entries.filter((e) => e._id !== entryId) }
-          : prev
-      );
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Error deleting entry");
-    } finally {
-      setActionLoading(false);
+      if (!res.ok) throw new Error("Failed to delete entry");
+
+      setMealPlan({
+        ...mealPlan!,
+        entries: mealPlan!.entries.filter((entry) => entry._id !== entryId),
+      });
+    } catch (err: any) {
+      alert(err.message || "Error deleting entry");
     }
   };
 
+  // Handle successful add/edit of an entry
+  const handleEntrySuccess = (entry: MealPlanEntry) => {
+    if (!mealPlan) return;
+
+    const exists = mealPlan.entries.find((e) => e._id === entry._id);
+    if (exists) {
+      setMealPlan({
+        ...mealPlan,
+        entries: mealPlan.entries.map((e) => (e._id === entry._id ? entry : e)),
+      });
+    } else {
+      setMealPlan({ ...mealPlan, entries: [...mealPlan.entries, entry] });
+    }
+
+    setShowAddForm(false);
+    setEditingEntryId(null);
+  };
+
+  // Loading/Error UI
   if (loading) return <p className={styles.message}>Loading meal plan...</p>;
   if (error) return <p className={styles.error}>Error: {error}</p>;
-  if (!mealPlan) return <p className={styles.message}>Meal plan not found.</p>;
+  if (!mealPlan) return <p className={styles.error}>Meal plan not found.</p>;
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>
-        Meal Plan - Week of{" "}
-        {new Date(mealPlan.weekStartDate).toLocaleDateString()}
-      </h1>
+      <h1 className={styles.title}>Meal Plan Details</h1>
 
-      <div className={styles.notesSection}>
+      {/* Editable meal plan info */}
+      <div className={styles.formGroup}>
+        <label>
+          Week Start Date:
+          <input
+            type="date"
+            value={weekStartDate}
+            onChange={(e) => setWeekStartDate(e.target.value)}
+          />
+        </label>
+      </div>
+
+      <div className={styles.formGroup}>
         <label>
           Notes:
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className={styles.textarea}
+            placeholder="Add notes for this week..."
           />
         </label>
-        <button
-          disabled={actionLoading}
-          onClick={handleUpdateNotes}
-          className={styles.button}
-        >
-          {actionLoading ? "Updating..." : "Update Notes"}
-        </button>
       </div>
 
-      <h2 className={styles.sectionTitle}>Entries</h2>
+      <button className={styles.updateButton} onClick={handleUpdatePlan}>
+        Update Meal Plan
+      </button>
+
+      <h2 className={styles.subtitle}>Entries</h2>
+
+      {/* Add new entry */}
+      {showAddForm ? (
+        <MealPlanEntryForm
+          mealPlanId={planId} // guaranteed string
+          token={token}
+          onSuccess={handleEntrySuccess}
+          onCancel={() => setShowAddForm(false)}
+        />
+      ) : (
+        <button
+          className={styles.addButton}
+          onClick={() => setShowAddForm(true)}
+        >
+          + Add New Entry
+        </button>
+      )}
+
+      {/* Entries list */}
       {mealPlan.entries.length === 0 ? (
-        <p className={styles.emptyMessage}>No entries yet</p>
+        <p>No entries yet.</p>
       ) : (
         <ul className={styles.entryList}>
           {mealPlan.entries.map((entry) => (
             <li key={entry._id} className={styles.entryItem}>
-              <input
-                type="text"
-                value={entry.recipeId}
-                onChange={(e) =>
-                  setMealPlan((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          entries: prev.entries.map((en) =>
-                            en._id === entry._id
-                              ? { ...en, recipeId: e.target.value }
-                              : en
-                          ),
-                        }
-                      : prev
-                  )
-                }
-              />
-              <select
-                value={entry.mealType}
-                onChange={(e) =>
-                  setMealPlan((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          entries: prev.entries.map((en) =>
-                            en._id === entry._id
-                              ? { ...en, mealType: e.target.value }
-                              : en
-                          ),
-                        }
-                      : prev
-                  )
-                }
-              >
-                {mealTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={entry.dayOfWeek}
-                onChange={(e) =>
-                  setMealPlan((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          entries: prev.entries.map((en) =>
-                            en._id === entry._id
-                              ? { ...en, dayOfWeek: e.target.value }
-                              : en
-                          ),
-                        }
-                      : prev
-                  )
-                }
-              >
-                {daysOfWeek.map((day) => (
-                  <option key={day} value={day}>
-                    {day}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min={1}
-                value={entry.servings}
-                onChange={(e) =>
-                  setMealPlan((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          entries: prev.entries.map((en) =>
-                            en._id === entry._id
-                              ? { ...en, servings: Number(e.target.value) }
-                              : en
-                          ),
-                        }
-                      : prev
-                  )
-                }
-              />
-              <button
-                disabled={actionLoading}
-                onClick={() => handleUpdateEntry(entry)}
-              >
-                Update
-              </button>
-              <button
-                disabled={actionLoading}
-                onClick={() => handleDeleteEntry(entry._id!)}
-              >
-                Delete
-              </button>
+              <strong>
+                {entry.dayOfWeek} - {entry.mealType}
+              </strong>
+              <p>Servings: {entry.servings}</p>
+
+              <div className={styles.entryButtons}>
+                <button
+                  className={styles.editButton}
+                  onClick={() => setEditingEntryId(entry._id)}
+                >
+                  Edit
+                </button>
+
+                <button
+                  className={styles.deleteButton}
+                  onClick={() => handleDeleteEntry(entry._id)}
+                >
+                  Delete
+                </button>
+              </div>
+
+              {/* Inline edit form */}
+              {editingEntryId === entry._id && (
+                <MealPlanEntryForm
+                  mealPlanId={planId}
+                  token={token}
+                  initialData={entry}
+                  onSuccess={handleEntrySuccess}
+                  onCancel={() => setEditingEntryId(null)}
+                />
+              )}
             </li>
           ))}
         </ul>
       )}
-
-      <h3 className={styles.sectionTitle}>Add New Entry</h3>
-      <div className={styles.newEntryForm}>
-        <input
-          type="text"
-          placeholder="Recipe ID"
-          value={newEntry.recipeId}
-          onChange={(e) =>
-            setNewEntry({ ...newEntry, recipeId: e.target.value })
-          }
-        />
-        <select
-          value={newEntry.mealType}
-          onChange={(e) =>
-            setNewEntry({ ...newEntry, mealType: e.target.value })
-          }
-        >
-          {mealTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-        <select
-          value={newEntry.dayOfWeek}
-          onChange={(e) =>
-            setNewEntry({ ...newEntry, dayOfWeek: e.target.value })
-          }
-        >
-          {daysOfWeek.map((day) => (
-            <option key={day} value={day}>
-              {day}
-            </option>
-          ))}
-        </select>
-        <input
-          type="number"
-          min={1}
-          value={newEntry.servings}
-          onChange={(e) =>
-            setNewEntry({ ...newEntry, servings: Number(e.target.value) })
-          }
-        />
-        <button disabled={actionLoading} onClick={handleAddEntry}>
-          {actionLoading ? "Adding..." : "Add Entry"}
-        </button>
-      </div>
     </div>
   );
 }
