@@ -1,80 +1,90 @@
-/* src/app/dashboard/meal-plans/page.tsx */
+// src/app/dashboard/meal-plans/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
-import MealPlanCard from "@/components/MealPlanCard";
-import CreateMealPlanModal from "@/components/CreateMealPlanModal";
-import { useMealPlanContext } from "@/context/MealPlanContext";
-import styles from "./MealPlannerPage.module.css";
+/**
+ * MealPlansListPage
+ *
+ * Lists all meal plans for the logged-in user
+ * Allows navigation to view/edit each meal plan
+ * Provides a button to create a new meal plan
+ */
 
-export default function MealPlannerPage() {
-  const { mealPlans, setMealPlans } = useMealPlanContext();
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import styles from "./MealPlansListPage.module.css";
+
+interface MealPlan {
+  _id: string;
+  weekStartDate: string;
+  notes: string;
+}
+
+export default function MealPlansListPage() {
+  const router = useRouter();
+  const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch user's meal plans
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
   useEffect(() => {
     async function fetchMealPlans() {
+      if (!token) return router.push("/auth/login");
       try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
+        setLoading(true);
         const res = await fetch("/api/meal-plans", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        setMealPlans(data.plans || []);
+        if (!res.ok)
+          throw new Error(data.message || "Failed to fetch meal plans");
+        setMealPlans(data.mealPlans || []);
       } catch (err) {
-        console.error("Failed to fetch meal plans", err);
-        setMealPlans([]);
+        setError(
+          err instanceof Error ? err.message : "Error loading meal plans"
+        );
       } finally {
         setLoading(false);
       }
     }
-
     fetchMealPlans();
-  }, [setMealPlans]);
+  }, [router, token]);
 
-  if (loading)
-    return <p className="text-center mt-10">Loading meal plans...</p>;
+  if (loading) return <p className={styles.message}>Loading meal plans...</p>;
+  if (error) return <p className={styles.error}>Error: {error}</p>;
 
   return (
-    <main className={styles.container}>
-      {/* Page title */}
+    <div className={styles.container}>
       <h1 className={styles.title}>Your Meal Plans</h1>
 
-      {/* Button to open modal */}
       <button
-        className={styles.newPlanButton}
-        onClick={() => setIsModalOpen(true)}
+        className={styles.createButton}
+        onClick={() => router.push("/dashboard/meal-plans/create")}
       >
-        + New Meal Plan
+        + Create New Meal Plan
       </button>
 
-      {/* Create Meal Plan Modal */}
-      <CreateMealPlanModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
-
-      {/* Display meal plans */}
-      {mealPlans.length > 0 ? (
-        <div className={styles.grid}>
-          {mealPlans.map((plan) => (
-            <MealPlanCard
-              key={plan._id}
-              id={plan._id}
-              weekStartDate={plan.weekStartDate}
-              notes={plan.notes}
-              entriesCount={plan.entries?.length} // pass count only
-            />
-          ))}
-        </div>
-      ) : (
+      {mealPlans.length === 0 ? (
         <p className={styles.emptyMessage}>
-          No meal plans yet. Start planning your week!
+          You haven't created any meal plans yet.
         </p>
+      ) : (
+        <ul className={styles.list}>
+          {mealPlans.map((plan) => (
+            <li
+              key={plan._id}
+              className={styles.listItem}
+              onClick={() => router.push(`/dashboard/meal-plans/${plan._id}`)}
+            >
+              <strong>
+                Week of {new Date(plan.weekStartDate).toLocaleDateString()}
+              </strong>
+              <p>{plan.notes || "No notes"}</p>
+            </li>
+          ))}
+        </ul>
       )}
-    </main>
+    </div>
   );
 }
