@@ -1,11 +1,8 @@
-// path: src/app/api/meal-plans/[id]/entries/route.ts
+// src/app/api/meal-plans/[id]/entries/route.ts
 /**
- * Meal Plan Entries API (POST)
- * Adds a new entry to a specific meal plan
- *
- * - POST: Add a new entry (recipeId, dayOfWeek, mealType, servings)
- *
- * Fully JWT-protected; users can only add entries to their own meal plans.
+ * Meal Plan Entries API
+ * Handles adding a new entry to a specific meal plan
+ * Fully JWT-protected
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -14,16 +11,36 @@ import MealPlan from "@/models/MealPlan";
 import { verifyToken } from "@/lib/auth";
 import mongoose from "mongoose";
 
+/**
+ * Helper to extract Bearer token
+ */
+function getTokenFromHeader(req: NextRequest) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return null;
+  const [type, token] = authHeader.split(" ");
+  return type === "Bearer" ? token : null;
+}
+
+/**
+ * POST /api/meal-plans/:id/entries
+ * Add a new entry to a meal plan
+ * Body should include:
+ *   - recipeId: string
+ *   - dayOfWeek: string (e.g., "Monday")
+ *   - mealType: string (e.g., "Breakfast")
+ *   - servings: number
+ */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectToDatabase();
 
-    const token = req.headers.get("authorization")?.split(" ")[1];
+    const token = getTokenFromHeader(req);
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const userId = verifyToken(token);
-    const mealPlanId = params.id;
+    if (!userId) return NextResponse.json({ message: "Invalid token" }, { status: 401 });
 
+    const { id: mealPlanId } = params;
     if (!mongoose.Types.ObjectId.isValid(mealPlanId)) {
       return NextResponse.json({ message: "Invalid meal plan ID" }, { status: 400 });
     }
@@ -34,27 +51,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ message: "All fields are required" }, { status: 400 });
     }
 
-    // Find the meal plan belonging to the user
     const mealPlan = await MealPlan.findOne({ _id: mealPlanId, userId });
-    if (!mealPlan) return NextResponse.json({ message: "Meal plan not found or unauthorized" }, { status: 404 });
+    if (!mealPlan) return NextResponse.json({ message: "Meal plan not found" }, { status: 404 });
 
-    // Add new entry
-    const newEntry = {
-      recipeId,
-      dayOfWeek,
-      mealType,
-      servings,
-    };
-
+    const newEntry = { recipeId, dayOfWeek, mealType, servings };
     mealPlan.entries.push(newEntry);
     await mealPlan.save();
 
-    // Return the newly added entry
+    // Return the newly added entry (last in array)
     const addedEntry = mealPlan.entries[mealPlan.entries.length - 1];
 
-    return NextResponse.json({ message: "Entry added successfully", entry: addedEntry });
+    return NextResponse.json({ message: "Entry added successfully", entry: addedEntry }, { status: 201 });
   } catch (err) {
-    console.error("POST /meal-plans/[id]/entries error:", err);
+    console.error("POST /meal-plans/:id/entries error:", err);
     return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
   }
 }
