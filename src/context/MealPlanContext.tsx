@@ -2,15 +2,12 @@
 "use client";
 
 /**
- * MealPlanContext
- *
- * Provides global state for meal plans and helpers to update them.
- * Fully typed for TypeScript.
+ * Global context for managing MealPlans and their entries
  */
 
 import React, { createContext, ReactNode, useContext, useState } from "react";
 
-// Individual meal plan entry
+// Types
 export interface MealPlanEntry {
   _id: string;
   recipeId: string;
@@ -19,28 +16,28 @@ export interface MealPlanEntry {
   servings: number;
 }
 
-// Meal plan
 export interface MealPlan {
   _id: string;
   weekStartDate: string;
   notes: string;
-  entries: MealPlanEntry[];
+  entries: MealPlanEntry[]; // always defined
 }
 
 // Context type
-interface MealPlanContextType {
+interface MealPlanContextProps {
   mealPlans: MealPlan[];
   setMealPlans: React.Dispatch<React.SetStateAction<MealPlan[]>>;
 }
 
 // Create context
-const MealPlanContext = createContext<MealPlanContextType | undefined>(
+const MealPlanContext = createContext<MealPlanContextProps | undefined>(
   undefined
 );
 
-// Provider component
+// Provider
 export const MealPlanProvider = ({ children }: { children: ReactNode }) => {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
+
   return (
     <MealPlanContext.Provider value={{ mealPlans, setMealPlans }}>
       {children}
@@ -48,12 +45,13 @@ export const MealPlanProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Custom hook for consuming the context
-export const useMealPlanContext = (): MealPlanContextType => {
+// Custom hook for context consumption
+export const useMealPlanContext = (): MealPlanContextProps => {
   const context = useContext(MealPlanContext);
-  if (!context)
+  if (!context) {
     throw new Error(
       "useMealPlanContext must be used within a MealPlanProvider"
     );
+  }
   return context;
 };

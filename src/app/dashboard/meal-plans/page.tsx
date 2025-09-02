@@ -7,9 +7,6 @@ import { useMealPlanContext } from "@/context/MealPlanContext";
 import MealPlanCard from "@/components/MealPlanCard";
 import styles from "./MealPlansListPage.module.css";
 
-/**
- * List all meal plans for the logged-in user
- */
 export default function MealPlansListPage() {
   const router = useRouter();
   const { mealPlans, setMealPlans } = useMealPlanContext();
@@ -50,8 +47,8 @@ export default function MealPlansListPage() {
   }, [token, setMealPlans]);
 
   const handleDelete = async (id: string) => {
-    if (!token) return;
-    if (!confirm("Are you sure you want to delete this meal plan?")) return;
+    if (!token || !confirm("Are you sure you want to delete this meal plan?"))
+      return;
 
     try {
       const res = await fetch(`/api/meal-plans/${id}`, {
@@ -59,7 +56,6 @@ export default function MealPlansListPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to delete meal plan");
-
       setMealPlans(mealPlans.filter((plan) => plan._id !== id));
     } catch (err: any) {
       alert(err.message || "Error deleting meal plan");
@@ -72,7 +68,6 @@ export default function MealPlansListPage() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Your Meal Plans</h1>
-
       <button
         className={styles.createButton}
         onClick={() => router.push("/dashboard/meal-plans/create")}

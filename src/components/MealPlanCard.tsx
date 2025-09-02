@@ -1,37 +1,48 @@
 // path: src/components/MealPlanCard.tsx
 "use client";
 
-/**
- * MealPlanCard
- *
- * Displays a single meal plan summary for dashboard list.
- */
-
 import React from "react";
-import { useRouter } from "next/navigation";
 import { MealPlan } from "@/context/MealPlanContext";
 import styles from "./MealPlanCard.module.css";
 
 interface Props {
-  plan: MealPlan;
+  mealPlan: MealPlan;
+  onClick: () => void;
+  onDelete?: () => void;
 }
 
-export default function MealPlanCard({ plan }: Props) {
-  const router = useRouter();
-
-  const handleClick = () => {
-    router.push(`/dashboard/meal-plans/${plan._id}`);
-  };
-
+export default function MealPlanCard({ mealPlan, onClick, onDelete }: Props) {
   return (
-    <div className={styles.card} onClick={handleClick}>
-      <h3 className={styles.title}>
-        {new Date(plan.weekStartDate).toLocaleDateString()}
+    <div
+      className={styles.card}
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onClick();
+      }}
+      aria-label={`Meal plan starting ${new Date(
+        mealPlan.weekStartDate
+      ).toLocaleDateString()}`}
+    >
+      <h3 className={styles.date}>
+        Week of {new Date(mealPlan.weekStartDate).toLocaleDateString()}
       </h3>
-      <p>{plan.notes || "No notes"}</p>
-      <p>
-        {plan.entries.length} {plan.entries.length === 1 ? "entry" : "entries"}
-      </p>
+      {mealPlan.notes && <p className={styles.notes}>{mealPlan.notes}</p>}
+      <p className={styles.entries}>Recipes: {mealPlan.entries.length}</p>
+
+      {onDelete && (
+        <button
+          type="button"
+          className={styles.deleteButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+        >
+          Delete
+        </button>
+      )}
     </div>
   );
 }

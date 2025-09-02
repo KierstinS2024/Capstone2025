@@ -4,66 +4,46 @@
 /**
  * MealPlanEntryForm
  *
- * Reusable form to add a new meal plan entry (recipe).
- * Can be used inline or inside a modal.
+ * Reusable form for adding a new entry to a meal plan.
  */
 
 import React, { useState } from "react";
+import { MealPlanEntry } from "@/context/MealPlanContext";
 import styles from "./MealPlanEntryForm.module.css";
-
-export interface MealPlanEntryFormData {
-  recipeId: string;
-  mealType: string;
-  dayOfWeek: string;
-  servings: number;
-}
 
 interface Props {
   mealPlanId: string;
   token: string;
-  initialData?: MealPlanEntryFormData & { _id?: string };
-  onSuccess: (entry: MealPlanEntryFormData & { _id: string }) => void;
+  onSuccess: (entry: MealPlanEntry) => void;
   onCancel?: () => void;
 }
 
 export default function MealPlanEntryForm({
   mealPlanId,
   token,
-  initialData,
   onSuccess,
   onCancel,
 }: Props) {
-  const [recipeId, setRecipeId] = useState(initialData?.recipeId || "");
-  const [mealType, setMealType] = useState(
-    initialData?.mealType || "Breakfast"
-  );
-  const [dayOfWeek, setDayOfWeek] = useState(
-    initialData?.dayOfWeek || "Monday"
-  );
-  const [servings, setServings] = useState(initialData?.servings || 1);
+  const [recipeId, setRecipeId] = useState("");
+  const [mealType, setMealType] = useState("Breakfast");
+  const [dayOfWeek, setDayOfWeek] = useState("Monday");
+  const [servings, setServings] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const isEditing = !!initialData?._id;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipeId) {
-      setError("Recipe ID is required.");
+      setError("Recipe ID is required");
       return;
     }
 
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      setError(null);
-
-      const method = isEditing ? "PATCH" : "POST";
-      const url = isEditing
-        ? `/api/meal-plans/${mealPlanId}/entries/${initialData?._id}`
-        : `/api/meal-plans/${mealPlanId}/entries`;
-
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(`/api/meal-plans/${mealPlanId}/entries`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -72,18 +52,17 @@ export default function MealPlanEntryForm({
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to save entry");
+      if (!res.ok) throw new Error(data.message || "Failed to add entry");
 
       onSuccess(data.entry);
 
-      if (!isEditing) {
-        setRecipeId("");
-        setMealType("Breakfast");
-        setDayOfWeek("Monday");
-        setServings(1);
-      }
+      // Reset form
+      setRecipeId("");
+      setMealType("Breakfast");
+      setDayOfWeek("Monday");
+      setServings(1);
     } catch (err: any) {
-      setError(err.message || "Error saving entry");
+      setError(err.message || "Network error");
     } finally {
       setLoading(false);
     }
@@ -99,7 +78,6 @@ export default function MealPlanEntryForm({
           type="text"
           value={recipeId}
           onChange={(e) => setRecipeId(e.target.value)}
-          placeholder="Enter recipe ID"
           required
           className={styles.input}
         />
@@ -143,8 +121,8 @@ export default function MealPlanEntryForm({
         Servings:
         <input
           type="number"
-          value={servings}
           min={1}
+          value={servings}
           onChange={(e) => setServings(Number(e.target.value))}
           required
           className={styles.input}
@@ -157,20 +135,13 @@ export default function MealPlanEntryForm({
           disabled={loading}
           className={styles.submitButton}
         >
-          {loading
-            ? isEditing
-              ? "Updating..."
-              : "Adding..."
-            : isEditing
-            ? "Update Entry"
-            : "Add Entry"}
+          {loading ? "Adding..." : "Add Entry"}
         </button>
-
         {onCancel && (
           <button
             type="button"
-            onClick={onCancel}
             className={styles.cancelButton}
+            onClick={onCancel}
           >
             Cancel
           </button>
