@@ -15,13 +15,12 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    // Wait until AuthProvider hydration is done
-    if (user === null && token === null) {
-      // no session → redirect
-      router.push("/auth/login");
-    } else {
-      // session found → allow access
+    if (user && token) {
+      // ✅ session exists → allow access
       setCheckingAuth(false);
+    } else if (user === null && token === null) {
+      // ❌ no session → redirect
+      router.push("/auth/login");
     }
   }, [user, token, router]);
 
