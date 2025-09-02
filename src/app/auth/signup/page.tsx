@@ -1,10 +1,10 @@
-// path: src/app/auth/register/page.tsx
+// src/app/auth/signup/page.tsx
 "use client";
 
 import { useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
-import styles from "./RegisterPage.module.css";
+import styles from "./SignupPage.module.css"; // match the file name
 
 export default function SignupPage() {
   const router = useRouter();
@@ -28,20 +28,26 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/auth/signup", {
+        // match backend route
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
+
       if (!res.ok) {
         setError(data.message || "Signup failed");
         setLoading(false);
         return;
       }
 
+      // log in user immediately after signup
       login(data.token, data.user);
+
+      // optionally redirect to dashboard
+      router.push("/dashboard");
     } catch (err) {
       setError("An unexpected error occurred");
       setLoading(false);
