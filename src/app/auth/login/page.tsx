@@ -1,30 +1,35 @@
 // path: src/app/auth/login/page.tsx
+
 "use client";
 
 /**
  * Login Page
  *
- * Handles user authentication.
- * Integrates with AuthContext for login state management.
+ * Allows existing users to authenticate.
+ * - Accepts email and password
+ * - Calls API to login
+ * - Saves JWT + user info in AuthContext
+ * - Redirects to dashboard on success
  */
 
-import { useState, FormEvent, useContext } from "react";
+import { useState, useContext } from "react";
 import { AuthContext } from "@/context/AuthContext";
 
 export default function LoginPage() {
-  const { login } = useContext(AuthContext);
+  const { login } = useContext(AuthContext); // login function from AuthContext
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
+      // 1️⃣ Call login API
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -39,12 +44,13 @@ export default function LoginPage() {
         return;
       }
 
-      // Update context with token and user
+      // 2️⃣ Save JWT + user info in AuthContext
       login(data.token, data.user);
+
+      // 3️⃣ Redirect handled in AuthContext.login()
     } catch (err) {
       console.error("Login error:", err);
       setError("An unexpected error occurred");
-    } finally {
       setLoading(false);
     }
   }
@@ -57,41 +63,40 @@ export default function LoginPage() {
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">
+            <label htmlFor="email" className="block mb-1 font-medium">
               Email
             </label>
             <input
-              id="email"
               type="email"
+              id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md"
             />
           </div>
 
+          {/* Password */}
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium mb-1"
-            >
+            <label htmlFor="password" className="block mb-1 font-medium">
               Password
             </label>
             <input
-              id="password"
               type="password"
+              id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? "Logging in..." : "Log In"}
           </button>

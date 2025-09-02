@@ -5,16 +5,16 @@
  */
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IUser extends Document {
+export interface UserDocument extends Document {
   email: string;
   passwordHash: string;
-  preferences?: Record<string, any>; // e.g., dietary restrictions, favorite cuisines
+  preferences?: Record<string, any>;
   avatarUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const UserSchema = new Schema<IUser>(
+const UserSchema = new Schema<UserDocument>(
   {
     email: { type: String, required: true, unique: true },
     passwordHash: { type: String, required: true },
@@ -24,4 +24,4 @@ const UserSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
-export default mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+export default mongoose.models.User || mongoose.model<UserDocument>("User", UserSchema);

@@ -1,20 +1,20 @@
 // path: src/models/Ingredient.ts
 /**
  * Ingredient model
- * Represents an ingredient that can be used in recipes and shopping lists
+ * Represents an ingredient for recipes and shopping lists
  */
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IIngredient extends Document {
+export interface IngredientDocument extends Document {
   name: string;
-  unit: string; // e.g., grams, cups
-  defaultQuantity: number; // default quantity for recipes
-  nutritionInfo?: Record<string, any>; // e.g., calories, macros
+  unit: string;
+  defaultQuantity: number;
+  nutritionInfo?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const IngredientSchema = new Schema<IIngredient>(
+const IngredientSchema = new Schema<IngredientDocument>(
   {
     name: { type: String, required: true },
     unit: { type: String, required: true },
@@ -24,4 +24,4 @@ const IngredientSchema = new Schema<IIngredient>(
   { timestamps: true }
 );
 
-export default mongoose.models.Ingredient || mongoose.model<IIngredient>("Ingredient", IngredientSchema);
+export default mongoose.models.Ingredient || mongoose.model<IngredientDocument>("Ingredient", IngredientSchema);

@@ -1,23 +1,23 @@
 // path: src/models/FoodIntake.ts
 /**
  * FoodIntake model
- * Logs user consumption of recipes or ingredients for nutrition tracking
+ * Logs what the user consumes for nutrition tracking
  */
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IFoodIntake extends Document {
-  userId: mongoose.Types.ObjectId;
-  recipeId?: mongoose.Types.ObjectId;
-  ingredientId?: mongoose.Types.ObjectId;
-  date: Date;
-  quantity: number;
-  unit: string;
-  nutritionSnapshot?: Record<string, any>; // snapshot of calories/macros at time of logging
+export interface FoodIntakeDocument extends Document {
+  userId: mongoose.Types.ObjectId;          // Reference to User
+  recipeId?: mongoose.Types.ObjectId;       // Optional recipe reference
+  ingredientId?: mongoose.Types.ObjectId;   // Optional ingredient reference
+  date: Date;                               // Date of consumption
+  quantity: number;                         // Amount consumed
+  unit: string;                             // Unit of measurement
+  nutritionSnapshot?: Record<string, any>;  // Calories/macros at time of logging
   createdAt: Date;
   updatedAt: Date;
 }
 
-const FoodIntakeSchema = new Schema<IFoodIntake>(
+const FoodIntakeSchema = new Schema<FoodIntakeDocument>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     recipeId: { type: Schema.Types.ObjectId, ref: "Recipe" },
@@ -30,4 +30,4 @@ const FoodIntakeSchema = new Schema<IFoodIntake>(
   { timestamps: true }
 );
 
-export default mongoose.models.FoodIntake || mongoose.model<IFoodIntake>("FoodIntake", FoodIntakeSchema);
+export default mongoose.models.FoodIntake || mongoose.model<FoodIntakeDocument>("FoodIntake", FoodIntakeSchema);

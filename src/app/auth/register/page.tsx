@@ -1,20 +1,24 @@
 // path: src/app/auth/signup/page.tsx
+
 "use client";
 
 /**
  * Signup Page
  *
- * Handles new user registration.
- * Integrates with AuthContext for login state management.
+ * Allows a new user to create an account.
+ * - Validates passwords
+ * - Calls API to register user
+ * - Saves JWT and user info in AuthContext
+ * - Redirects to dashboard on success
  */
 
-import { useState, FormEvent, useContext } from "react";
+import { useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { login } = useContext(AuthContext); // Use context to update user state
+  const { login } = useContext(AuthContext); // login function from context
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,10 +26,11 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
+    // 1️⃣ Validate passwords match
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -34,6 +39,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
+      // 2️⃣ Call registration API
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,14 +54,13 @@ export default function SignupPage() {
         return;
       }
 
-      // Use context login to store user & token
+      // 3️⃣ Save JWT + user info in AuthContext
       login(data.token, data.user);
 
-      // Redirect handled by AuthContext
+      // 4️⃣ Redirect to dashboard handled in AuthContext.login()
     } catch (err) {
       console.error("Signup error:", err);
       setError("An unexpected error occurred");
-    } finally {
       setLoading(false);
     }
   }
@@ -68,58 +73,55 @@ export default function SignupPage() {
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">
+            <label htmlFor="email" className="block mb-1 font-medium">
               Email
             </label>
             <input
-              id="email"
               type="email"
+              id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md"
             />
           </div>
 
+          {/* Password */}
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium mb-1"
-            >
+            <label htmlFor="password" className="block mb-1 font-medium">
               Password
             </label>
             <input
-              id="password"
               type="password"
+              id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md"
             />
           </div>
 
+          {/* Confirm Password */}
           <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium mb-1"
-            >
+            <label htmlFor="confirmPassword" className="block mb-1 font-medium">
               Confirm Password
             </label>
             <input
-              id="confirmPassword"
               type="password"
+              id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? "Signing up..." : "Sign Up"}
           </button>

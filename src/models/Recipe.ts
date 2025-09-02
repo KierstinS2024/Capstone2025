@@ -1,17 +1,17 @@
 // path: src/models/Recipe.ts
 /**
  * Recipe model
- * Stores recipe details, ingredients, instructions, nutrition, and ownership
+ * Stores recipe details, ingredients, instructions, and nutrition
  */
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IRecipe extends Document {
+export interface RecipeDocument extends Document {
   name: string;
   description: string;
   instructions: string[];
   cuisine?: string;
   userSubmitted: boolean;
-  createdByUserId?: mongoose.Types.ObjectId; // references User
+  createdByUserId?: mongoose.Types.ObjectId;
   ingredients: {
     ingredientId: mongoose.Types.ObjectId;
     quantity: number;
@@ -22,7 +22,7 @@ export interface IRecipe extends Document {
   updatedAt: Date;
 }
 
-const RecipeSchema = new Schema<IRecipe>(
+const RecipeSchema = new Schema<RecipeDocument>(
   {
     name: { type: String, required: true },
     description: { type: String, required: true },
@@ -42,4 +42,4 @@ const RecipeSchema = new Schema<IRecipe>(
   { timestamps: true }
 );
 
-export default mongoose.models.Recipe || mongoose.model<IRecipe>("Recipe", RecipeSchema);
+export default mongoose.models.Recipe || mongoose.model<RecipeDocument>("Recipe", RecipeSchema);

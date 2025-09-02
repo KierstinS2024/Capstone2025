@@ -1,82 +1,92 @@
 // path: src/app/api/meal-plans/entries/[entryId]/route.ts
 /**
- * Meal Plan Entry API (update or delete a specific entry)
- * PATCH: Update an existing meal plan entry (servings, day, meal type)
- * DELETE: Remove an entry from a meal plan
+ * Meal Plan Entry API
+ * Handles CRUD for individual entries within a specific meal plan
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import MealPlan from "@/models/MealPlan";
 import { verifyToken } from "@/lib/auth";
-import mongoose from "mongoose";
 
-// PATCH /api/meal-plans/entries/[entryId]
-// Update the details of a meal plan entry
-export async function PATCH(req: NextRequest, { params }: { params: { entryId: string } }) {
+/**
+ * GET /api/meal-plans/entries/[entryId]
+ * Fetch a single entry by ID (optional for frontend display)
+ */
+export async function GET(req: NextRequest, { params }: { params: { entryId: string } }) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const userId = verifyToken(authHeader);
-
-    const entryId = params.entryId;
-    if (!mongoose.Types.ObjectId.isValid(entryId)) {
-      return NextResponse.json({ message: "Invalid entry ID" }, { status: 400 });
-    }
-
-    const { dayOfWeek, mealType, servings } = await req.json();
     await connectToDatabase();
+    const { entryId } = params;
 
-    // Find the meal plan containing this entry
+    // Find the meal plan that contains this entry
     const mealPlan = await MealPlan.findOne({ "entries._id": entryId });
-    if (!mealPlan) return NextResponse.json({ message: "Meal plan entry not found" }, { status: 404 });
-    if (!mealPlan.userId.equals(userId)) return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+    if (!mealPlan) return NextResponse.json({ message: "Entry not found" }, { status: 404 });
 
-    // Locate the specific entry
     const entry = mealPlan.entries.id(entryId);
-    if (!entry) return NextResponse.json({ message: "Entry not found" }, { status: 404 });
+    return NextResponse.json({ entry });
+  } catch (err) {
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
+  }
+}
 
-    // Update fields if provided
+/**
+ * PUT /api/meal-plans/entries/[entryId]
+ * Update an existing entry
+ */
+export async function PUT(req: NextRequest, { params }: { params: { entryId: string } }) {
+  try {
+    await connectToDatabase();
+    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+    const userId = token && (await verifyToken(token));
+    if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+    const { entryId } = params;
+    const { recipeId, dayOfWeek, mealType, servings } = await req.json();
+
+    const mealPlan = await MealPlan.findOne({ "entries._id": entryId, userId });
+    if (!mealPlan) return NextResponse.json({ message: "Entry not found" }, { status: 404 });
+
+    const entry = mealPlan.entries.id(entryId);
+    if (recipeId) entry.recipeId = recipeId;
     if (dayOfWeek) entry.dayOfWeek = dayOfWeek;
     if (mealType) entry.mealType = mealType;
-    if (servings !== undefined) entry.servings = servings;
+    if (servings) entry.servings = servings;
 
     await mealPlan.save();
-
-    return NextResponse.json({ updatedEntry: entry }, { status: 200 });
+    return NextResponse.json({ message: "Entry updated", entry });
   } catch (err) {
-    console.error("Error updating meal plan entry:", err);
-    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
-};
+}
 
-// DELETE /api/meal-plans/entries/[entryId]
-// Remove a meal plan entry
+/**
+ * DELETE /api/meal-plans/entries/[entryId]
+ * Delete an individual entry from a meal plan
+ */
 export async function DELETE(req: NextRequest, { params }: { params: { entryId: string } }) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const userId = verifyToken(authHeader);
-
-    const entryId = params.entryId;
-    if (!mongoose.Types.ObjectId.isValid(entryId)) {
-      return NextResponse.json({ message: "Invalid entry ID" }, { status: 400 });
-    }
-
     await connectToDatabase();
+    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+    const userId = token && (await verifyToken(token));
+    if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    // Find the meal plan containing this entry
-    const mealPlan = await MealPlan.findOne({ "entries._id": entryId });
-    if (!mealPlan) return NextResponse.json({ message: "Meal plan entry not found" }, { status: 404 });
-    if (!mealPlan.userId.equals(userId)) return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+    const { entryId } = params;
+    const mealPlan = await MealPlan.findOne({ "entries._id": entryId, userId });
+    if (!mealPlan) return NextResponse.json({ message: "Entry not found" }, { status: 404 });
 
-    // Remove the entry
-    const entry = mealPlan.entries.id(entryId);
-    entry.remove();
-
+    mealPlan.entries.id(entryId).remove();
     await mealPlan.save();
-
-    return NextResponse.json({ message: "Entry deleted successfully" }, { status: 200 });
+    return NextResponse.json({ message: "Entry deleted" });
   } catch (err) {
-    console.error("Error deleting meal plan entry:", err);
-    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
-};
+}

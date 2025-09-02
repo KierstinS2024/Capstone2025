@@ -5,21 +5,21 @@
  */
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IMealPlan extends Document {
-  userId: mongoose.Types.ObjectId; // references User
-  weekStartDate: Date;
-  notes?: string;
+export interface MealPlanDocument extends Document {
+  userId: mongoose.Types.ObjectId;        // Reference to User
+  weekStartDate: Date;                    // Monday of the week
+  notes?: string;                         // Optional notes for the week
   entries: {
-    recipeId: mongoose.Types.ObjectId;
-    dayOfWeek: string; // e.g., "Monday"
-    mealType: string; // e.g., "Breakfast", "Lunch", "Dinner"
-    servings: number;
+    recipeId: mongoose.Types.ObjectId;    // Recipe assigned to a meal
+    dayOfWeek: string;                    // "Monday", "Tuesday", etc.
+    mealType: string;                     // "Breakfast", "Lunch", "Dinner"
+    servings: number;                     // Number of servings
   }[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-const MealPlanSchema = new Schema<IMealPlan>(
+const MealPlanSchema = new Schema<MealPlanDocument>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     weekStartDate: { type: Date, required: true },
@@ -36,4 +36,4 @@ const MealPlanSchema = new Schema<IMealPlan>(
   { timestamps: true }
 );
 
-export default mongoose.models.MealPlan || mongoose.model<IMealPlan>("MealPlan", MealPlanSchema);
+export default mongoose.models.MealPlan || mongoose.model<MealPlanDocument>("MealPlan", MealPlanSchema);

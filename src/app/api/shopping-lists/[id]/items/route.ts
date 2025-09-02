@@ -1,71 +1,49 @@
 // path: src/app/api/shopping-lists/[id]/items/route.ts
-/** 
- * Add Item to Shopping List
- *
- * POST: Add a new item to an existing shopping list
- *
- * Requirements:
- * - JWT authentication
- * - Only the shopping list owner can add items
- * - Items include ingredientId, quantity, unit, and optional purchased status
+/**
+ * POST /api/shopping-lists/:id/items
+ * Add a new item to an existing shopping list
+ * Body should include:
+ *   - ingredientId: string
+ *   - quantity: number
+ *   - unit: string
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
 import ShoppingList from "@/models/ShoppingList";
+import { verifyToken } from "@/lib/auth";
 
-interface Params {
-  params: { id: string };
+function getToken(req: NextRequest) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return null;
+  const [type, token] = authHeader.split(" ");
+  return type === "Bearer" ? token : null;
 }
 
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const userId = verifyToken(authHeader); // Validate JWT
-
-    const { ingredientId, quantity, unit, purchased } = await req.json();
-
-    if (!ingredientId || quantity === undefined || !unit) {
-      return NextResponse.json(
-        { message: "ingredientId, quantity, and unit are required" },
-        { status: 400 }
-      );
-    }
-
     await connectToDatabase();
 
-    // Find the shopping list that belongs to the user
-    const shoppingList = await ShoppingList.findOne({
-      _id: params.id,
-      userId,
-    });
+    const token = getToken(req);
+    if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    const userId = verifyToken(token);
+    if (!userId) return NextResponse.json({ message: "Invalid token" }, { status: 401 });
 
-    if (!shoppingList) {
-      return NextResponse.json({ message: "Shopping list not found" }, { status: 404 });
+    const { ingredientId, quantity, unit } = await req.json();
+    if (!ingredientId || !quantity || !unit) {
+      return NextResponse.json({ message: "All fields are required" }, { status: 400 });
     }
 
-    // Create the new item object
-    const newItem = {
-      _id: new mongoose.Types.ObjectId(), // subdocument id
-      ingredientId: new mongoose.Types.ObjectId(ingredientId),
-      quantity,
-      unit,
-      purchased: purchased || false,
-    };
+    const list = await ShoppingList.findOne({ _id: params.id, userId });
+    if (!list) return NextResponse.json({ message: "Shopping list not found" }, { status: 404 });
 
-    // Push new item into shopping list
-    shoppingList.items.push(newItem);
+    const newItem = { ingredientId, quantity, unit, purchased: false };
+    list.items.push(newItem);
+    await list.save();
 
-    await shoppingList.save();
-
-    return NextResponse.json({ message: "Item added successfully", item: newItem, shoppingList }, { status: 201 });
-  } catch (error) {
-    console.error("Error adding shopping list item:", error);
-    return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ item: newItem }, { status: 201 });
+  } catch (err) {
+    console.error("POST /shopping-lists/:id/items error:", err);
+    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
   }
 }

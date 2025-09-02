@@ -1,72 +1,69 @@
 // path: src/app/api/shopping-lists/route.ts
-/**
- * Shopping Lists API Route
- *
- * GET: Fetch all shopping lists for the authenticated user
- * POST: Create a new shopping list for the authenticated user
- *
- * Uses JWT for authentication and MongoDB (via Mongoose) for storage.
+/**      
+ * Shopping List Main CRUD API
+ * 
+ * Endpoints:
+ *  POST   /api/shopping-lists       → Create a new shopping list
+ *  GET    /api/shopping-lists       → Get all shopping lists for the logged-in user
+ * 
+ * JWT-protected: requires Authorization header with Bearer token
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import ShoppingList from "@/models/ShoppingList";
 import { verifyToken } from "@/lib/auth";
-import mongoose from "mongoose";
-
-export async function GET(req: NextRequest) {
-  try {
-    // Extract JWT from Authorization header
-    const authHeader = req.headers.get("authorization");
-    const userId = verifyToken(authHeader); // throws if invalid
-
-    await connectToDatabase();
-
-    // Find all shopping lists for this user, sorted by creation date
-    const lists = await ShoppingList.find({ userId }).sort({ createdAt: -1 });
-
-    return NextResponse.json({ lists });
-  } catch (err) {
-    console.error("Error fetching shopping lists:", err);
-    return NextResponse.json(
-      { message: err instanceof Error ? err.message : "Unauthorized" },
-      { status: 401 }
-    );
-  }
-}
 
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const userId = verifyToken(authHeader); // throws if invalid
+    await connectToDatabase();
+
+    // Check for auth token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return NextResponse.json({ message: "Missing Authorization header" }, { status: 401 });
+
+    const token = authHeader.split(" ")[1];
+    const userId = verifyToken(token);
+    if (!userId) return NextResponse.json({ message: "Invalid token" }, { status: 401 });
 
     const { title, items } = await req.json();
 
-    if (!title) {
-      return NextResponse.json({ message: "Title is required" }, { status: 400 });
+    if (!title || !items) {
+      return NextResponse.json({ message: "Title and items are required" }, { status: 400 });
     }
 
-    await connectToDatabase();
-
-    // Create a new shopping list
+    // Create the shopping list
     const newList = await ShoppingList.create({
-      userId: new mongoose.Types.ObjectId(userId),
+      userId,
       title,
-      items: items?.map((item: any) => ({
-        ingredientId: new mongoose.Types.ObjectId(item.ingredientId),
-        quantity: item.quantity,
-        unit: item.unit,
-        purchased: false,
-      })) || [],
-      createdAt: new Date(),
+      items,
     });
 
-    return NextResponse.json({ list: newList }, { status: 201 });
+    return NextResponse.json({ data: newList });
   } catch (err) {
-    console.error("Error creating shopping list:", err);
-    return NextResponse.json(
-      { message: err instanceof Error ? err.message : "Server error" },
-      { status: 500 }
-    );
+    console.error("Create Shopping List error:", err);
+    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    await connectToDatabase();
+
+    // Check for auth token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return NextResponse.json({ message: "Missing Authorization header" }, { status: 401 });
+
+    const token = authHeader.split(" ")[1];
+    const userId = verifyToken(token);
+    if (!userId) return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+
+    // Get all shopping lists for this user
+    const lists = await ShoppingList.find({ userId }).sort({ createdAt: -1 });
+
+    return NextResponse.json({ data: lists });
+  } catch (err) {
+    console.error("Get Shopping Lists error:", err);
+    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
   }
 }

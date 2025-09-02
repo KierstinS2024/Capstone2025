@@ -1,22 +1,25 @@
-// src/app/layout.tsx
+// path: src/app/layout.tsx
+import { ReactNode } from "react";
 import "./globals.css";
-import { AppProviders } from "@/context";
 
-export const metadata = {
-  title: "Capstone 2025",
-  description: "Meal planning and recipe management app",
-};
+interface RootLayoutProps {
+  children: ReactNode;
+}
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+/**
+ * RootLayout (Server Component)
+ *
+ * Handles HTML structure, <head> metadata, and global styles.
+ * All pages render inside this layout.
+ */
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 text-gray-900 antialiased">
-        <AppProviders>{children}</AppProviders>
-      </body>
+      <head>
+        <title>Meal Planner App</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }

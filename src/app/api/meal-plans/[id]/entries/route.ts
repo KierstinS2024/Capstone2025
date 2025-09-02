@@ -1,8 +1,13 @@
 // path: src/app/api/meal-plans/[id]/entries/route.ts
-/**    
- * Meal Plan Entry API (add recipe to a plan)
- * POST: Add a recipe to a meal plan (requires authentication)
+/**
+ * Meal Plan Entries API (POST)
+ * Adds a new entry to a specific meal plan
+ *
+ * - POST: Add a new entry (recipeId, dayOfWeek, mealType, servings)
+ *
+ * Fully JWT-protected; users can only add entries to their own meal plans.
  */
+
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import MealPlan from "@/models/MealPlan";
@@ -11,36 +16,45 @@ import mongoose from "mongoose";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const userId = verifyToken(authHeader);
-
-    const mealPlanId = params.id;
-    const { recipeId, dayOfWeek, mealType, servings } = await req.json();
-
-    if (!mongoose.Types.ObjectId.isValid(mealPlanId) || !mongoose.Types.ObjectId.isValid(recipeId)) {
-      return NextResponse.json({ message: "Invalid ID" }, { status: 400 });
-    }
-
     await connectToDatabase();
 
-    const mealPlan = await MealPlan.findById(mealPlanId);
-    if (!mealPlan) return NextResponse.json({ message: "Meal plan not found" }, { status: 404 });
-    if (!mealPlan.userId.equals(userId)) return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+    const token = req.headers.get("authorization")?.split(" ")[1];
+    if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
+    const userId = verifyToken(token);
+    const mealPlanId = params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(mealPlanId)) {
+      return NextResponse.json({ message: "Invalid meal plan ID" }, { status: 400 });
+    }
+
+    const { recipeId, dayOfWeek, mealType, servings } = await req.json();
+
+    if (!recipeId || !dayOfWeek || !mealType || !servings) {
+      return NextResponse.json({ message: "All fields are required" }, { status: 400 });
+    }
+
+    // Find the meal plan belonging to the user
+    const mealPlan = await MealPlan.findOne({ _id: mealPlanId, userId });
+    if (!mealPlan) return NextResponse.json({ message: "Meal plan not found or unauthorized" }, { status: 404 });
+
+    // Add new entry
     const newEntry = {
-      _id: new mongoose.Types.ObjectId(),
-      recipeId: new mongoose.Types.ObjectId(recipeId),
+      recipeId,
       dayOfWeek,
       mealType,
-      servings: servings || 1,
+      servings,
     };
 
     mealPlan.entries.push(newEntry);
     await mealPlan.save();
 
-    return NextResponse.json({ entry: newEntry }, { status: 201 });
+    // Return the newly added entry
+    const addedEntry = mealPlan.entries[mealPlan.entries.length - 1];
+
+    return NextResponse.json({ message: "Entry added successfully", entry: addedEntry });
   } catch (err) {
-    console.error("Error adding entry to meal plan:", err);
+    console.error("POST /meal-plans/[id]/entries error:", err);
     return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
   }
 }

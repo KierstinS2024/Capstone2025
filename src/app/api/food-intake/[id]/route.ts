@@ -1,15 +1,15 @@
-// path: src/app/api/ingredients/[id]/route.ts
+// path: src/app/api/food-intake/[id]/route.ts
 /**
- * Single Ingredient endpoints
- * - GET: fetch ingredient by ID
- * - PUT: update ingredient
- * - DELETE: delete ingredient
+ * Individual Food Intake endpoints
+ * - GET: fetch a single food intake log
+ * - PUT: update a food intake log
+ * - DELETE: delete a food intake log
  * JWT-protected
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
-import Ingredient from "@/models/Ingredient";
+import FoodIntake from "@/models/FoodIntake";
 import { verifyToken } from "@/lib/auth";
 import mongoose from "mongoose";
 
@@ -24,14 +24,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     if (!userId) return NextResponse.json({ message: "Invalid token" }, { status: 401 });
 
     const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ message: "Invalid ingredient ID" }, { status: 400 });
+    if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ message: "Invalid food intake ID" }, { status: 400 });
 
-    const ingredient = await Ingredient.findById(id);
-    if (!ingredient) return NextResponse.json({ message: "Ingredient not found" }, { status: 404 });
+    const foodIntake = await FoodIntake.findOne({ _id: id, userId });
+    if (!foodIntake) return NextResponse.json({ message: "Food intake not found" }, { status: 404 });
 
-    return NextResponse.json({ data: ingredient });
+    return NextResponse.json({ data: foodIntake });
   } catch (err) {
-    console.error("Fetching ingredient error:", err);
+    console.error("Fetching food intake error:", err);
     return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
   }
 }
@@ -47,26 +47,29 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (!userId) return NextResponse.json({ message: "Invalid token" }, { status: 401 });
 
     const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ message: "Invalid ingredient ID" }, { status: 400 });
+    if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ message: "Invalid food intake ID" }, { status: 400 });
 
     const body = await req.json();
-    const { name, unit, defaultQuantity, nutritionInfo } = body;
+    const { recipeId, ingredientId, date, quantity, unit, nutritionSnapshot } = body;
 
-    if (!name || !unit || !defaultQuantity) {
-      return NextResponse.json({ message: "name, unit, and defaultQuantity are required" }, { status: 400 });
+    if (!date || !quantity || !unit || (!recipeId && !ingredientId)) {
+      return NextResponse.json({ message: "date, quantity, unit, and either recipeId or ingredientId required" }, { status: 400 });
     }
 
-    const ingredient = await Ingredient.findByIdAndUpdate(
-      id,
-      { name, unit, defaultQuantity, nutritionInfo: nutritionInfo || {} },
-      { new: true }
-    );
+    const foodIntake = await FoodIntake.findOne({ _id: id, userId });
+    if (!foodIntake) return NextResponse.json({ message: "Food intake not found" }, { status: 404 });
 
-    if (!ingredient) return NextResponse.json({ message: "Ingredient not found" }, { status: 404 });
+    foodIntake.recipeId = recipeId;
+    foodIntake.ingredientId = ingredientId;
+    foodIntake.date = date;
+    foodIntake.quantity = quantity;
+    foodIntake.unit = unit;
+    foodIntake.nutritionSnapshot = nutritionSnapshot || {};
 
-    return NextResponse.json({ data: ingredient });
+    await foodIntake.save();
+    return NextResponse.json({ data: foodIntake });
   } catch (err) {
-    console.error("Updating ingredient error:", err);
+    console.error("Updating food intake error:", err);
     return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
   }
 }
@@ -82,14 +85,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (!userId) return NextResponse.json({ message: "Invalid token" }, { status: 401 });
 
     const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ message: "Invalid ingredient ID" }, { status: 400 });
+    if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ message: "Invalid food intake ID" }, { status: 400 });
 
-    const ingredient = await Ingredient.findByIdAndDelete(id);
-    if (!ingredient) return NextResponse.json({ message: "Ingredient not found" }, { status: 404 });
+    const foodIntake = await FoodIntake.findOneAndDelete({ _id: id, userId });
+    if (!foodIntake) return NextResponse.json({ message: "Food intake not found" }, { status: 404 });
 
-    return NextResponse.json({ message: "Ingredient deleted successfully" });
+    return NextResponse.json({ message: "Food intake deleted successfully" });
   } catch (err) {
-    console.error("Deleting ingredient error:", err);
+    console.error("Deleting food intake error:", err);
     return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
   }
 }

@@ -1,12 +1,5 @@
-// path: src/components/ProtectedRoute.tsx
+// src/components/ProtectedRoute.tsx
 "use client";
-
-/**
- * ProtectedRoute
- *
- * Wraps pages/components that require authentication.
- * Redirects unauthenticated users to /auth/login.
- */
 
 import { ReactNode, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,20 +12,23 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, token } = useContext(AuthContext);
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    if (!user || !token) {
+    // Wait until AuthProvider hydration is done
+    if (user === null && token === null) {
+      // no session → redirect
       router.push("/auth/login");
     } else {
-      setLoading(false);
+      // session found → allow access
+      setCheckingAuth(false);
     }
   }, [user, token, router]);
 
-  if (loading) {
+  if (checkingAuth) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>Loading...</p>
+        <p>Checking authentication...</p>
       </div>
     );
   }

@@ -1,101 +1,80 @@
 // path: src/app/api/shopping-lists/items/[itemId]/route.ts
-/** 
- * Shopping List Item CRUD
- *
- * PATCH: Update a single shopping list item (quantity, unit, purchased)
- * DELETE: Remove a shopping list item from its parent shopping list
- *
- * All operations require JWT authentication.
- * Ownership of the parent shopping list is verified before making changes.
+/**      
+ * Shopping List Item CRUD API
+ * Handles updating, marking purchased, and deleting individual shopping list items
+ * All routes are JWT-protected
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
 import ShoppingList from "@/models/ShoppingList";
+import { verifyToken } from "@/lib/auth";
 
-interface Params {
-  params: { itemId: string };
-}
+// Connect to MongoDB
+connectToDatabase();
 
 /**
- * PATCH: Update a shopping list item
- * Example: Update quantity, unit, or purchased status
+ * PUT /api/shopping-lists/items/[itemId]
+ * Update a shopping list item (quantity, unit, purchased status)
  */
-export async function PATCH(req: NextRequest, { params }: Params) {
+export async function PUT(req: NextRequest, { params }: { params: { itemId: string } }) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const userId = verifyToken(authHeader);
+    const token = req.headers.get("Authorization")?.split(" ")[1];
+    const userId = verifyToken(token);
 
-    // Parse the request body for updated fields
     const { quantity, unit, purchased } = await req.json();
+    const { itemId } = params;
 
-    await connectToDatabase();
+    if (!itemId) return NextResponse.json({ message: "Item ID required" }, { status: 400 });
 
-    // Find the shopping list that contains this item and belongs to the user
-    const shoppingList = await ShoppingList.findOne({
-      userId,
-      "items._id": params.itemId,
-    });
+    // Find the list containing this item
+    const list = await ShoppingList.findOne({ "items._id": itemId, userId });
+    if (!list) return NextResponse.json({ message: "Item not found" }, { status: 404 });
 
-    if (!shoppingList) {
-      return NextResponse.json({ message: "Shopping list item not found" }, { status: 404 });
-    }
+    const item = list.items.id(itemId);
+    if (!item) return NextResponse.json({ message: "Item not found" }, { status: 404 });
 
-    // Find the specific item
-    const item = shoppingList.items.id(params.itemId);
-    if (!item) {
-      return NextResponse.json({ message: "Item not found" }, { status: 404 });
-    }
-
-    // Update fields if provided
     if (quantity !== undefined) item.quantity = quantity;
-    if (unit) item.unit = unit;
+    if (unit !== undefined) item.unit = unit;
     if (purchased !== undefined) item.purchased = purchased;
 
-    await shoppingList.save();
+    await list.save();
 
-    return NextResponse.json({ item, shoppingList });
-  } catch (error) {
-    console.error("Error updating shopping list item:", error);
+    return NextResponse.json({ data: item });
+  } catch (err) {
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Server error" },
+      { message: err instanceof Error ? err.message : "Failed to update item" },
       { status: 500 }
     );
   }
 }
 
 /**
- * DELETE: Remove a shopping list item from its parent list
+ * DELETE /api/shopping-lists/items/[itemId]
+ * Delete a shopping list item
  */
-export async function DELETE(req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: { params: { itemId: string } }) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const userId = verifyToken(authHeader);
+    const token = req.headers.get("Authorization")?.split(" ")[1];
+    const userId = verifyToken(token);
 
-    await connectToDatabase();
+    const { itemId } = params;
+    if (!itemId) return NextResponse.json({ message: "Item ID required" }, { status: 400 });
 
-    // Find the shopping list that contains this item and belongs to the user
-    const shoppingList = await ShoppingList.findOne({
-      userId,
-      "items._id": params.itemId,
-    });
+    // Find the list containing this item
+    const list = await ShoppingList.findOne({ "items._id": itemId, userId });
+    if (!list) return NextResponse.json({ message: "Item not found" }, { status: 404 });
 
-    if (!shoppingList) {
-      return NextResponse.json({ message: "Shopping list item not found" }, { status: 404 });
-    }
+    const item = list.items.id(itemId);
+    if (!item) return NextResponse.json({ message: "Item not found" }, { status: 404 });
 
-    // Remove the item
-    shoppingList.items.id(params.itemId)?.remove();
+    item.remove(); // Remove item from subdocument array
+    await list.save();
 
-    await shoppingList.save();
-
-    return NextResponse.json({ message: "Item removed successfully", shoppingList });
-  } catch (error) {
-    console.error("Error deleting shopping list item:", error);
+    return NextResponse.json({ data: { id: itemId, message: "Item deleted" } });
+  } catch (err) {
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Server error" },
+      { message: err instanceof Error ? err.message : "Failed to delete item" },
       { status: 500 }
     );
   }
