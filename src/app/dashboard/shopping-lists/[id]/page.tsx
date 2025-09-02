@@ -1,187 +1,109 @@
-// path: src/app/dashboard/shopping-lists/[id]/page.tsx
+// src/app/dashboard/shopping-lists/[id]/page.tsx
+"use client";
+
 /**
- * ShoppingListDetailPage
+ * ShoppingListPage
  *
- * Displays all items for a specific shopping list.
- * Supports CRUD for items: add, update, mark purchased, delete.
+ * Fetches and displays a single shopping list.
+ * - Fetches data from /api/shopping-lists/:id
+ * - Requires authentication token
+ * - Handles loading, error, and empty states
+ * - Provides a back button to navigate to the previous page
  */
 
-import React, { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import ShoppingListItemRow from "@/components/ShoppingListItemRow";
-import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import styles from "./ShoppingListPage.module.css";
 
 interface ShoppingListItem {
   _id: string;
-  ingredientId: string;
-  name: string; // Ingredient display name
-  quantity: number;
-  unit: string;
-  purchased: boolean;
+  name: string;
+  quantity?: string;
+  notes?: string;
 }
 
 interface ShoppingList {
   _id: string;
-  title: string;
-  createdAt: string;
+  name: string;
   items: ShoppingListItem[];
+  createdAt: string;
 }
 
-const ShoppingListDetailPage: React.FC = () => {
-  const { id: listId } = useParams();
-  const { token } = useAuth();
-  const [list, setList] = useState<ShoppingList | null>(null);
+export default function ShoppingListPage() {
+  const { id } = useParams(); // shopping list ID from URL
+  const router = useRouter();
+
+  const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
   const [loading, setLoading] = useState(true);
-  const [newItemName, setNewItemName] = useState("");
-  const [newItemQty, setNewItemQty] = useState<number>(1);
-  const [newItemUnit, setNewItemUnit] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch shopping list by ID
   useEffect(() => {
-    if (!token || !listId) return;
-
-    const fetchList = async () => {
+    async function fetchShoppingList() {
       setLoading(true);
+      setError(null);
+
       try {
-        const res = await fetch(`/api/shopping-lists/${listId}`, {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("User not authenticated");
+
+        const res = await fetch(`/api/shopping-lists/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         const data = await res.json();
-        setList(data.list);
-      } catch (error) {
-        console.error("Failed to fetch shopping list:", error);
+        if (!res.ok) throw new Error(data.message || "Shopping list not found");
+
+        setShoppingList(data);
+      } catch (err) {
+        console.error(err);
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch shopping list"
+        );
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchList();
-  }, [token, listId]);
-
-  // Update item
-  const handleUpdateItem = async (
-    itemId: string,
-    quantity: number,
-    unit: string,
-    purchased: boolean
-  ) => {
-    if (!token) return;
-    try {
-      const res = await fetch(`/api/shopping-lists/items/${itemId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ quantity, unit, purchased }),
-      });
-      const data = await res.json();
-      if (data.item && list) {
-        setList({
-          ...list,
-          items: list.items.map((item) =>
-            item._id === itemId ? data.item : item
-          ),
-        });
-      }
-    } catch (error) {
-      console.error("Failed to update item:", error);
     }
-  };
 
-  // Delete item
-  const handleDeleteItem = async (itemId: string) => {
-    if (!token) return;
-    try {
-      const res = await fetch(`/api/shopping-lists/items/${itemId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok && list) {
-        setList({
-          ...list,
-          items: list.items.filter((item) => item._id !== itemId),
-        });
-      }
-    } catch (error) {
-      console.error("Failed to delete item:", error);
-    }
-  };
+    fetchShoppingList();
+  }, [id]);
 
-  // Add new item manually
-  const handleAddItem = async () => {
-    if (!token || !newItemName.trim() || !list) return;
-
-    try {
-      const res = await fetch(`/api/shopping-lists/${list._id}/items`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: newItemName.trim(),
-          quantity: newItemQty,
-          unit: newItemUnit,
-        }),
-      });
-      const data = await res.json();
-      if (data.item) {
-        setList({ ...list, items: [...list.items, data.item] });
-        setNewItemName("");
-        setNewItemQty(1);
-        setNewItemUnit("");
-      }
-    } catch (error) {
-      console.error("Failed to add item:", error);
-    }
-  };
-
-  if (loading) return <p>Loading shopping list...</p>;
-  if (!list) return <p>Shopping list not found.</p>;
+  if (loading)
+    return <p className={styles.message}>Loading shopping list...</p>;
+  if (error) return <p className={styles.error}>Error: {error}</p>;
+  if (!shoppingList)
+    return <p className={styles.message}>Shopping list not found.</p>;
 
   return (
-    <div>
-      <h1>{list.title}</h1>
-      <p>Created: {new Date(list.createdAt).toLocaleDateString()}</p>
+    <div className={styles.container}>
+      {/* Header */}
+      <h1 className={styles.title}>{shoppingList.name}</h1>
+      <p className={styles.date}>
+        Created at: {new Date(shoppingList.createdAt).toLocaleDateString()}
+      </p>
 
-      <div style={{ marginTop: "1rem" }}>
-        {list.items.map((item) => (
-          <ShoppingListItemRow
-            key={item._id}
-            item={item}
-            onUpdate={handleUpdateItem}
-            onDelete={handleDeleteItem}
-          />
-        ))}
-      </div>
+      {/* List items */}
+      {shoppingList.items.length === 0 ? (
+        <p className={styles.emptyMessage}>No items in this shopping list.</p>
+      ) : (
+        <ul className={styles.itemList}>
+          {shoppingList.items.map((item) => (
+            <li key={item._id} className={styles.item}>
+              <span className={styles.itemName}>{item.name}</span>
+              {item.quantity && (
+                <span className={styles.itemQuantity}> - {item.quantity}</span>
+              )}
+              {item.notes && (
+                <span className={styles.itemNotes}> ({item.notes})</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
 
-      <div style={{ marginTop: "2rem" }}>
-        <h2>Add New Item</h2>
-        <input
-          type="text"
-          placeholder="Ingredient name"
-          value={newItemName}
-          onChange={(e) => setNewItemName(e.target.value)}
-        />
-        <input
-          type="number"
-          placeholder="Quantity"
-          value={newItemQty}
-          onChange={(e) => setNewItemQty(Number(e.target.value))}
-          style={{ width: "4rem" }}
-        />
-        <input
-          type="text"
-          placeholder="Unit"
-          value={newItemUnit}
-          onChange={(e) => setNewItemUnit(e.target.value)}
-          style={{ width: "5rem" }}
-        />
-        <button onClick={handleAddItem}>Add Item</button>
-      </div>
+      {/* Back button */}
+      <button className={styles.backButton} onClick={() => router.back()}>
+        ← Back
+      </button>
     </div>
   );
-};
-
-export default ShoppingListDetailPage;
+}

@@ -1,13 +1,11 @@
-/* path: src/app/dashboard/meal-plans/[id]/MealPlanDetailPage.module.css */
+/* src/app/dashboard/meal-plans/[id]/MealPlanDetailPage.module.css */
 
 /* Main container */
 .container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 2rem auto;
-  padding: 2rem;
-  background: #f8f9fa;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 1rem 2rem;
+  font-family: system-ui, sans-serif;
 }
 
 /* Page title */
@@ -15,40 +13,69 @@
   font-size: 1.8rem;
   font-weight: bold;
   margin-bottom: 1rem;
-  color: #1d3557;
 }
 
-/* Notes */
+/* Optional notes */
 .notes {
   font-style: italic;
   margin-bottom: 1.5rem;
   color: #555;
 }
 
-/* Message text (loading, error, empty) */
+/* Loading, empty, or error messages */
 .message {
   font-style: italic;
-  color: #777;
+  color: #555;
   margin: 1rem 0;
 }
 
-/* Entries grid */
+.error {
+  color: #e63946;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+/* Grid for meal entries */
 .entriesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.2rem;
-  margin-top: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-/* Entry card */
+/* Individual entry card */
 .entryCard {
   padding: 1rem;
-  border-radius: 10px;
-  background-color: #ffffff;
   border: 1px solid #ddd;
-  transition: box-shadow 0.2s ease;
+  border-radius: 8px;
+  background-color: #f9f9f9;
 }
 
-.entryCard:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+/* Recipe name */
+.recipeName {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1d3557;
+}
+
+/* Details like meal type and servings */
+.detail {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* Back button */
+.backButton {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #457b9d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.backButton:hover {
+  background-color: #1d3557;
 }
