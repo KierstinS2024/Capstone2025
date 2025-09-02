@@ -1,4 +1,4 @@
-// path: src/app/dashboard/meal-plans/[id]/page.tsx
+// src/app/dashboard/meal-plans/[id]/page.tsx
 
 "use client";
 
