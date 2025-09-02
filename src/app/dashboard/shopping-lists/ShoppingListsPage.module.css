@@ -1,55 +1,69 @@
-/* src/app/dashboard/shopping-lists/ShoppingListsPage.module.css */
-
-/* Container for the page */
+/* path: src/app/dashboard/shopping-lists/ShoppingListsPage.module.css */
+         
 .container {
   max-width: 900px;
   margin: 2rem auto;
-  padding: 1rem;
+  padding: 0 1rem;
 }
 
-/* Page title */
 .title {
-  font-size: 1.8rem;
-  font-weight: bold;
+  font-size: 2rem;
   margin-bottom: 1rem;
+  text-align: center;
 }
 
-/* List of shopping lists */
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-/* Each shopping list item */
-.listItem {
-  margin-bottom: 0.75rem;
-}
-
-/* Link to shopping list detail */
-.listLink {
-  text-decoration: none;
-  color: #1d3557;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.listLink:hover {
-  color: #457b9d;
-}
-
-/* Loading / error / empty messages */
-.message {
-  font-style: italic;
-  color: #555;
+.message,
+.error,
+.emptyMessage {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #666;
 }
 
 .error {
-  color: #e63946;
-  font-weight: bold;
+  color: red;
 }
 
-.emptyMessage {
-  font-style: italic;
-  color: #777;
+.createButton {
+  display: block;
+  margin: 1rem auto 2rem;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.createButton:hover {
+  background-color: #45a049;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+}
+
+.listItem {
+  margin-bottom: 1rem;
+  background: #f9f9f9;
+  padding: 0.8rem 1rem;
+  border-radius: 6px;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.listItem:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.listLink {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+}
+
+.listLink:hover {
+  color: #4caf50;
 }

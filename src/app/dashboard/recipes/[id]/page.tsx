@@ -1,13 +1,15 @@
 // path: src/app/dashboard/recipes/[id]/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import styles from "./RecipeDetailPage.module.css";
 
 interface Ingredient {
   name: string;
-  quantity: string;
+  quantity: number;
+  unit: string;
 }
 
 interface Recipe {
@@ -15,36 +17,48 @@ interface Recipe {
   name: string;
   description: string;
   cuisine?: string;
-  instructions?: string[];
-  ingredients?: Ingredient[];
+  instructions: string[];
+  ingredients: Ingredient[];
+  userSubmitted: boolean;
   createdByUserId?: string;
 }
 
 export default function RecipeDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const recipeId = params?.id as string;
-
+  const recipeId = typeof params.id === "string" ? params.id : "";
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<Partial<Recipe>>({});
+
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
+  // Redirect if not authenticated
   useEffect(() => {
-    if (!recipeId) return;
+    if (!token) router.push("/auth/login");
+  }, [token, router]);
+
+  // Fetch recipe details
+  useEffect(() => {
+    if (!recipeId || !token) return;
 
     async function fetchRecipe() {
       try {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`/api/recipes/${recipeId}`);
+        const res = await fetch(`/api/recipes/${recipeId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.message || "Failed to fetch recipe");
         setRecipe(data.recipe);
+        setFormData(data.recipe);
       } catch (err: any) {
         setError(err.message || "Error loading recipe");
       } finally {
@@ -53,19 +67,45 @@ export default function RecipeDetailPage() {
     }
 
     fetchRecipe();
-  }, [recipeId]);
+  }, [recipeId, token]);
 
+  // Update recipe
+  const handleUpdate = async () => {
+    if (!recipe || !token) return;
+
+    try {
+      const res = await fetch(`/api/recipes/${recipeId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to update recipe");
+
+      setRecipe(data.recipe);
+      setIsEditing(false);
+      alert("Recipe updated successfully!");
+    } catch (err: any) {
+      alert(err.message || "Error updating recipe");
+    }
+  };
+
+  // Delete recipe
   const handleDelete = async () => {
-    if (!token || !recipe) return;
+    if (!recipe || !token) return;
     if (!confirm("Are you sure you want to delete this recipe?")) return;
 
     try {
-      const res = await fetch(`/api/recipes/${recipe._id}`, {
+      const res = await fetch(`/api/recipes/${recipeId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!res.ok) throw new Error("Failed to delete recipe");
+
+      alert("Recipe deleted successfully");
       router.push("/dashboard/recipes");
     } catch (err: any) {
       alert(err.message || "Error deleting recipe");
@@ -74,59 +114,99 @@ export default function RecipeDetailPage() {
 
   if (loading) return <p className={styles.message}>Loading recipe...</p>;
   if (error) return <p className={styles.error}>Error: {error}</p>;
-  if (!recipe) return <p className={styles.message}>Recipe not found.</p>;
+  if (!recipe) return <p className={styles.error}>Recipe not found.</p>;
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>{recipe.name}</h1>
-      {recipe.cuisine && (
-        <p className={styles.cuisine}>Cuisine: {recipe.cuisine}</p>
-      )}
-      <p className={styles.description}>{recipe.description}</p>
+    <ProtectedRoute>
+      <div className={styles.container}>
+        <h1 className={styles.title}>
+          {isEditing ? (
+            <input
+              type="text"
+              value={formData.name || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+            />
+          ) : (
+            recipe.name
+          )}
+        </h1>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Ingredients</h2>
-        {recipe.ingredients && recipe.ingredients.length > 0 ? (
-          <ul className={styles.list}>
-            {recipe.ingredients.map((ing, idx) => (
-              <li key={idx} className={styles.listItem}>
-                {ing.quantity} {ing.name}
-              </li>
-            ))}
-          </ul>
+        <p className={styles.cuisine}>
+          Cuisine:{" "}
+          {isEditing ? (
+            <input
+              type="text"
+              value={formData.cuisine || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, cuisine: e.target.value })
+              }
+            />
+          ) : (
+            recipe.cuisine || "N/A"
+          )}
+        </p>
+
+        <h2>Description</h2>
+        {isEditing ? (
+          <textarea
+            value={formData.description || ""}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
+          />
         ) : (
-          <p>No ingredients listed.</p>
+          <p>{recipe.description}</p>
         )}
-      </section>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Instructions</h2>
-        {recipe.instructions && recipe.instructions.length > 0 ? (
-          <ol className={styles.list}>
-            {recipe.instructions.map((step, idx) => (
-              <li key={idx} className={styles.listItem}>
-                {step}
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p>No instructions provided.</p>
+        <h2>Ingredients</h2>
+        <ul>
+          {recipe.ingredients.map((ing, idx) => (
+            <li key={idx}>
+              {ing.name}: {ing.quantity} {ing.unit}
+            </li>
+          ))}
+        </ul>
+
+        <h2>Instructions</h2>
+        <ol>
+          {recipe.instructions.map((step, idx) => (
+            <li key={idx}>{step}</li>
+          ))}
+        </ol>
+
+        {recipe.userSubmitted && (
+          <div className={styles.actions}>
+            {isEditing ? (
+              <>
+                <button onClick={handleUpdate} className={styles.saveButton}>
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setFormData(recipe);
+                  }}
+                  className={styles.cancelButton}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className={styles.editButton}
+              >
+                Edit
+              </button>
+            )}
+            <button onClick={handleDelete} className={styles.deleteButton}>
+              Delete
+            </button>
+          </div>
         )}
-      </section>
-
-      {token && recipe.createdByUserId && (
-        <div className={styles.actions}>
-          <button
-            className={styles.editButton}
-            onClick={() => router.push(`/dashboard/recipes/${recipe._id}/edit`)}
-          >
-            ✏️ Edit
-          </button>
-          <button className={styles.deleteButton} onClick={handleDelete}>
-            🗑️ Delete
-          </button>
-        </div>
-      )}
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

@@ -1,18 +1,20 @@
-/* src/app/dashboard/DashboardPage.module.css */
-
-/* Add button for shopping lists next to logout */
-.shoppingListsButton {
-  display: inline-block;
-  margin-left: 1rem;
-  padding: 0.5rem 1rem;
-  background-color: #457b9d;
-  color: white;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
+.cards {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.shoppingListsButton:hover {
-  background-color: #1d3557;
+.card {
+  background: #f3f3f3;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+  text-decoration: none;
+  color: #333;
+  transition: background 0.2s ease;
+}
+
+.card:hover {
+  background: #e0e0e0;
 }

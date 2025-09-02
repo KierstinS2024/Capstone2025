@@ -1,39 +1,51 @@
 // path: src/app/dashboard/recipes/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import RecipeCard from "@/components/RecipeCard";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import styles from "./RecipesListPage.module.css";
 
+interface Recipe {
+  _id: string;
+  name: string;
+  cuisine?: string;
+  description: string;
+}
+
 /**
- * RecipesListPage
- * Displays all recipes with search/filter functionality.
+ * The main content for the Recipe List Page
  */
-export default function RecipesListPage() {
+function RecipesListPageContent() {
   const router = useRouter();
-  const [recipes, setRecipes] = useState<any[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [search, setSearch] = useState("");
-  const [cuisine, setCuisine] = useState("");
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  // Fetch recipes from API
+  // Redirect if not authenticated
   useEffect(() => {
+    if (!token) router.push("/auth/login");
+  }, [token, router]);
+
+  // Fetch all recipes
+  useEffect(() => {
+    if (!token) return;
+
     async function fetchRecipes() {
       try {
         setLoading(true);
         setError(null);
 
-        const params = new URLSearchParams();
-        if (search) params.set("search", search);
-        if (cuisine) params.set("cuisine", cuisine);
+        const res = await fetch("/api/recipes", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        const res = await fetch(`/api/recipes?${params.toString()}`);
         const data = await res.json();
-
         if (!res.ok) throw new Error(data.message || "Failed to fetch recipes");
+
         setRecipes(data.recipes || []);
       } catch (err: any) {
         setError(err.message || "Error loading recipes");
@@ -43,62 +55,50 @@ export default function RecipesListPage() {
     }
 
     fetchRecipes();
-  }, [search, cuisine]);
+  }, [token]);
 
   if (loading) return <p className={styles.message}>Loading recipes...</p>;
   if (error) return <p className={styles.error}>Error: {error}</p>;
+  if (recipes.length === 0)
+    return <p className={styles.message}>No recipes found.</p>;
 
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Recipes</h1>
-
-      {/* Controls: Search + Filter + Create */}
-      <div className={styles.controls}>
-        <input
-          type="text"
-          placeholder="Search recipes..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className={styles.searchInput}
-        />
-
-        <select
-          value={cuisine}
-          onChange={(e) => setCuisine(e.target.value)}
-          className={styles.selectInput}
-        >
-          <option value="">All Cuisines</option>
-          <option value="Italian">Italian</option>
-          <option value="Mexican">Mexican</option>
-          <option value="Indian">Indian</option>
-          <option value="American">American</option>
-          {/* Add more cuisines as needed */}
-        </select>
-
-        <button
-          className={styles.createButton}
-          onClick={() => router.push("/dashboard/recipes/create")}
-        >
-          + Create New Recipe
-        </button>
-      </div>
-
-      {/* Recipes Grid */}
-      {recipes.length === 0 ? (
-        <p className={styles.emptyMessage}>
-          No recipes found. Try adjusting your search or filters.
-        </p>
-      ) : (
-        <div className={styles.grid}>
-          {recipes.map((recipe) => (
-            <RecipeCard
-              key={recipe._id}
-              recipe={recipe}
+      <button
+        className={styles.createButton}
+        onClick={() => router.push("/dashboard/recipes/create")}
+      >
+        + Create New Recipe
+      </button>
+      <ul className={styles.list}>
+        {recipes.map((recipe) => (
+          <li key={recipe._id} className={styles.listItem}>
+            <h2
+              className={styles.recipeName}
               onClick={() => router.push(`/dashboard/recipes/${recipe._id}`)}
-            />
-          ))}
-        </div>
-      )}
+            >
+              {recipe.name}
+            </h2>
+            {recipe.cuisine && (
+              <p className={styles.cuisine}>Cuisine: {recipe.cuisine}</p>
+            )}
+            <p className={styles.description}>{recipe.description}</p>
+          </li>
+        ))}
+      </ul>
     </div>
+  );
+}
+
+/**
+ * RecipeListPage
+ * Wraps the content in ProtectedRoute
+ */
+export default function RecipesListPage() {
+  return (
+    <ProtectedRoute>
+      <RecipesListPageContent />
+    </ProtectedRoute>
   );
 }

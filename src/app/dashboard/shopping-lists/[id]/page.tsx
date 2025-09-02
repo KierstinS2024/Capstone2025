@@ -1,107 +1,104 @@
-// src/app/dashboard/shopping-lists/[id]/page.tsx
+// path: src/app/dashboard/shopping-lists/[id]/page.tsx
 "use client";
 
-/**
- * ShoppingListDetailPage
- *
- * Shows a single shopping list including its items.
- * - Fetches /api/shopping-lists/[id]
- * - Displays list name, created date, and items
- * - Shows loading/error states
- * - Back button navigates to /dashboard/shopping-lists
- */
+import React, { useEffect, useState } from "react";
+import { useMealPlanContext, MealPlan } from "@/context/MealPlanContext";
+import styles from "./ShoppingListPage.module.css";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import styles from "./ShoppingListDetailPage.module.css";
-
-interface ShoppingListItem {
-  _id: string;
+interface Ingredient {
   name: string;
-  quantity?: number;
-  purchased?: boolean;
+  quantity: number;
+  unit: string;
 }
 
-interface ShoppingList {
-  _id: string;
+interface AggregatedIngredient {
   name: string;
-  createdAt: string;
-  items: ShoppingListItem[];
+  totalQuantity: number;
+  unit: string;
 }
 
-export default function ShoppingListDetailPage() {
-  const { id } = useParams(); // Extract shopping list ID from URL
-  const router = useRouter();
-
-  const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
+export default function ShoppingListPage() {
+  const { mealPlans } = useMealPlanContext();
+  const [ingredients, setIngredients] = useState<AggregatedIngredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
   useEffect(() => {
-    async function fetchShoppingList() {
-      setLoading(true);
-      setError(null);
+    if (!token) return;
 
+    async function fetchIngredients() {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("User not authenticated.");
+        setLoading(true);
+        setError(null);
 
-        const res = await fetch(`/api/shopping-lists/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        // Gather all recipe IDs from all meal plans
+        const recipeIds: string[] = [];
+        mealPlans.forEach((plan: MealPlan) => {
+          plan.entries?.forEach((entry) => {
+            if (entry.recipeId) recipeIds.push(entry.recipeId);
+          });
         });
 
-        const data = await res.json();
-        if (!res.ok)
-          throw new Error(data.message || "Shopping list not found.");
-
-        setShoppingList(data);
-      } catch (err) {
-        console.error(err);
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch shopping list."
+        // Fetch all recipe details
+        const recipesResponses = await Promise.all(
+          recipeIds.map((id) =>
+            fetch(`/api/recipes/${id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }).then((res) => res.json())
+          )
         );
+
+        // Aggregate ingredients
+        const allIngredients: AggregatedIngredient[] = [];
+        recipesResponses.forEach((data) => {
+          if (data.recipe?.ingredients?.length) {
+            data.recipe.ingredients.forEach((ing: Ingredient) => {
+              const existing = allIngredients.find(
+                (i) => i.name === ing.name && i.unit === ing.unit
+              );
+              if (existing) {
+                existing.totalQuantity += ing.quantity;
+              } else {
+                allIngredients.push({
+                  name: ing.name,
+                  totalQuantity: ing.quantity,
+                  unit: ing.unit,
+                });
+              }
+            });
+          }
+        });
+
+        setIngredients(allIngredients);
+      } catch (err: any) {
+        setError(err.message || "Error fetching ingredients");
       } finally {
         setLoading(false);
       }
     }
 
-    fetchShoppingList();
-  }, [id]);
+    fetchIngredients();
+  }, [mealPlans, token]);
 
   if (loading)
     return <p className={styles.message}>Loading shopping list...</p>;
   if (error) return <p className={styles.error}>Error: {error}</p>;
-  if (!shoppingList)
-    return <p className={styles.message}>Shopping list not found.</p>;
+  if (ingredients.length === 0)
+    return <p className={styles.message}>No ingredients found.</p>;
 
   return (
     <div className={styles.container}>
-      {/* Shopping list header */}
-      <h1 className={styles.title}>{shoppingList.name}</h1>
-      <p className={styles.created}>
-        Created on {new Date(shoppingList.createdAt).toLocaleDateString()}
-      </p>
-
-      {/* Items section */}
-      {shoppingList.items.length === 0 ? (
-        <p className={styles.emptyMessage}>
-          No items in this shopping list yet.
-        </p>
-      ) : (
-        <ul className={styles.itemList}>
-          {shoppingList.items.map((item) => (
-            <li key={item._id} className={styles.item}>
-              {item.name} {item.quantity ? `- ${item.quantity}` : ""}
-              {item.purchased ? " ✅" : ""}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Back button */}
-      <button className={styles.backButton} onClick={() => router.back()}>
-        ← Back
-      </button>
+      <h1 className={styles.title}>Shopping List</h1>
+      <ul className={styles.list}>
+        {ingredients.map((ing) => (
+          <li key={ing.name} className={styles.item}>
+            {ing.name}: {ing.totalQuantity} {ing.unit}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

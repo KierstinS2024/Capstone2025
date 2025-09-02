@@ -1,14 +1,5 @@
-// src/app/dashboard/shopping-lists/page.tsx
+// path: src/app/dashboard/shopping-lists/page.tsx
 "use client";
-
-/**
- * ShoppingListsPage
- *
- * Displays all shopping lists for the authenticated user.
- * - Fetches `/api/shopping-lists`
- * - Shows loading and error states
- * - Links to individual shopping list detail pages
- */
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -22,9 +13,6 @@ interface ShoppingList {
   itemsCount: number;
 }
 
-/**
- * Main content component for the shopping lists page
- */
 function ShoppingListsPageContent() {
   const [lists, setLists] = useState<ShoppingList[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +56,6 @@ function ShoppingListsPageContent() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Your Shopping Lists</h1>
-
       {lists.length === 0 ? (
         <p className={styles.emptyMessage}>
           You haven't created any shopping lists yet.
@@ -92,10 +79,6 @@ function ShoppingListsPageContent() {
   );
 }
 
-/**
- * Wraps the ShoppingListsPageContent in ProtectedRoute
- * Ensures only authenticated users can access shopping lists
- */
 export default function ShoppingListsPage() {
   return (
     <ProtectedRoute>
