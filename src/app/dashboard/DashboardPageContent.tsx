@@ -4,40 +4,44 @@
 /**
  * DashboardPageContent
  *
- * Displays user's meal plans and provides navigation to shopping lists.
+ * Displays user's dashboard with:
+ * - Welcome header + logout
+ * - Quick actions (create meal plan, generate shopping list)
+ * - Today’s summary (nutrition placeholders)
+ * - List of meal plans using MealPlanCard
  */
 
 import { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+
 import { AuthContext } from "@/context/AuthContext";
+import MealPlanCard from "@/components/MealPlanCard";
 import styles from "./DashboardPage.module.css";
 
 interface User {
-  id: string;
+  _id: string;
   email: string;
 }
 
-interface MealPlanEntry {
+interface MealPlan {
   _id: string;
   weekStartDate: string;
   notes?: string;
+  entries?: { _id: string }[];
 }
 
 export default function DashboardPageContent() {
   const router = useRouter();
   const { logout } = useContext(AuthContext);
+
   const [user, setUser] = useState<User | null>(null);
-  const [mealPlans, setMealPlans] = useState<MealPlanEntry[]>([]);
+  const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/auth/login");
-      return;
-    }
+    if (!token) return router.push("/auth/login");
 
     async function loadData() {
       try {
@@ -46,10 +50,7 @@ export default function DashboardPageContent() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const userData = await userRes.json();
-        if (!userData.user) {
-          router.push("/auth/login");
-          return;
-        }
+        if (!userData.user) return router.push("/auth/login");
         setUser(userData.user);
 
         // Fetch meal plans
@@ -75,44 +76,73 @@ export default function DashboardPageContent() {
 
   return (
     <div className={styles.dashboardPage}>
-      {/* Header with welcome + logout */}
+      {/* Header */}
       <div className={styles.headerRow}>
         <h1 className={styles.welcome}>Welcome, {user?.email}</h1>
-        <div>
+        <div className={styles.headerButtons}>
           <button className={styles.logoutButton} onClick={logout}>
             Logout
           </button>
-          {/* New Shopping Lists button */}
-          <Link
-            href="/dashboard/shopping-lists"
-            className={styles.shoppingListsButton}
-          >
-            Your Shopping Lists
-          </Link>
         </div>
       </div>
 
-      {/* Meal plans list */}
-      <h2 className={styles.sectionTitle}>Your Meal Plans</h2>
-      {mealPlans.length === 0 ? (
-        <p className={styles.emptyMessage}>
-          You haven't created any meal plans yet.
-        </p>
-      ) : (
-        <ul className={styles.mealPlanList}>
-          {mealPlans.map((plan) => (
-            <li key={plan._id} className={styles.mealPlanItem}>
-              <Link
-                href={`/dashboard/meal-plans/${plan._id}`}
-                className={styles.mealPlanLink}
-              >
-                Week of {new Date(plan.weekStartDate).toLocaleDateString()}
-                {plan.notes ? ` - ${plan.notes}` : ""}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Quick Actions */}
+      <section className={styles.quickActions}>
+        <button
+          className={styles.actionButton}
+          onClick={() => router.push("/dashboard/meal-plans/create")}
+        >
+          + Create New Meal Plan
+        </button>
+        <button
+          className={styles.actionButton}
+          onClick={() => {
+            if (!mealPlans[0])
+              return alert("No meal plans available to generate list.");
+            router.push(
+              `/dashboard/shopping-lists/from-meal-plan/${mealPlans[0]._id}`
+            );
+          }}
+        >
+          Generate Shopping List
+        </button>
+      </section>
+
+      {/* Today’s Summary (placeholder) */}
+      <section className={styles.todaySummary}>
+        <h2>Today’s Summary</h2>
+        <div className={styles.summaryCards}>
+          <div className={styles.card}>Calories: --</div>
+          <div className={styles.card}>Protein: --</div>
+          <div className={styles.card}>Carbs: --</div>
+          <div className={styles.card}>
+            Pending Groceries: {mealPlans.length}
+          </div>
+        </div>
+      </section>
+
+      {/* Meal Plans */}
+      <section className={styles.section}>
+        <h2>Your Meal Plans</h2>
+        {mealPlans.length === 0 ? (
+          <p className={styles.emptyMessage}>
+            You haven't created any meal plans yet.
+          </p>
+        ) : (
+          <div className={styles.cardsGrid}>
+            {mealPlans.map((plan) => (
+              <MealPlanCard
+                key={plan._id}
+                id={plan._id} // <-- fix applied
+                weekStartDate={plan.weekStartDate}
+                notes={plan.notes}
+                entriesCount={plan.entries?.length}
+                onClick={() => router.push(`/dashboard/meal-plans/${plan._id}`)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

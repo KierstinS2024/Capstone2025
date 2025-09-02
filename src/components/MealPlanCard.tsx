@@ -1,59 +1,53 @@
-/* src/components/MealPlanCard.tsx */
+// src/components/MealPlanCard.tsx
 "use client";
-
-/**
- * MealPlanCard
- *
- * Displays a single meal plan as a card.
- * Supports click to navigate and optional delete button.
- */
 
 import React from "react";
 import styles from "./MealPlanCard.module.css";
 
-// Props for MealPlanCard
-export interface MealPlanCardProps {
-  mealPlan: {
-    _id: string;
-    weekStartDate: string;
-    notes?: string;
-    entries?: any[]; // optional entries array for count
-  };
-  onClick?: () => void; // optional click handler (navigate to detail)
-  onDelete?: () => void; // optional delete button handler
+// Props for each MealPlanCard
+interface MealPlanCardProps {
+  id: string; // Meal plan ID
+  weekStartDate: string;
+  notes?: string;
+  entriesCount?: number;
+  onClick?: () => void; // Optional click handler
 }
 
-export default function MealPlanCard({ mealPlan, onClick, onDelete }: MealPlanCardProps) {
+export default function MealPlanCard({
+  id,
+  weekStartDate,
+  notes,
+  entriesCount,
+  onClick,
+}: MealPlanCardProps) {
+  // Handle Enter / Space keys for keyboard activation
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onClick) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <div
       className={styles.card}
+      role="button"
+      tabIndex={0} // make focusable
       onClick={onClick}
-      style={{ cursor: onClick ? "pointer" : "default" }}
+      onKeyDown={handleKeyDown}
+      aria-label={`Meal plan starting ${new Date(
+        weekStartDate
+      ).toLocaleDateString()}`}
     >
-      {/* Display the week start date */}
       <h3 className={styles.date}>
-        Week of {new Date(mealPlan.weekStartDate).toLocaleDateString()}
+        Week of {new Date(weekStartDate).toLocaleDateString()}
       </h3>
 
-      {/* Optional notes */}
-      {mealPlan.notes && <p className={styles.notes}>{mealPlan.notes}</p>}
+      {notes && <p className={styles.notes}>{notes}</p>}
 
-      {/* Optional entries count */}
-      {mealPlan.entries && (
-        <p className={styles.entries}>Recipes: {mealPlan.entries.length}</p>
-      )}
-
-      {/* Optional delete button */}
-      {onDelete && (
-        <button
-          className={styles.deleteButton}
-          onClick={(e) => {
-            e.stopPropagation(); // prevent card click navigation
-            onDelete();
-          }}
-        >
-          Delete
-        </button>
+      {entriesCount !== undefined && (
+        <p className={styles.entries}>Recipes: {entriesCount}</p>
       )}
     </div>
   );
