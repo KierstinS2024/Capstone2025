@@ -1,6 +1,5 @@
-// path: src/app/api/auth/register/route.ts
-/**
- * POST /api/auth/register
+/* src/app/api/auth/signup/route.ts/**
+ * POST /api/auth/signup
  * Registers a new user and returns a JWT
  */
 import { NextRequest, NextResponse } from "next/server";

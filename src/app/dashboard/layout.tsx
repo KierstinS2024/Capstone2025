@@ -1,8 +1,15 @@
-// path: src/app/dashboard/layout.tsx
+// src/app/dashboard/layout.tsx
 "use client";
 
+/**
+ * DashboardLayout
+ *
+ * Wraps all dashboard pages with:
+ * - ProtectedRoute (ensures only logged-in users can access)
+ * - Common layout styling (header, main content area)
+ */
+
 import { ReactNode, useContext } from "react";
-import Link from "next/link";
 import { AuthContext } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import styles from "./DashboardLayout.module.css";
@@ -12,30 +19,26 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { logout } = useContext(AuthContext);
+  const { logout, user } = useContext(AuthContext);
 
   return (
     <ProtectedRoute>
-      <div className={styles.container}>
+      <div className={styles.layoutContainer}>
+        {/* Header */}
         <header className={styles.header}>
-          <h1 className={styles.title}>Meal Planner Dashboard</h1>
-          <nav className={styles.nav}>
-            <Link href="/dashboard" className={styles.navLink}>
-              Home
-            </Link>
-            <Link href="/dashboard/recipes" className={styles.navLink}>
-              Recipes
-            </Link>
-            <Link href="/dashboard/shopping-lists" className={styles.navLink}>
-              Shopping Lists
-            </Link>
-            <span onClick={logout} className={styles.logout}>
-              Logout
-            </span>
-          </nav>
+          <h1 className={styles.title}>Dashboard</h1>
+          {user && (
+            <div className={styles.userActions}>
+              <span className={styles.userEmail}>{user.email}</span>
+              <button className={styles.logoutButton} onClick={logout}>
+                Logout
+              </button>
+            </div>
+          )}
         </header>
 
-        <main className={styles.main}>{children}</main>
+        {/* Main content */}
+        <main className={styles.mainContent}>{children}</main>
       </div>
     </ProtectedRoute>
   );

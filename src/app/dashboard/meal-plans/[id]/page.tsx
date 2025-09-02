@@ -1,24 +1,29 @@
 // src/app/dashboard/meal-plans/[id]/page.tsx
-
 "use client";
+
+/**
+ * MealPlanDetailPage
+ *
+ * Displays detailed information for a single meal plan:
+ * - Week start date
+ * - Notes (if any)
+ * - List of meal entries
+ * - Button to generate a shopping list
+ *
+ * Fetches data from /api/meal-plans/[id] and uses token from localStorage
+ */
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import styles from "./MealPlanDetailPage.module.css";
 import GenerateShoppingListButton from "@/components/GenerateShoppingListButton";
+import styles from "./MealPlanDetailPage.module.css"; // create this CSS file
 
-/**
- * Represents a single meal plan entry
- */
 interface MealPlanEntry {
   recipeName: string;
   mealType: string;
   servings: number;
 }
 
-/**
- * Represents the full meal plan object returned from the backend
- */
 interface MealPlan {
   _id: string;
   weekStartDate: string;
@@ -26,26 +31,14 @@ interface MealPlan {
   entries?: MealPlanEntry[];
 }
 
-/**
- * MealPlanDetailPage
- *
- * Displays the details for a single meal plan including:
- * - Week start date
- * - Notes (if any)
- * - Meal entries with recipe, meal type, and servings
- * - Button to generate shopping list from this meal plan
- */
 export default function MealPlanDetailPage() {
-  const { id } = useParams(); // Extract meal plan ID from URL
+  const { id } = useParams();
   const router = useRouter();
 
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Fetch meal plan details from the backend API
-   */
   useEffect(() => {
     async function fetchMealPlan() {
       setLoading(true);
@@ -60,10 +53,7 @@ export default function MealPlanDetailPage() {
         });
 
         const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.message || "Meal plan not found.");
-        }
+        if (!res.ok) throw new Error(data.message || "Meal plan not found.");
 
         setMealPlan(data);
       } catch (err) {
@@ -79,36 +69,27 @@ export default function MealPlanDetailPage() {
     fetchMealPlan();
   }, [id]);
 
-  /**
-   * Callback when a shopping list is successfully generated
-   * @param shoppingListId - The newly created shopping list ID
-   */
   const handleShoppingListGenerated = (shoppingListId: string) => {
-    // Redirect user to the generated shopping list page
     router.push(`/dashboard/shopping-lists/${shoppingListId}`);
   };
 
   if (loading) return <p className={styles.message}>Loading...</p>;
-  if (error) return <p className={styles.message}>Error: {error}</p>;
+  if (error) return <p className={styles.error}>Error: {error}</p>;
   if (!mealPlan) return <p className={styles.message}>Meal plan not found.</p>;
 
   return (
     <main className={styles.container}>
-      {/* Page title showing the week start date */}
       <h1 className={styles.title}>Meal Plan for {mealPlan.weekStartDate}</h1>
 
-      {/* Display optional notes */}
       {mealPlan.notes && (
         <p className={styles.notes}>Notes: {mealPlan.notes}</p>
       )}
 
-      {/* Generate Shopping List Button */}
       <GenerateShoppingListButton
         mealPlanId={mealPlan._id}
         onSuccess={handleShoppingListGenerated}
       />
 
-      {/* Display meal entries */}
       {mealPlan.entries && mealPlan.entries.length > 0 ? (
         <div className={styles.entriesGrid}>
           {mealPlan.entries.map((entry, index) => (
@@ -124,7 +105,6 @@ export default function MealPlanDetailPage() {
         <p className={styles.message}>No entries yet for this week.</p>
       )}
 
-      {/* Back button */}
       <button className={styles.backButton} onClick={() => router.back()}>
         ← Back
       </button>

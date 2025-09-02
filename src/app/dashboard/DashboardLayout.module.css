@@ -1,0 +1,58 @@
+/* src/app/dashboard/DashboardLayout.module.css */
+
+/* Overall layout wrapper */
+.layoutContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+/* Header styles */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #1d3557;
+  color: white;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+/* User info & logout */
+.userActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.userEmail {
+  font-weight: 500;
+}
+
+.logoutButton {
+  padding: 0.4rem 0.8rem;
+  background-color: #e63946;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.logoutButton:hover {
+  background-color: #d62828;
+}
+
+/* Main content wrapper */
+.mainContent {
+  flex: 1;
+  padding: 2rem;
+  background-color: #f1faee;
+}
