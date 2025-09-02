@@ -4,10 +4,10 @@
 /**
  * ShoppingListDetailPage
  *
- * Displays the details of a single shopping list.
- * - Fetches shopping list items from `/api/shopping-lists/:id`
- * - Allows marking items as purchased
- * - Shows loading and error states
+ * Displays a single shopping list with all its items.
+ * - Fetches shopping list from `/api/shopping-lists/[id]`
+ * - Handles loading and error states
+ * - Provides a back button to return to the shopping lists overview
  */
 
 import { useEffect, useState } from "react";
@@ -15,10 +15,9 @@ import { useParams, useRouter } from "next/navigation";
 import styles from "./ShoppingListDetailPage.module.css";
 
 interface ShoppingListItem {
-  _id: string;
   name: string;
   quantity: string;
-  purchased: boolean;
+  notes?: string;
 }
 
 interface ShoppingList {
@@ -36,7 +35,6 @@ export default function ShoppingListDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch shopping list from backend
   useEffect(() => {
     async function fetchShoppingList() {
       setLoading(true);
@@ -51,12 +49,13 @@ export default function ShoppingListDetailPage() {
         });
 
         const data = await res.json();
+
         if (!res.ok)
           throw new Error(data.message || "Shopping list not found.");
 
-        setShoppingList(data);
+        setShoppingList(data.list);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching shopping list:", err);
         setError(
           err instanceof Error ? err.message : "Failed to fetch shopping list."
         );
@@ -68,37 +67,6 @@ export default function ShoppingListDetailPage() {
     fetchShoppingList();
   }, [id]);
 
-  // Toggle purchased state of an item
-  async function togglePurchased(itemId: string) {
-    if (!shoppingList) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("User not authenticated.");
-
-      const res = await fetch(
-        `/api/shopping-lists/${id}/items/${itemId}/toggle`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (!res.ok) throw new Error("Failed to update item.");
-
-      // Optimistically update UI
-      setShoppingList({
-        ...shoppingList,
-        items: shoppingList.items.map((item) =>
-          item._id === itemId ? { ...item, purchased: !item.purchased } : item
-        ),
-      });
-    } catch (err) {
-      console.error(err);
-      alert(err instanceof Error ? err.message : "Error updating item.");
-    }
-  }
-
   if (loading)
     return <p className={styles.message}>Loading shopping list...</p>;
   if (error) return <p className={styles.error}>Error: {error}</p>;
@@ -108,26 +76,24 @@ export default function ShoppingListDetailPage() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>{shoppingList.name}</h1>
-      <p className={styles.date}>
-        Created at: {new Date(shoppingList.createdAt).toLocaleDateString()}
+      <p className={styles.created}>
+        Created on: {new Date(shoppingList.createdAt).toLocaleDateString()}
       </p>
 
-      <ul className={styles.itemsList}>
-        {shoppingList.items.map((item) => (
-          <li key={item._id} className={styles.item}>
-            <label>
-              <input
-                type="checkbox"
-                checked={item.purchased}
-                onChange={() => togglePurchased(item._id)}
-              />
-              <span className={item.purchased ? styles.purchased : ""}>
-                {item.name} ({item.quantity})
-              </span>
-            </label>
-          </li>
-        ))}
-      </ul>
+      {shoppingList.items.length === 0 ? (
+        <p className={styles.emptyMessage}>This shopping list has no items.</p>
+      ) : (
+        <ul className={styles.itemsList}>
+          {shoppingList.items.map((item, index) => (
+            <li key={index} className={styles.item}>
+              <strong>{item.name}</strong> - {item.quantity}
+              {item.notes && (
+                <span className={styles.notes}> ({item.notes})</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
 
       <button className={styles.backButton} onClick={() => router.back()}>
         ← Back

@@ -2,27 +2,27 @@
 "use client";
 
 /**
- * AllShoppingListsPage
+ * ShoppingListsPage
  *
- * Displays a list of all shopping lists for the logged-in user.
- * - Fetches from /api/shopping-lists
- * - Requires authentication
- * - Shows loading, error, and empty states
- * - Links to individual shopping list pages
+ * Displays all shopping lists for the authenticated user.
+ * - Fetches `/api/shopping-lists`
+ * - Shows loading and error states
+ * - Links to individual shopping list detail pages
  */
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import styles from "./AllShoppingListsPage.module.css";
+import styles from "./ShoppingListsPage.module.css";
 
 interface ShoppingList {
   _id: string;
   name: string;
   createdAt: string;
+  itemsCount: number;
 }
 
-export default function AllShoppingListsPage() {
+export default function ShoppingListsPage() {
   const router = useRouter();
   const [lists, setLists] = useState<ShoppingList[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,7 @@ export default function AllShoppingListsPage() {
 
       try {
         const token = localStorage.getItem("token");
-        if (!token) throw new Error("User not authenticated");
+        if (!token) throw new Error("User not authenticated.");
 
         const res = await fetch("/api/shopping-lists", {
           headers: { Authorization: `Bearer ${token}` },
@@ -43,13 +43,13 @@ export default function AllShoppingListsPage() {
 
         const data = await res.json();
         if (!res.ok)
-          throw new Error(data.message || "Failed to fetch shopping lists");
+          throw new Error(data.message || "Failed to fetch shopping lists.");
 
         setLists(data.lists || []);
       } catch (err) {
         console.error(err);
         setError(
-          err instanceof Error ? err.message : "Failed to fetch shopping lists"
+          err instanceof Error ? err.message : "Failed to load shopping lists."
         );
       } finally {
         setLoading(false);
@@ -69,7 +69,7 @@ export default function AllShoppingListsPage() {
 
       {lists.length === 0 ? (
         <p className={styles.emptyMessage}>
-          You don't have any shopping lists yet.
+          You haven't created any shopping lists yet.
         </p>
       ) : (
         <ul className={styles.list}>
@@ -79,16 +79,13 @@ export default function AllShoppingListsPage() {
                 href={`/dashboard/shopping-lists/${list._id}`}
                 className={styles.listLink}
               >
-                {list.name} - {new Date(list.createdAt).toLocaleDateString()}
+                {list.name} ({list.itemsCount} items) - created on{" "}
+                {new Date(list.createdAt).toLocaleDateString()}
               </Link>
             </li>
           ))}
         </ul>
       )}
-
-      <button className={styles.backButton} onClick={() => router.back()}>
-        ← Back
-      </button>
     </div>
   );
 }
