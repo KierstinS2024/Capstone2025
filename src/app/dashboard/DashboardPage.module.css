@@ -1,0 +1,81 @@
+/* path: src/app/dashboard/DashboardPage.module.css */
+
+/* Overall container */
+.dashboardPage {
+  padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Header row with welcome + logout button */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.welcome {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+/* Logout button */
+.logoutButton {
+  padding: 0.5rem 1rem;
+  background-color: #e63946;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
+}
+
+.logoutButton:hover {
+  background-color: #d62828;
+}
+
+/* Section title */
+.sectionTitle {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+/* Loading, empty, and error messages */
+.message {
+  font-style: italic;
+  color: #555;
+}
+
+.error {
+  color: #e63946;
+  font-weight: bold;
+}
+
+.emptyMessage {
+  font-style: italic;
+  color: #777;
+}
+
+/* Meal plan list */
+.mealPlanList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mealPlanItem {
+  margin-bottom: 0.75rem;
+}
+
+.mealPlanLink {
+  text-decoration: none;
+  color: #1d3557;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.mealPlanLink:hover {
+  color: #457b9d;
+}
