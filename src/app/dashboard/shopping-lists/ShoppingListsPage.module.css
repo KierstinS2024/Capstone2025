@@ -1,38 +1,21 @@
 /* src/app/dashboard/shopping-lists/ShoppingListsPage.module.css */
 
+/* Overall page container */
 .container {
-  max-width: 700px;
-  margin: 0 auto;
   padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: sans-serif;
 }
 
+/* Page title */
 .title {
   font-size: 1.8rem;
   font-weight: bold;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.listItem {
-  margin-bottom: 0.75rem;
-}
-
-.listLink {
-  text-decoration: none;
-  color: #1d3557;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.listLink:hover {
-  color: #457b9d;
-}
-
+/* Messages for loading, error, or empty state */
 .message {
   font-style: italic;
   color: #555;
@@ -46,4 +29,28 @@
 .emptyMessage {
   font-style: italic;
   color: #777;
+}
+
+/* Shopping list UL */
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Individual list item */
+.listItem {
+  margin-bottom: 0.75rem;
+}
+
+/* Shopping list link */
+.listLink {
+  text-decoration: none;
+  color: #1d3557;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.listLink:hover {
+  color: #457b9d;
 }
