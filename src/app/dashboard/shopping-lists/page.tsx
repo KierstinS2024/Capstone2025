@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import styles from "./ShoppingListsPage.module.css";
+import styles from "./ShoppingListsShared.module.css";
 
 interface ShoppingList {
   _id: string;
