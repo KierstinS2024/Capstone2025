@@ -1,28 +1,34 @@
-// path: src/app/auth/signup/page.tsx
+// src/app/auth/signup/page.tsx
 "use client";
 
+/**
+ * SignupPage
+ *
+ * Allows new users to create an account.
+ * - Uses AuthContext to store token & user
+ * - Redirects to dashboard after successful signup
+ * - Handles errors and password confirmation
+ */
+
 import { useState, useContext } from "react";
-import { AuthContext } from "@/context/AuthContext";
-import styles from "./SignupPage.module.css"; // keep CSS separate and scoped
 import { useRouter } from "next/navigation";
+import { AuthContext } from "@/context/AuthContext";
+import styles from "./SignupPage.module.css";
 
 export default function SignupPage() {
-  const { login } = useContext(AuthContext); // access global auth
   const router = useRouter();
+  const { login } = useContext(AuthContext);
 
-  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Form submit handler
-  const handleSignup = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    // Simple client-side validation
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -45,15 +51,14 @@ export default function SignupPage() {
         return;
       }
 
-      // Save auth info globally and redirect to dashboard
+      // Save token & user in AuthContext
       login(data.token, data.user);
-
-      // optional: router.push("/dashboard"); already handled by login()
     } catch (err) {
+      console.error(err);
       setError("An unexpected error occurred");
       setLoading(false);
     }
-  };
+  }
 
   return (
     <div className={styles.container}>
@@ -62,7 +67,7 @@ export default function SignupPage() {
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <form onSubmit={handleSignup} className={styles.form}>
+        <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
             <label htmlFor="email">Email</label>
             <input
@@ -70,7 +75,6 @@ export default function SignupPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={styles.input}
               required
             />
           </div>
@@ -82,7 +86,6 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={styles.input}
               required
             />
           </div>
@@ -94,25 +97,17 @@ export default function SignupPage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className={styles.input}
               required
             />
           </div>
 
-          <button
-            type="submit"
-            className={styles.submitButton}
-            disabled={loading}
-          >
+          <button type="submit" disabled={loading}>
             {loading ? "Signing up..." : "Sign Up"}
           </button>
         </form>
 
         <p className={styles.loginPrompt}>
-          Already have an account?{" "}
-          <a href="/auth/login" className={styles.loginLink}>
-            Log in
-          </a>
+          Already have an account? <a href="/auth/login">Log in</a>
         </p>
       </div>
     </div>
