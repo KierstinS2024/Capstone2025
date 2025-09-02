@@ -1,69 +1,104 @@
-/* src/app/dashboard/recipes/page.tsx */
+// path: src/app/dashboard/recipes/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import RecipeCard from "@/components/RecipeCard";
-import SearchBar from "@/components/SearchBar";
-import styles from "./RecipesPage.module.css";
+import styles from "./RecipesListPage.module.css";
 
-interface Recipe {
-  _id?: string; // For MongoDB recipes
-  id?: number; // For external API recipes
-  name: string;
-  description?: string;
-  cuisine?: string;
-  image?: string;
-  userSubmitted?: boolean;
-}
+/**
+ * RecipesListPage
+ * Displays all recipes with search/filter functionality.
+ */
+export default function RecipesListPage() {
+  const router = useRouter();
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default function RecipesPage() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [search, setSearch] = useState("");
+  const [cuisine, setCuisine] = useState("");
 
-  // Handle search queries
-  const handleSearch = async (query: string) => {
-    if (!query) return;
+  // Fetch recipes from API
+  useEffect(() => {
+    async function fetchRecipes() {
+      try {
+        setLoading(true);
+        setError(null);
 
-    try {
-      const res = await fetch(`/api/external/recipes?query=${query}`);
-      const data = await res.json();
+        const params = new URLSearchParams();
+        if (search) params.set("search", search);
+        if (cuisine) params.set("cuisine", cuisine);
 
-      // Map external API results to internal Recipe type
-      const mapped = (data.results || []).map((r: any) => ({
-        id: r.id,
-        name: r.title,
-        description: r.summary?.replace(/<[^>]+>/g, ""), // Strip HTML tags
-        image: r.image,
-        cuisine: r.cuisines?.[0],
-        userSubmitted: false,
-      }));
+        const res = await fetch(`/api/recipes?${params.toString()}`);
+        const data = await res.json();
 
-      setRecipes(mapped);
-    } catch (err) {
-      console.error("Failed to fetch recipes", err);
-      setRecipes([]);
+        if (!res.ok) throw new Error(data.message || "Failed to fetch recipes");
+        setRecipes(data.recipes || []);
+      } catch (err: any) {
+        setError(err.message || "Error loading recipes");
+      } finally {
+        setLoading(false);
+      }
     }
-  };
+
+    fetchRecipes();
+  }, [search, cuisine]);
+
+  if (loading) return <p className={styles.message}>Loading recipes...</p>;
+  if (error) return <p className={styles.error}>Error: {error}</p>;
 
   return (
-    <main className={styles.container}>
-      {/* Page title */}
-      <h1 className={styles.title}>Find Recipes</h1>
+    <div className={styles.container}>
+      <h1 className={styles.title}>Recipes</h1>
 
-      {/* Search input */}
-      <SearchBar onSearch={handleSearch} />
+      {/* Controls: Search + Filter + Create */}
+      <div className={styles.controls}>
+        <input
+          type="text"
+          placeholder="Search recipes..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className={styles.searchInput}
+        />
 
-      {/* Recipes grid */}
-      {recipes.length > 0 ? (
+        <select
+          value={cuisine}
+          onChange={(e) => setCuisine(e.target.value)}
+          className={styles.selectInput}
+        >
+          <option value="">All Cuisines</option>
+          <option value="Italian">Italian</option>
+          <option value="Mexican">Mexican</option>
+          <option value="Indian">Indian</option>
+          <option value="American">American</option>
+          {/* Add more cuisines as needed */}
+        </select>
+
+        <button
+          className={styles.createButton}
+          onClick={() => router.push("/dashboard/recipes/create")}
+        >
+          + Create New Recipe
+        </button>
+      </div>
+
+      {/* Recipes Grid */}
+      {recipes.length === 0 ? (
+        <p className={styles.emptyMessage}>
+          No recipes found. Try adjusting your search or filters.
+        </p>
+      ) : (
         <div className={styles.grid}>
           {recipes.map((recipe) => (
-            <RecipeCard key={recipe.id || recipe._id} recipe={recipe} />
+            <RecipeCard
+              key={recipe._id}
+              recipe={recipe}
+              onClick={() => router.push(`/dashboard/recipes/${recipe._id}`)}
+            />
           ))}
         </div>
-      ) : (
-        <p className={styles.emptyMessage}>
-          No recipes yet. Try searching above!
-        </p>
       )}
-    </main>
+    </div>
   );
 }

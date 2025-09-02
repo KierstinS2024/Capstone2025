@@ -1,58 +1,132 @@
-// src/app/dashboard/recipes/[id]/page.tsx
+// path: src/app/dashboard/recipes/[id]/page.tsx
+"use client";
 
-import React from "react";
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import styles from "./RecipeDetailPage.module.css";
+
+interface Ingredient {
+  name: string;
+  quantity: string;
+}
 
 interface Recipe {
-  _id?: string;
-  id?: number;
+  _id: string;
   name: string;
-  description?: string;
+  description: string;
   cuisine?: string;
-  userSubmitted?: boolean;
+  instructions?: string[];
+  ingredients?: Ingredient[];
+  createdByUserId?: string;
 }
 
-async function getRecipe(id: string): Promise<Recipe> {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/recipes/${id}`,
-    {
-      cache: "no-store",
+export default function RecipeDetailPage() {
+  const router = useRouter();
+  const params = useParams();
+  const recipeId = params?.id as string;
+
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  useEffect(() => {
+    if (!recipeId) return;
+
+    async function fetchRecipe() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await fetch(`/api/recipes/${recipeId}`);
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message || "Failed to fetch recipe");
+        setRecipe(data.recipe);
+      } catch (err: any) {
+        setError(err.message || "Error loading recipe");
+      } finally {
+        setLoading(false);
+      }
     }
-  );
-  return res.json();
-}
 
-export default async function RecipeDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const recipe = await getRecipe(params.id);
+    fetchRecipe();
+  }, [recipeId]);
+
+  const handleDelete = async () => {
+    if (!token || !recipe) return;
+    if (!confirm("Are you sure you want to delete this recipe?")) return;
+
+    try {
+      const res = await fetch(`/api/recipes/${recipe._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete recipe");
+      router.push("/dashboard/recipes");
+    } catch (err: any) {
+      alert(err.message || "Error deleting recipe");
+    }
+  };
+
+  if (loading) return <p className={styles.message}>Loading recipe...</p>;
+  if (error) return <p className={styles.error}>Error: {error}</p>;
+  if (!recipe) return <p className={styles.message}>Recipe not found.</p>;
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10">
-      <div className="bg-white shadow-sm rounded-xl p-8 border border-gray-100">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">{recipe.name}</h1>
+    <div className={styles.container}>
+      <h1 className={styles.title}>{recipe.name}</h1>
+      {recipe.cuisine && (
+        <p className={styles.cuisine}>Cuisine: {recipe.cuisine}</p>
+      )}
+      <p className={styles.description}>{recipe.description}</p>
 
-        {recipe.cuisine && (
-          <p className="text-gray-500 mb-6 italic">{recipe.cuisine}</p>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Ingredients</h2>
+        {recipe.ingredients && recipe.ingredients.length > 0 ? (
+          <ul className={styles.list}>
+            {recipe.ingredients.map((ing, idx) => (
+              <li key={idx} className={styles.listItem}>
+                {ing.quantity} {ing.name}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No ingredients listed.</p>
         )}
+      </section>
 
-        {recipe.description && (
-          <p className="text-gray-700 leading-relaxed">{recipe.description}</p>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Instructions</h2>
+        {recipe.instructions && recipe.instructions.length > 0 ? (
+          <ol className={styles.list}>
+            {recipe.instructions.map((step, idx) => (
+              <li key={idx} className={styles.listItem}>
+                {step}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p>No instructions provided.</p>
         )}
+      </section>
 
-        <div className="mt-6">
-          <span
-            className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
-              recipe.userSubmitted
-                ? "bg-green-100 text-green-800"
-                : "bg-blue-100 text-blue-800"
-            }`}
+      {token && recipe.createdByUserId && (
+        <div className={styles.actions}>
+          <button
+            className={styles.editButton}
+            onClick={() => router.push(`/dashboard/recipes/${recipe._id}/edit`)}
           >
-            {recipe.userSubmitted ? "Your Recipe" : "External"}
-          </span>
+            ✏️ Edit
+          </button>
+          <button className={styles.deleteButton} onClick={handleDelete}>
+            🗑️ Delete
+          </button>
         </div>
-      </div>
-    </main>
+      )}
+    </div>
   );
 }
