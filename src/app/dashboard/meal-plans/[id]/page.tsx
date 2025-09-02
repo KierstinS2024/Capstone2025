@@ -1,99 +1,80 @@
-// src/app/dashboard/meal-plans/[id]/page.tsx
+// path: src/app/dashboard/meal-plans/[id]/page.tsx
 "use client";
 
 /**
  * MealPlanDetailPage
  *
- * Displays a single meal plan in detail.
- * Allows editing the plan's notes and weekStartDate.
- * Lists entries with add/edit/delete capabilities using MealPlanEntryForm.
- * Implements best practices for TypeScript and App Router.
+ * Shows detailed view of a meal plan with ability to edit notes, date, and entries.
+ * Fully typed with TypeScript and uses MealPlanContext.
  */
 
-import { useState, useEffect, useContext } from "react";
-import { useParams } from "next/navigation";
-import { MealPlanContext } from "@/context/MealPlanContext";
+import React, { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  useMealPlanContext,
+  MealPlan,
+  MealPlanEntry,
+} from "@/context/MealPlanContext";
 import MealPlanEntryForm from "@/components/MealPlanEntryForm";
+import EditMealPlanEntryModal from "@/components/EditMealPlanEntryModal";
 import styles from "./MealPlanDetailPage.module.css";
 
-interface MealPlanEntry {
-  _id: string;
-  recipeId: string;
-  mealType: string;
-  dayOfWeek: string;
-  servings: number;
-}
-
-interface MealPlan {
-  _id: string;
-  weekStartDate: string;
-  notes: string;
-  entries: MealPlanEntry[];
-}
-
 export default function MealPlanDetailPage() {
+  const router = useRouter();
   const params = useParams();
-  const { mealPlans, setMealPlans } = useContext(MealPlanContext);
+  const { mealPlans, setMealPlans } = useMealPlanContext();
 
-  // Narrow planId to string safely
-  const rawPlanId = params.id;
-  const planId = typeof rawPlanId === "string" ? rawPlanId : undefined;
-
-  if (!planId) {
-    return <p className={styles.error}>Invalid meal plan ID.</p>;
-  }
-
-  // Token from localStorage (client-side only)
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  if (!token) {
-    return (
-      <p className={styles.error}>You must be logged in to view this page.</p>
-    );
-  }
-
+  const planId = typeof params.id === "string" ? params.id : "";
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
-  const [notes, setNotes] = useState("");
   const [weekStartDate, setWeekStartDate] = useState("");
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editingEntry, setEditingEntry] = useState<MealPlanEntry | null>(null);
 
-  // Fetch meal plan details
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  // Redirect to login if no token
   useEffect(() => {
-    async function fetchMealPlan() {
-      try {
-        setLoading(true);
-        setError(null);
+    if (!token) router.push("/auth/login");
+  }, [token, router]);
 
+  // Fetch meal plan
+  useEffect(() => {
+    if (!planId || !token) return;
+
+    const fetchMealPlan = async () => {
+      setLoading(true);
+      setError(null);
+      try {
         const res = await fetch(`/api/meal-plans/${planId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-
         if (!res.ok)
           throw new Error(data.message || "Failed to fetch meal plan");
 
         setMealPlan(data.mealPlan);
-        setNotes(data.mealPlan.notes || "");
         setWeekStartDate(
           new Date(data.mealPlan.weekStartDate).toISOString().slice(0, 10)
         );
+        setNotes(data.mealPlan.notes || "");
       } catch (err: any) {
         setError(err.message || "Error loading meal plan");
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchMealPlan();
   }, [planId, token]);
 
-  // Update meal plan notes and weekStartDate
+  // Update meal plan info
   const handleUpdatePlan = async () => {
-    if (!mealPlan) return;
+    if (!mealPlan || !token) return;
 
     try {
       const res = await fetch(`/api/meal-plans/${planId}`, {
@@ -102,28 +83,25 @@ export default function MealPlanDetailPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ notes, weekStartDate }),
+        body: JSON.stringify({ weekStartDate, notes }),
       });
       const data = await res.json();
-
       if (!res.ok)
         throw new Error(data.message || "Failed to update meal plan");
 
       setMealPlan(data.mealPlan);
-
-      // Sync with global context
       setMealPlans(
         mealPlans.map((plan) => (plan._id === planId ? data.mealPlan : plan))
       );
-
       alert("Meal plan updated successfully!");
     } catch (err: any) {
       alert(err.message || "Error updating meal plan");
     }
   };
 
-  // Delete a meal plan entry
+  // Delete an entry
   const handleDeleteEntry = async (entryId: string) => {
+    if (!mealPlan || !token) return;
     if (!confirm("Are you sure you want to delete this entry?")) return;
 
     try {
@@ -134,33 +112,28 @@ export default function MealPlanDetailPage() {
       if (!res.ok) throw new Error("Failed to delete entry");
 
       setMealPlan({
-        ...mealPlan!,
-        entries: mealPlan!.entries.filter((entry) => entry._id !== entryId),
+        ...mealPlan,
+        entries: mealPlan.entries.filter((e) => e._id !== entryId),
       });
     } catch (err: any) {
       alert(err.message || "Error deleting entry");
     }
   };
 
-  // Handle successful add/edit of an entry
+  // Add or edit entry callback
   const handleEntrySuccess = (entry: MealPlanEntry) => {
     if (!mealPlan) return;
 
     const exists = mealPlan.entries.find((e) => e._id === entry._id);
-    if (exists) {
-      setMealPlan({
-        ...mealPlan,
-        entries: mealPlan.entries.map((e) => (e._id === entry._id ? entry : e)),
-      });
-    } else {
-      setMealPlan({ ...mealPlan, entries: [...mealPlan.entries, entry] });
-    }
+    const updatedEntries = exists
+      ? mealPlan.entries.map((e) => (e._id === entry._id ? entry : e))
+      : [...mealPlan.entries, entry];
 
+    setMealPlan({ ...mealPlan, entries: updatedEntries });
     setShowAddForm(false);
-    setEditingEntryId(null);
+    setEditingEntry(null);
   };
 
-  // Loading/Error UI
   if (loading) return <p className={styles.message}>Loading meal plan...</p>;
   if (error) return <p className={styles.error}>Error: {error}</p>;
   if (!mealPlan) return <p className={styles.error}>Meal plan not found.</p>;
@@ -169,40 +142,36 @@ export default function MealPlanDetailPage() {
     <div className={styles.container}>
       <h1 className={styles.title}>Meal Plan Details</h1>
 
-      {/* Editable meal plan info */}
+      {/* Meal Plan Info */}
       <div className={styles.formGroup}>
-        <label>
-          Week Start Date:
-          <input
-            type="date"
-            value={weekStartDate}
-            onChange={(e) => setWeekStartDate(e.target.value)}
-          />
-        </label>
+        <label>Week Start Date:</label>
+        <input
+          type="date"
+          value={weekStartDate}
+          onChange={(e) => setWeekStartDate(e.target.value)}
+        />
       </div>
 
       <div className={styles.formGroup}>
-        <label>
-          Notes:
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add notes for this week..."
-          />
-        </label>
+        <label>Notes:</label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Add notes..."
+        />
       </div>
 
       <button className={styles.updateButton} onClick={handleUpdatePlan}>
         Update Meal Plan
       </button>
 
+      {/* Entries */}
       <h2 className={styles.subtitle}>Entries</h2>
 
-      {/* Add new entry */}
       {showAddForm ? (
         <MealPlanEntryForm
-          mealPlanId={planId} // guaranteed string
-          token={token}
+          mealPlanId={planId}
+          token={token!}
           onSuccess={handleEntrySuccess}
           onCancel={() => setShowAddForm(false)}
         />
@@ -215,7 +184,6 @@ export default function MealPlanDetailPage() {
         </button>
       )}
 
-      {/* Entries list */}
       {mealPlan.entries.length === 0 ? (
         <p>No entries yet.</p>
       ) : (
@@ -225,16 +193,15 @@ export default function MealPlanDetailPage() {
               <strong>
                 {entry.dayOfWeek} - {entry.mealType}
               </strong>
+              <p>Recipe ID: {entry.recipeId}</p>
               <p>Servings: {entry.servings}</p>
-
               <div className={styles.entryButtons}>
                 <button
                   className={styles.editButton}
-                  onClick={() => setEditingEntryId(entry._id)}
+                  onClick={() => setEditingEntry(entry)}
                 >
                   Edit
                 </button>
-
                 <button
                   className={styles.deleteButton}
                   onClick={() => handleDeleteEntry(entry._id)}
@@ -242,20 +209,21 @@ export default function MealPlanDetailPage() {
                   Delete
                 </button>
               </div>
-
-              {/* Inline edit form */}
-              {editingEntryId === entry._id && (
-                <MealPlanEntryForm
-                  mealPlanId={planId}
-                  token={token}
-                  initialData={entry}
-                  onSuccess={handleEntrySuccess}
-                  onCancel={() => setEditingEntryId(null)}
-                />
-              )}
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Edit Modal */}
+      {editingEntry && (
+        <EditMealPlanEntryModal
+          isOpen={!!editingEntry}
+          onClose={() => setEditingEntry(null)}
+          entry={editingEntry}
+          mealPlanId={mealPlan._id}
+          token={token!}
+          onUpdate={handleEntrySuccess}
+        />
       )}
     </div>
   );

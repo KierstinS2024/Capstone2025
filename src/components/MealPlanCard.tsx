@@ -1,54 +1,37 @@
-// src/components/MealPlanCard.tsx
+// path: src/components/MealPlanCard.tsx
 "use client";
 
+/**
+ * MealPlanCard
+ *
+ * Displays a single meal plan summary for dashboard list.
+ */
+
 import React from "react";
+import { useRouter } from "next/navigation";
+import { MealPlan } from "@/context/MealPlanContext";
 import styles from "./MealPlanCard.module.css";
 
-// Props for each MealPlanCard
-interface MealPlanCardProps {
-  id: string; // Meal plan ID
-  weekStartDate: string;
-  notes?: string;
-  entriesCount?: number;
-  onClick?: () => void; // Optional click handler
+interface Props {
+  plan: MealPlan;
 }
 
-export default function MealPlanCard({
-  id,
-  weekStartDate,
-  notes,
-  entriesCount,
-  onClick,
-}: MealPlanCardProps) {
-  // Handle Enter / Space keys for keyboard activation
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!onClick) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onClick();
-    }
+export default function MealPlanCard({ plan }: Props) {
+  const router = useRouter();
+
+  const handleClick = () => {
+    router.push(`/dashboard/meal-plans/${plan._id}`);
   };
 
   return (
-    <div
-      className={styles.card}
-      role="button"
-      tabIndex={0} // make focusable
-      onClick={onClick}
-      onKeyDown={handleKeyDown}
-      aria-label={`Meal plan starting ${new Date(
-        weekStartDate
-      ).toLocaleDateString()}`}
-    >
-      <h3 className={styles.date}>
-        Week of {new Date(weekStartDate).toLocaleDateString()}
+    <div className={styles.card} onClick={handleClick}>
+      <h3 className={styles.title}>
+        {new Date(plan.weekStartDate).toLocaleDateString()}
       </h3>
-
-      {notes && <p className={styles.notes}>{notes}</p>}
-
-      {entriesCount !== undefined && (
-        <p className={styles.entries}>Recipes: {entriesCount}</p>
-      )}
+      <p>{plan.notes || "No notes"}</p>
+      <p>
+        {plan.entries.length} {plan.entries.length === 1 ? "entry" : "entries"}
+      </p>
     </div>
   );
 }

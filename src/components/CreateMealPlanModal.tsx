@@ -1,7 +1,14 @@
+// path: src/components/CreateMealPlanModal.tsx
 "use client";
 
+/**
+ * CreateMealPlanModal
+ *
+ * Modal to create a new meal plan. Fully type-safe with MealPlanContext.
+ */
+
 import React, { useState } from "react";
-import { useMealPlanContext } from "@/context/MealPlanContext";
+import { useMealPlanContext, MealPlan } from "@/context/MealPlanContext";
 import styles from "./CreateMealPlanModal.module.css";
 
 interface Props {
@@ -35,19 +42,19 @@ export default function CreateMealPlanModal({ isOpen, onClose }: Props) {
         },
         body: JSON.stringify({ weekStartDate, notes }),
       });
-
       const data = await res.json();
-      if (res.ok) {
-        setMealPlans((prev) => [data, ...prev]);
-        onClose();
-        setWeekStartDate("");
-        setNotes("");
-      } else {
-        setError(data.error || "Failed to create meal plan");
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Network error");
+
+      if (!res.ok)
+        throw new Error(data.message || "Failed to create meal plan");
+
+      // Prepend the new meal plan
+      setMealPlans((prev) => [data.mealPlan as MealPlan, ...prev]);
+
+      onClose();
+      setWeekStartDate("");
+      setNotes("");
+    } catch (err: any) {
+      setError(err.message || "Network error");
     } finally {
       setLoading(false);
     }
@@ -55,7 +62,7 @@ export default function CreateMealPlanModal({ isOpen, onClose }: Props) {
 
   return (
     <div className={styles.overlay}>
-      <form onSubmit={handleSubmit} className={styles.modal}>
+      <form className={styles.modal} onSubmit={handleSubmit}>
         <h2 className={styles.title}>New Meal Plan</h2>
 
         <label className={styles.label}>Week Start Date</label>

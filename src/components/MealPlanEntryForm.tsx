@@ -1,28 +1,29 @@
-// src/components/MealPlanEntryForm.tsx
+// path: src/components/MealPlanEntryForm.tsx
 "use client";
 
 /**
  * MealPlanEntryForm
  *
- * Reusable form for adding or editing a meal plan entry (recipe).
- * Can be used in modal or inline on the detail page.
+ * Reusable form to add a new meal plan entry (recipe).
+ * Can be used inline or inside a modal.
  */
 
-import { useState } from "react";
+import React, { useState } from "react";
 import styles from "./MealPlanEntryForm.module.css";
 
-interface MealPlanEntryFormProps {
-  mealPlanId: string; // ID of the parent meal plan
-  token: string; // JWT token for protected API calls
-  initialData?: {
-    _id?: string;
-    recipeId: string;
-    mealType: string;
-    dayOfWeek: string;
-    servings: number;
-  };
-  onSuccess: (entry: any) => void; // Callback to update parent state
-  onCancel?: () => void; // Optional cancel handler
+export interface MealPlanEntryFormData {
+  recipeId: string;
+  mealType: string;
+  dayOfWeek: string;
+  servings: number;
+}
+
+interface Props {
+  mealPlanId: string;
+  token: string;
+  initialData?: MealPlanEntryFormData & { _id?: string };
+  onSuccess: (entry: MealPlanEntryFormData & { _id: string }) => void;
+  onCancel?: () => void;
 }
 
 export default function MealPlanEntryForm({
@@ -31,7 +32,7 @@ export default function MealPlanEntryForm({
   initialData,
   onSuccess,
   onCancel,
-}: MealPlanEntryFormProps) {
+}: Props) {
   const [recipeId, setRecipeId] = useState(initialData?.recipeId || "");
   const [mealType, setMealType] = useState(
     initialData?.mealType || "Breakfast"
@@ -47,13 +48,8 @@ export default function MealPlanEntryForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) {
-      setError("No authentication token found.");
-      return;
-    }
-
     if (!recipeId) {
-      setError("Please select a recipe.");
+      setError("Recipe ID is required.");
       return;
     }
 
@@ -62,11 +58,11 @@ export default function MealPlanEntryForm({
       setError(null);
 
       const method = isEditing ? "PATCH" : "POST";
-      const endpoint = isEditing
+      const url = isEditing
         ? `/api/meal-plans/${mealPlanId}/entries/${initialData?._id}`
         : `/api/meal-plans/${mealPlanId}/entries`;
 
-      const res = await fetch(endpoint, {
+      const res = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -78,10 +74,8 @@ export default function MealPlanEntryForm({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to save entry");
 
-      // Call parent callback to update state
       onSuccess(data.entry);
 
-      // Reset form if adding new entry
       if (!isEditing) {
         setRecipeId("");
         setMealType("Breakfast");
@@ -160,8 +154,8 @@ export default function MealPlanEntryForm({
       <div className={styles.buttonGroup}>
         <button
           type="submit"
-          className={styles.submitButton}
           disabled={loading}
+          className={styles.submitButton}
         >
           {loading
             ? isEditing
@@ -175,8 +169,8 @@ export default function MealPlanEntryForm({
         {onCancel && (
           <button
             type="button"
-            className={styles.cancelButton}
             onClick={onCancel}
+            className={styles.cancelButton}
           >
             Cancel
           </button>
