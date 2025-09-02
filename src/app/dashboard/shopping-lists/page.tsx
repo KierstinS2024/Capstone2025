@@ -11,8 +11,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import styles from "./ShoppingListsPage.module.css";
 
 interface ShoppingList {
@@ -22,8 +22,10 @@ interface ShoppingList {
   itemsCount: number;
 }
 
-export default function ShoppingListsPage() {
-  const router = useRouter();
+/**
+ * Main content component for the shopping lists page
+ */
+function ShoppingListsPageContent() {
   const [lists, setLists] = useState<ShoppingList[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export default function ShoppingListsPage() {
 
         setLists(data.lists || []);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching shopping lists:", err);
         setError(
           err instanceof Error ? err.message : "Failed to load shopping lists."
         );
@@ -87,5 +89,17 @@ export default function ShoppingListsPage() {
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * Wraps the ShoppingListsPageContent in ProtectedRoute
+ * Ensures only authenticated users can access shopping lists
+ */
+export default function ShoppingListsPage() {
+  return (
+    <ProtectedRoute>
+      <ShoppingListsPageContent />
+    </ProtectedRoute>
   );
 }
