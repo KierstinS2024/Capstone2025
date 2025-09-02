@@ -5,9 +5,9 @@
  * ShoppingListDetailPage
  *
  * Displays a single shopping list with all its items.
- * - Fetches shopping list from `/api/shopping-lists/[id]`
- * - Handles loading and error states
- * - Provides a back button to return to the shopping lists overview
+ * - Fetches `/api/shopping-lists/:id`
+ * - Shows loading and error states
+ * - Allows navigating back to all shopping lists
  */
 
 import { useEffect, useState } from "react";
@@ -16,27 +16,27 @@ import styles from "./ShoppingListDetailPage.module.css";
 
 interface ShoppingListItem {
   name: string;
-  quantity: string;
-  notes?: string;
+  quantity: number;
+  unit?: string;
 }
 
 interface ShoppingList {
   _id: string;
   name: string;
-  createdAt: string;
   items: ShoppingListItem[];
+  createdAt: string;
 }
 
 export default function ShoppingListDetailPage() {
-  const { id } = useParams();
+  const { id } = useParams(); // shopping list ID from URL
   const router = useRouter();
 
-  const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
+  const [list, setList] = useState<ShoppingList | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchShoppingList() {
+    async function fetchList() {
       setLoading(true);
       setError(null);
 
@@ -50,53 +50,46 @@ export default function ShoppingListDetailPage() {
 
         const data = await res.json();
 
-        if (!res.ok)
-          throw new Error(data.message || "Shopping list not found.");
+        if (!res.ok) throw new Error(data.message || "Failed to fetch list.");
 
-        setShoppingList(data.list);
+        setList(data.list);
       } catch (err) {
-        console.error("Error fetching shopping list:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch shopping list."
-        );
+        console.error(err);
+        setError(err instanceof Error ? err.message : "Unknown error.");
       } finally {
         setLoading(false);
       }
     }
 
-    fetchShoppingList();
+    fetchList();
   }, [id]);
 
   if (loading)
     return <p className={styles.message}>Loading shopping list...</p>;
   if (error) return <p className={styles.error}>Error: {error}</p>;
-  if (!shoppingList)
-    return <p className={styles.message}>Shopping list not found.</p>;
+  if (!list) return <p className={styles.message}>Shopping list not found.</p>;
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>{shoppingList.name}</h1>
-      <p className={styles.created}>
-        Created on: {new Date(shoppingList.createdAt).toLocaleDateString()}
+      <h1 className={styles.title}>{list.name}</h1>
+      <p className={styles.createdAt}>
+        Created on: {new Date(list.createdAt).toLocaleDateString()}
       </p>
 
-      {shoppingList.items.length === 0 ? (
-        <p className={styles.emptyMessage}>This shopping list has no items.</p>
+      {list.items.length === 0 ? (
+        <p className={styles.emptyMessage}>No items in this list yet.</p>
       ) : (
-        <ul className={styles.itemsList}>
-          {shoppingList.items.map((item, index) => (
-            <li key={index} className={styles.item}>
-              <strong>{item.name}</strong> - {item.quantity}
-              {item.notes && (
-                <span className={styles.notes}> ({item.notes})</span>
-              )}
+        <ul className={styles.list}>
+          {list.items.map((item, index) => (
+            <li key={index} className={styles.listItem}>
+              {item.quantity} {item.unit ? item.unit : ""} - {item.name}
             </li>
           ))}
         </ul>
       )}
 
       <button className={styles.backButton} onClick={() => router.back()}>
-        ← Back
+        ← Back to all shopping lists
       </button>
     </div>
   );
