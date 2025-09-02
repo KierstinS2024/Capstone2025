@@ -1,83 +1,54 @@
 /* path: src/app/dashboard/meal-plans/[id]/MealPlanDetailPage.module.css */
 
-/* Container for the entire page */
+/* Main container */
 .container {
-  max-width: 900px;
-  margin: 0 auto;
+  max-width: 800px;
+  margin: 2rem auto;
   padding: 2rem;
-  font-family: 'Inter', sans-serif;
+  background: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Page title */
 .title {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: bold;
   margin-bottom: 1rem;
-  color: #111827;
+  color: #1d3557;
 }
 
-/* Notes section below the title */
+/* Notes */
 .notes {
-  font-size: 1rem;
-  color: #4b5563;
-  margin-bottom: 2rem;
+  font-style: italic;
+  margin-bottom: 1.5rem;
+  color: #555;
 }
 
-/* Grid layout for meal plan entries */
+/* Message text (loading, error, empty) */
+.message {
+  font-style: italic;
+  color: #777;
+  margin: 1rem 0;
+}
+
+/* Entries grid */
 .entriesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.2rem;
+  margin-top: 1.5rem;
 }
 
-/* Individual meal plan entry card */
+/* Entry card */
 .entryCard {
-  background-color: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
   padding: 1rem;
-  transition: box-shadow 0.2s;
+  border-radius: 10px;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  transition: box-shadow 0.2s ease;
 }
 
 .entryCard:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Recipe name heading in entry card */
-.recipeName {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #1f2937;
-}
-
-/* Detail text: meal type and servings */
-.detail {
-  font-size: 0.95rem;
-  color: #6b7280;
-}
-
-/* Back button at bottom of page */
-.backButton {
-  display: inline-block;
-  background-color: #e5e7eb;
-  color: #111827;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.backButton:hover {
-  background-color: #d1d5db;
-}
-
-/* General messages: loading, error, empty state */
-.message {
-  font-size: 1rem;
-  color: #6b7280;
-  text-align: center;
-  margin-top: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
