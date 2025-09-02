@@ -25,13 +25,13 @@ export default function GenerateShoppingListButton({
   mealPlanId,
   onSuccess,
 }: GenerateShoppingListButtonProps) {
-  // State to track if the API call is in progress
+  // Track if API call is in progress
   const [isLoading, setIsLoading] = useState(false);
 
-  // State to store any error message returned from the API
+  // Store error message returned from API
   const [error, setError] = useState<string | null>(null);
 
-  // State to store success message (optional)
+  // Store success message
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   /**
@@ -63,11 +63,10 @@ export default function GenerateShoppingListButton({
       const data = await res.json();
 
       if (!res.ok) {
-        // Handle API error
         throw new Error(data.message || "Failed to generate shopping list.");
       }
 
-      // Optional callback to parent component with new shopping list ID
+      // Notify parent with the new shopping list ID
       if (onSuccess) onSuccess(data.list._id);
 
       setSuccessMessage("Shopping list generated successfully!");
@@ -81,7 +80,7 @@ export default function GenerateShoppingListButton({
 
   return (
     <div>
-      {/* Main button */}
+      {/* Main action button */}
       <button
         className={styles.button}
         onClick={handleGenerate}
@@ -90,12 +89,12 @@ export default function GenerateShoppingListButton({
         {isLoading ? "Generating..." : "Generate Shopping List"}
       </button>
 
-      {/* Error message */}
-      {error && <p style={{ color: "red", marginTop: "0.5rem" }}>{error}</p>}
+      {/* Error feedback */}
+      {error && <p className={styles.messageError}>{error}</p>}
 
-      {/* Success message */}
+      {/* Success feedback */}
       {successMessage && (
-        <p style={{ color: "green", marginTop: "0.5rem" }}>{successMessage}</p>
+        <p className={styles.messageSuccess}>{successMessage}</p>
       )}
     </div>
   );
