@@ -1,31 +1,22 @@
 // path: src/app/dashboard/layout.tsx
-
 "use client";
 
 import { ReactNode, useContext } from "react";
 import Link from "next/link";
 import { AuthContext } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import styles from "./DashboardLayout.module.css"; // dashboard-specific styles
+import styles from "./DashboardLayout.module.css";
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
-/**
- * DashboardLayout
- *
- * Wraps all /dashboard routes with ProtectedRoute.
- * Provides dashboard navigation (header + nav links).
- * Logout is handled via AuthContext.logout().
- */
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { logout } = useContext(AuthContext);
 
   return (
     <ProtectedRoute>
       <div className={styles.container}>
-        {/* Header */}
         <header className={styles.header}>
           <h1 className={styles.title}>Meal Planner Dashboard</h1>
           <nav className={styles.nav}>
@@ -44,7 +35,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </nav>
         </header>
 
-        {/* Main Content */}
         <main className={styles.main}>{children}</main>
       </div>
     </ProtectedRoute>

@@ -1,24 +1,14 @@
-// path: src/app/auth/signup/page.tsx
-
+// path: src/app/auth/register/page.tsx
 "use client";
-
-/**
- * Signup Page
- *
- * Allows a new user to create an account.
- * - Validates passwords
- * - Calls API to register user
- * - Saves JWT and user info in AuthContext
- * - Redirects to dashboard on success
- */
 
 import { useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
+import styles from "./RegisterPage.module.css";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { login } = useContext(AuthContext); // login function from context
+  const { login } = useContext(AuthContext);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +20,6 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
 
-    // 1️⃣ Validate passwords match
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -39,7 +28,6 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // 2️⃣ Call registration API
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,89 +35,81 @@ export default function SignupPage() {
       });
 
       const data = await res.json();
-
       if (!res.ok) {
         setError(data.message || "Signup failed");
         setLoading(false);
         return;
       }
 
-      // 3️⃣ Save JWT + user info in AuthContext
       login(data.token, data.user);
-
-      // 4️⃣ Redirect to dashboard handled in AuthContext.login()
     } catch (err) {
-      console.error("Signup error:", err);
       setError("An unexpected error occurred");
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white shadow-md rounded-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Sign Up</h1>
+    <div className={styles.container}>
+      <div className={styles.formWrapper}>
+        <h1 className={styles.title}>Sign Up</h1>
 
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+        {error && <p className={styles.error}>{error}</p>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email */}
-          <div>
-            <label htmlFor="email" className="block mb-1 font-medium">
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.formGroup}>
+            <label htmlFor="email" className={styles.label}>
               Email
             </label>
             <input
-              type="email"
               id="email"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className={styles.input}
               required
-              className="w-full px-3 py-2 border rounded-md"
             />
           </div>
 
-          {/* Password */}
-          <div>
-            <label htmlFor="password" className="block mb-1 font-medium">
+          <div className={styles.formGroup}>
+            <label htmlFor="password" className={styles.label}>
               Password
             </label>
             <input
-              type="password"
               id="password"
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className={styles.input}
               required
-              className="w-full px-3 py-2 border rounded-md"
             />
           </div>
 
-          {/* Confirm Password */}
-          <div>
-            <label htmlFor="confirmPassword" className="block mb-1 font-medium">
+          <div className={styles.formGroup}>
+            <label htmlFor="confirmPassword" className={styles.label}>
               Confirm Password
             </label>
             <input
-              type="password"
               id="confirmPassword"
+              type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              className={styles.input}
               required
-              className="w-full px-3 py-2 border rounded-md"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className={styles.submitButton}
           >
             {loading ? "Signing up..." : "Sign Up"}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm">
+        <p className={styles.loginPrompt}>
           Already have an account?{" "}
-          <a href="/auth/login" className="text-blue-600 hover:underline">
+          <a href="/auth/login" className={styles.loginLink}>
             Log in
           </a>
         </p>

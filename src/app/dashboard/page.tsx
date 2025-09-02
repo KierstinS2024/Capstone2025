@@ -1,11 +1,20 @@
-// src/app/dashboard/page.tsx
+// path: src/app/dashboard/page.tsx
 
 "use client";
+
+/**
+ * DashboardPage
+ *
+ * Displays the user's meal plans and welcome message.
+ * - Fetches user info from /api/auth/me
+ * - Fetches meal plans from /api/meal-plans
+ * - Redirects to login if no valid token
+ */
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import styles from "./page.module.css";
+import styles from "./DashboardPage.module.css"; // dashboard-specific styles
 
 interface User {
   id: string;
@@ -28,13 +37,14 @@ export default function DashboardPage() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
+      // If no token found, redirect to login
       router.push("/auth/login");
       return;
     }
 
     async function loadData() {
       try {
-        // Fetch user info
+        // Fetch current user info
         const userRes = await fetch("/api/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -45,7 +55,7 @@ export default function DashboardPage() {
         }
         setUser(userData.user);
 
-        // Fetch meal plans
+        // Fetch user's meal plans
         const plansRes = await fetch("/api/meal-plans", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -62,8 +72,9 @@ export default function DashboardPage() {
     loadData();
   }, [router]);
 
-  if (loading) return <p>Loading your dashboard...</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (loading)
+    return <p className={styles.message}>Loading your dashboard...</p>;
+  if (error) return <p className={styles.error}>Error: {error}</p>;
 
   return (
     <div className={styles.dashboardPage}>
@@ -78,12 +89,12 @@ export default function DashboardPage() {
           You haven't created any meal plans yet.
         </p>
       ) : (
-        <ul>
+        <ul className={styles.mealPlanList}>
           {mealPlans.map((plan) => (
-            <li key={plan._id}>
+            <li key={plan._id} className={styles.mealPlanItem}>
               <Link
                 href={`/dashboard/meal-plans/${plan._id}`}
-                className="text-blue-600 hover:underline"
+                className={styles.mealPlanLink}
               >
                 Week of {new Date(plan.weekStartDate).toLocaleDateString()}
                 {plan.notes ? ` - ${plan.notes}` : ""}
