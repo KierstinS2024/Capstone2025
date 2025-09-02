@@ -4,62 +4,64 @@
 /**
  * MealPlanDetailPage
  *
- * Displays detailed information for a single meal plan:
- * - Week start date
- * - Notes (if any)
- * - List of meal entries
- * - Button to generate a shopping list
- *
- * Fetches data from /api/meal-plans/[id] and uses token from localStorage
+ * Displays a single meal plan
+ * Allows updating notes and deleting the plan
+ * Fetches data from /api/meal-plans/:id
  */
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import GenerateShoppingListButton from "@/components/GenerateShoppingListButton";
-import styles from "./MealPlanDetailPage.module.css"; // create this CSS file
+import { useRouter } from "next/navigation";
+import styles from "./MealPlanDetailPage.module.css";
 
 interface MealPlanEntry {
-  recipeName: string;
+  _id: string;
   mealType: string;
-  servings: number;
+  dayOfWeek: string;
+  recipeId: string;
 }
 
 interface MealPlan {
   _id: string;
+  userId: string;
   weekStartDate: string;
-  notes?: string;
-  entries?: MealPlanEntry[];
+  notes: string;
+  entries: MealPlanEntry[];
 }
 
-export default function MealPlanDetailPage() {
-  const { id } = useParams();
-  const router = useRouter();
+interface PageProps {
+  params: { id: string };
+}
 
+export default function MealPlanDetailPage({ params }: PageProps) {
+  const { id } = params;
+  const router = useRouter();
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
     async function fetchMealPlan() {
-      setLoading(true);
-      setError(null);
+      if (!token) {
+        router.push("/auth/login");
+        return;
+      }
 
       try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("User not authenticated.");
-
+        setLoading(true);
         const res = await fetch(`/api/meal-plans/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+        if (!res.ok) throw new Error("Failed to load meal plan");
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Meal plan not found.");
-
-        setMealPlan(data);
+        setMealPlan(data.mealPlan);
+        setNotes(data.mealPlan.notes);
       } catch (err) {
-        console.error(err);
         setError(
-          err instanceof Error ? err.message : "Failed to fetch meal plan."
+          err instanceof Error ? err.message : "Error fetching meal plan"
         );
       } finally {
         setLoading(false);
@@ -67,47 +69,87 @@ export default function MealPlanDetailPage() {
     }
 
     fetchMealPlan();
-  }, [id]);
+  }, [id, router, token]);
 
-  const handleShoppingListGenerated = (shoppingListId: string) => {
-    router.push(`/dashboard/shopping-lists/${shoppingListId}`);
+  const handleUpdate = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/meal-plans/${id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ notes }),
+      });
+      if (!res.ok) throw new Error("Failed to update meal plan");
+      const data = await res.json();
+      setMealPlan(data.mealPlan);
+      alert("Meal plan updated!");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error updating meal plan");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!token) return;
+    if (!confirm("Are you sure you want to delete this meal plan?")) return;
+
+    try {
+      const res = await fetch(`/api/meal-plans/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to delete meal plan");
+      alert("Meal plan deleted!");
+      router.push("/dashboard/meal-plans");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error deleting meal plan");
+    }
   };
 
   if (loading) return <p className={styles.message}>Loading...</p>;
-  if (error) return <p className={styles.error}>Error: {error}</p>;
-  if (!mealPlan) return <p className={styles.message}>Meal plan not found.</p>;
+  if (error) return <p className={styles.error}>{error}</p>;
+  if (!mealPlan) return <p className={styles.error}>Meal plan not found</p>;
 
   return (
-    <main className={styles.container}>
-      <h1 className={styles.title}>Meal Plan for {mealPlan.weekStartDate}</h1>
+    <div className={styles.container}>
+      <h1 className={styles.title}>
+        Meal Plan: Week of{" "}
+        {new Date(mealPlan.weekStartDate).toLocaleDateString()}
+      </h1>
 
-      {mealPlan.notes && (
-        <p className={styles.notes}>Notes: {mealPlan.notes}</p>
-      )}
+      <div className={styles.section}>
+        <label>Notes:</label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className={styles.textarea}
+        />
+        <button onClick={handleUpdate} className={styles.button}>
+          Update Notes
+        </button>
+      </div>
 
-      <GenerateShoppingListButton
-        mealPlanId={mealPlan._id}
-        onSuccess={handleShoppingListGenerated}
-      />
+      <div className={styles.section}>
+        <h2>Entries</h2>
+        {mealPlan.entries.length === 0 ? (
+          <p>No entries yet</p>
+        ) : (
+          <ul className={styles.list}>
+            {mealPlan.entries.map((entry) => (
+              <li key={entry._id}>
+                {entry.dayOfWeek} - {entry.mealType} - Recipe ID:{" "}
+                {entry.recipeId}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
-      {mealPlan.entries && mealPlan.entries.length > 0 ? (
-        <div className={styles.entriesGrid}>
-          {mealPlan.entries.map((entry, index) => (
-            <div key={index} className={styles.entryCard}>
-              <h3 className={styles.recipeName}>{entry.recipeName}</h3>
-              <p className={styles.detail}>
-                Meal: {entry.mealType} | Servings: {entry.servings}
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className={styles.message}>No entries yet for this week.</p>
-      )}
-
-      <button className={styles.backButton} onClick={() => router.back()}>
-        ← Back
+      <button onClick={handleDelete} className={styles.deleteButton}>
+        Delete Meal Plan
       </button>
-    </main>
+    </div>
   );
 }
