@@ -2,19 +2,13 @@
 "use client";
 
 import { useState, useContext } from "react";
-import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
 import styles from "./LoginPage.module.css";
+import { useRouter } from "next/navigation";
 
-/**
- * LoginPage Component
- *
- * Allows a user to log in with their email and password.
- * Handles form state, submission, error messages, and redirects on success.
- */
 export default function LoginPage() {
+  const { login } = useContext(AuthContext); // access global auth
   const router = useRouter();
-  const { login } = useContext(AuthContext);
 
   // Form state
   const [email, setEmail] = useState("");
@@ -22,12 +16,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  /**
-   * Handles form submission
-   * Sends a POST request to /api/auth/login
-   * Logs in the user on success and redirects to /dashboard
-   */
-  async function handleSubmit(e: React.FormEvent) {
+  // Form submit handler
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -47,16 +37,15 @@ export default function LoginPage() {
         return;
       }
 
-      // Save user info in context
+      // Save auth info globally and redirect to dashboard
       login(data.token, data.user);
 
-      // Redirect to dashboard after successful login
-      router.push("/dashboard");
+      // optional: router.push("/dashboard"); already handled by login()
     } catch (err) {
       setError("An unexpected error occurred");
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className={styles.container}>
@@ -65,12 +54,9 @@ export default function LoginPage() {
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          {/* Email field */}
+        <form onSubmit={handleLogin} className={styles.form}>
           <div className={styles.formGroup}>
-            <label htmlFor="email" className={styles.label}>
-              Email
-            </label>
+            <label htmlFor="email">Email</label>
             <input
               id="email"
               type="email"
@@ -81,11 +67,8 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Password field */}
           <div className={styles.formGroup}>
-            <label htmlFor="password" className={styles.label}>
-              Password
-            </label>
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
@@ -96,17 +79,15 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Submit button */}
           <button
             type="submit"
-            disabled={loading}
             className={styles.submitButton}
+            disabled={loading}
           >
             {loading ? "Logging in..." : "Log In"}
           </button>
         </form>
 
-        {/* Link to signup page */}
         <p className={styles.signupPrompt}>
           Don't have an account?{" "}
           <a href="/auth/signup" className={styles.signupLink}>

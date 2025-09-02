@@ -1,25 +1,28 @@
-// src/app/auth/signup/page.tsx
+// path: src/app/auth/signup/page.tsx
 "use client";
 
 import { useState, useContext } from "react";
-import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
-import styles from "./SignupPage.module.css"; // match the file name
+import styles from "./SignupPage.module.css"; // keep CSS separate and scoped
+import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
+  const { login } = useContext(AuthContext); // access global auth
   const router = useRouter();
-  const { login } = useContext(AuthContext);
 
+  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  // Form submit handler
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
+    // Simple client-side validation
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -29,7 +32,6 @@ export default function SignupPage() {
 
     try {
       const res = await fetch("/api/auth/signup", {
-        // match backend route
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -43,16 +45,15 @@ export default function SignupPage() {
         return;
       }
 
-      // log in user immediately after signup
+      // Save auth info globally and redirect to dashboard
       login(data.token, data.user);
 
-      // optionally redirect to dashboard
-      router.push("/dashboard");
+      // optional: router.push("/dashboard"); already handled by login()
     } catch (err) {
       setError("An unexpected error occurred");
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className={styles.container}>
@@ -61,11 +62,9 @@ export default function SignupPage() {
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
+        <form onSubmit={handleSignup} className={styles.form}>
           <div className={styles.formGroup}>
-            <label htmlFor="email" className={styles.label}>
-              Email
-            </label>
+            <label htmlFor="email">Email</label>
             <input
               id="email"
               type="email"
@@ -77,9 +76,7 @@ export default function SignupPage() {
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="password" className={styles.label}>
-              Password
-            </label>
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
@@ -91,9 +88,7 @@ export default function SignupPage() {
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="confirmPassword" className={styles.label}>
-              Confirm Password
-            </label>
+            <label htmlFor="confirmPassword">Confirm Password</label>
             <input
               id="confirmPassword"
               type="password"
@@ -106,8 +101,8 @@ export default function SignupPage() {
 
           <button
             type="submit"
-            disabled={loading}
             className={styles.submitButton}
+            disabled={loading}
           >
             {loading ? "Signing up..." : "Sign Up"}
           </button>
