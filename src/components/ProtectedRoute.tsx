@@ -1,35 +1,28 @@
 // src/components/ProtectedRoute.tsx
 "use client";
 
-import { ReactNode, useContext, useEffect, useState } from "react";
+/**
+ * ProtectedRoute.tsx
+ * -------------------
+ * Ensures that children components are only accessible to authenticated users.
+ * Redirects to login if not authenticated.
+ */
+
+import { ReactNode } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { AuthContext } from "@/context/AuthContext";
 
 interface ProtectedRouteProps {
   children: ReactNode;
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, token } = useContext(AuthContext);
+  const { user } = useAuth();
   const router = useRouter();
-  const [checkingAuth, setCheckingAuth] = useState(true);
 
-  useEffect(() => {
-    if (user && token) {
-      // ✅ session exists → allow access
-      setCheckingAuth(false);
-    } else if (user === null && token === null) {
-      // ❌ no session → redirect
-      router.push("/auth/login");
-    }
-  }, [user, token, router]);
-
-  if (checkingAuth) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Checking authentication...</p>
-      </div>
-    );
+  if (!user) {
+    if (typeof window !== "undefined") router.push("/auth/login");
+    return null; // prevent flicker
   }
 
   return <>{children}</>;

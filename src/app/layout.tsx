@@ -1,11 +1,19 @@
 // src/app/layout.tsx
-import type { Metadata } from "next";
+"use client"; // Client component required for AuthProvider
+
+/**
+ * RootLayout.tsx
+ * -------------------
+ * Wraps the entire app with AuthProvider for global authentication state.
+ */
+
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider } from "../context/AuthContext";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Meal Planner",
-  description: "Recipes & meal planning",
+  title: "Capstone2025",
+  description: "Nutrition & meal planning app",
 };
 
 export default function RootLayout({
@@ -13,14 +21,5 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <html lang="en">
-      <body>
-        <AuthProvider>
-          {/* Temporary minimal container; AppShell + Header/Sidebar coming next step */}
-          <div className="main-container">{children}</div>
-        </AuthProvider>
-      </body>
-    </html>
-  );
+  return <AuthProvider>{children}</AuthProvider>;
 }

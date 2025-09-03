@@ -1,212 +1,137 @@
 // path: src/app/dashboard/recipes/[id]/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import styles from "../RecipesShared.module.css";
+import Link from "next/link";
+import styles from "../page.module.css";
 
-interface Ingredient {
-  name: string;
-  quantity: number;
-  unit: string;
-}
-
-interface Recipe {
-  _id: string;
-  name: string;
-  description: string;
-  cuisine?: string;
-  instructions: string[];
-  ingredients: Ingredient[];
-  userSubmitted: boolean;
-  createdByUserId?: string;
-}
-
+/**
+ * RecipeDetailPage
+ * - Loads and displays a single recipe by id
+ * - Allows delete (with confirm) and link to edit
+ */
 export default function RecipeDetailPage() {
   const router = useRouter();
-  const params = useParams();
-  const recipeId = typeof params.id === "string" ? params.id : "";
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+
+  const [recipe, setRecipe] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Partial<Recipe>>({});
-
-  const token =
+  const getToken = () =>
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  // Redirect if not authenticated
   useEffect(() => {
-    if (!token) router.push("/auth/login");
-  }, [token, router]);
-
-  // Fetch recipe details
-  useEffect(() => {
-    if (!recipeId || !token) return;
-
-    async function fetchRecipe() {
+    if (!id) return;
+    const load = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
-        const res = await fetch(`/api/recipes/${recipeId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const token = getToken();
+        const res = await fetch(`/api/recipes/${id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
+        if (!res.ok) throw new Error(`Failed to fetch recipe (${res.status})`);
         const data = await res.json();
-
-        if (!res.ok) throw new Error(data.message || "Failed to fetch recipe");
-        setRecipe(data.recipe);
-        setFormData(data.recipe);
+        setRecipe(data);
       } catch (err: any) {
-        setError(err.message || "Error loading recipe");
+        console.error(err);
+        setError("Unable to load recipe.");
       } finally {
         setLoading(false);
       }
-    }
+    };
+    load();
+  }, [id]);
 
-    fetchRecipe();
-  }, [recipeId, token]);
-
-  // Update recipe
-  const handleUpdate = async () => {
-    if (!recipe || !token) return;
+  const handleDelete = async () => {
+    if (!id) return;
+    const confirm = window.confirm(
+      "Delete this recipe? This cannot be undone."
+    );
+    if (!confirm) return;
 
     try {
-      const res = await fetch(`/api/recipes/${recipeId}`, {
-        method: "PUT",
+      const token = getToken();
+      const res = await fetch(`/api/recipes/${id}`, {
+        method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(formData),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to update recipe");
-
-      setRecipe(data.recipe);
-      setIsEditing(false);
-      alert("Recipe updated successfully!");
-    } catch (err: any) {
-      alert(err.message || "Error updating recipe");
-    }
-  };
-
-  // Delete recipe
-  const handleDelete = async () => {
-    if (!recipe || !token) return;
-    if (!confirm("Are you sure you want to delete this recipe?")) return;
-
-    try {
-      const res = await fetch(`/api/recipes/${recipeId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to delete recipe");
-
-      alert("Recipe deleted successfully");
+      if (!res.ok) throw new Error(`Failed to delete recipe (${res.status})`);
       router.push("/dashboard/recipes");
-    } catch (err: any) {
-      alert(err.message || "Error deleting recipe");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete recipe.");
     }
   };
 
-  if (loading) return <p className={styles.message}>Loading recipe...</p>;
-  if (error) return <p className={styles.error}>Error: {error}</p>;
-  if (!recipe) return <p className={styles.error}>Recipe not found.</p>;
+  if (loading)
+    return (
+      <div className={styles.container}>
+        <p>Loading…</p>
+      </div>
+    );
+  if (error)
+    return (
+      <div className={styles.container}>
+        <p className={styles.error}>⚠️ {error}</p>
+      </div>
+    );
+  if (!recipe)
+    return (
+      <div className={styles.container}>
+        <p>Recipe not found.</p>
+      </div>
+    );
 
   return (
-    <ProtectedRoute>
-      <div className={styles.container}>
-        <h1 className={styles.title}>
-          {isEditing ? (
-            <input
-              type="text"
-              value={formData.name || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-            />
-          ) : (
-            recipe.name
-          )}
-        </h1>
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <div>
+          <h1>{recipe.name}</h1>
+          {recipe.cuisine && <p className={styles.muted}>{recipe.cuisine}</p>}
+        </div>
+        <div className={styles.actions}>
+          <Link
+            href={`/dashboard/recipes/${recipe._id}/edit`}
+            className={styles.btn}
+          >
+            Edit
+          </Link>
+          <button onClick={handleDelete} className={styles.btnPrimary}>
+            Delete
+          </button>
+        </div>
+      </header>
 
-        <p className={styles.cuisine}>
-          Cuisine:{" "}
-          {isEditing ? (
-            <input
-              type="text"
-              value={formData.cuisine || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, cuisine: e.target.value })
-              }
-            />
-          ) : (
-            recipe.cuisine || "N/A"
-          )}
-        </p>
+      {recipe.description && (
+        <p style={{ marginBottom: "1rem" }}>{recipe.description}</p>
+      )}
 
-        <h2>Description</h2>
-        {isEditing ? (
-          <textarea
-            value={formData.description || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
-          />
-        ) : (
-          <p>{recipe.description}</p>
-        )}
+      {Array.isArray(recipe.instructions) && recipe.instructions.length > 0 && (
+        <section className={styles.card}>
+          <h2>Instructions</h2>
+          <ol style={{ paddingLeft: "1.25rem", marginTop: ".5rem" }}>
+            {recipe.instructions.map((step: string, idx: number) => (
+              <li key={idx} style={{ marginBottom: ".35rem" }}>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
-        <h2>Ingredients</h2>
-        <ul>
-          {recipe.ingredients.map((ing, idx) => (
-            <li key={idx}>
-              {ing.name}: {ing.quantity} {ing.unit}
-            </li>
-          ))}
-        </ul>
-
-        <h2>Instructions</h2>
-        <ol>
-          {recipe.instructions.map((step, idx) => (
-            <li key={idx}>{step}</li>
-          ))}
-        </ol>
-
-        {recipe.userSubmitted && (
-          <div className={styles.actions}>
-            {isEditing ? (
-              <>
-                <button onClick={handleUpdate} className={styles.saveButton}>
-                  Save
-                </button>
-                <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    setFormData(recipe);
-                  }}
-                  className={styles.cancelButton}
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setIsEditing(true)}
-                className={styles.editButton}
-              >
-                Edit
-              </button>
-            )}
-            <button onClick={handleDelete} className={styles.deleteButton}>
-              Delete
-            </button>
-          </div>
-        )}
-      </div>
-    </ProtectedRoute>
+      {recipe.nutritionInfo && (
+        <section className={styles.card}>
+          <h2>Nutrition</h2>
+          <pre style={{ whiteSpace: "pre-wrap" }}>
+            {JSON.stringify(recipe.nutritionInfo, null, 2)}
+          </pre>
+        </section>
+      )}
+    </div>
   );
 }

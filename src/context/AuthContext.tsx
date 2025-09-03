@@ -1,157 +1,99 @@
 // src/context/AuthContext.tsx
 "use client";
 
-import React, {
+/**
+ * AuthContext.tsx
+ * ----------------
+ * Provides global authentication state and helpers:
+ * - user info
+ * - JWT token
+ * - login, signup, logout
+ * 
+ * Wrap the app with <AuthProvider> in layout.tsx
+ */
+
+import {
   createContext,
-  useCallback,
   useContext,
-  useEffect,
-  useMemo,
-  useRef,
   useState,
+  useEffect,
+  ReactNode,
 } from "react";
-import { get, post, setTokenGetter } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
-type User = {
-  _id: string;
+export interface User {
   email: string;
-  name?: string;
-  // add any other fields your /api/auth/me returns
-};
+  avatarUrl?: string;
+  preferences?: Record<string, any>;
+}
 
-type AuthState = {
-  token: string | null;
+interface AuthContextType {
   user: User | null;
-  loading: boolean;
-};
-
-type AuthContextValue = {
   token: string | null;
-  user: User | null;
-  loading: boolean;
-  isAuthed: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  refreshMe: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Load auth from localStorage on mount
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    try {
+      const res = await axios.post("/api/auth/login", { email, password });
+      const { token, user } = res.data;
+      setToken(token);
+      setUser(user);
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      router.push("/dashboard");
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Login failed");
+    }
+  };
+
+  const signup = async (email: string, password: string) => {
+    try {
+      await axios.post("/api/auth/signup", { email, password });
+      router.push("/auth/login");
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Signup failed");
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/auth/login");
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, token, login, signup, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-const STORAGE_KEY = "auth_v1";
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    token: null,
-    user: null,
-    loading: true,
-  });
-
-  // Keep a ref in sync so api.ts can always read the latest token.
-  const tokenRef = useRef<string | null>(null);
-  tokenRef.current = state.token;
-
-  useEffect(() => {
-    // Allow api.ts to pull the token when needed
-    setTokenGetter(() => tokenRef.current);
-  }, []);
-
-  // Restore from localStorage on mount
-  useEffect(() => {
-    try {
-      const raw =
-        typeof window !== "undefined"
-          ? localStorage.getItem(STORAGE_KEY)
-          : null;
-      if (raw) {
-        const parsed = JSON.parse(raw) as { token: string; user: User | null };
-        setState({
-          token: parsed.token ?? null,
-          user: parsed.user ?? null,
-          loading: false,
-        });
-      } else {
-        setState((s) => ({ ...s, loading: false }));
-      }
-    } catch {
-      setState((s) => ({ ...s, loading: false }));
-    }
-  }, []);
-
-  // Persist to localStorage whenever token/user changes
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (state.token) {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ token: state.token, user: state.user })
-      );
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }, [state.token, state.user]);
-
-  const refreshMe = useCallback(async () => {
-    if (!state.token) return;
-    try {
-      const me = await get<User>("/api/auth/me", true);
-      setState((s) => ({ ...s, user: me }));
-    } catch {
-      // If /me fails (expired token), log out silently
-      setState({ token: null, user: null, loading: false });
-    }
-  }, [state.token]);
-
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await post<{ token: string; user: User }>(
-      "/api/auth/login",
-      { email, password },
-      false
-    );
-    setState({ token: res.token, user: res.user, loading: false });
-  }, []);
-
-  const signup = useCallback(async (email: string, password: string) => {
-    const res = await post<{ token: string; user: User }>(
-      "/api/auth/register",
-      { email, password },
-      false
-    );
-    setState({ token: res.token, user: res.user, loading: false });
-  }, []);
-
-  const logout = useCallback(() => {
-    setState({ token: null, user: null, loading: false });
-  }, []);
-
-  const value = useMemo<AuthContextValue>(() => {
-    return {
-      token: state.token,
-      user: state.user,
-      loading: state.loading,
-      isAuthed: Boolean(state.token),
-      login,
-      signup,
-      logout,
-      refreshMe,
-    };
-  }, [
-    state.token,
-    state.user,
-    state.loading,
-    login,
-    signup,
-    logout,
-    refreshMe,
-  ]);
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return ctx;
-}
+// Custom hook for consuming AuthContext
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
+};

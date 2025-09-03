@@ -1,27 +1,59 @@
-// path: src/app/dashboard/page.tsx
+// src/app/dashboard/page.tsx
 "use client";
 
-import Link from "next/link";
-import styles from "./DashboardPage.module.css";
+/**
+ * DashboardPage.tsx
+ * -------------------
+ * Main landing page after login.
+ * Displays welcome message, logout button, and navigation to app sections.
+ */
+
+import styles from "./page.module.css";
+import { useAuth } from "../../context/AuthContext";
+import ProtectedRoute from "../../components/ProtectedRoute";
 
 export default function DashboardPage() {
+  const { user, logout } = useAuth();
+
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>Dashboard</h1>
+    <ProtectedRoute>
+      <div className={styles.container}>
+        {/* Header with user greeting */}
+        <header className={styles.header}>
+          <h1 className={styles.welcomeMessage}>
+            Welcome, {user?.email ?? "User"}
+          </h1>
+          <button onClick={logout} className={styles.logoutButton}>
+            Logout
+          </button>
+        </header>
 
-      <div className={styles.cards}>
-        <Link href="/dashboard/meal-plans" className={styles.card}>
-          Meal Plans
-        </Link>
+        {/* Navigation menu */}
+        <nav className={styles.nav}>
+          <ul className={styles.navList}>
+            <li className={styles.navItem}>
+              <a href="/dashboard/recipes">Recipes</a>
+            </li>
+            <li className={styles.navItem}>
+              <a href="/dashboard/ingredients">Ingredients</a>
+            </li>
+            <li className={styles.navItem}>
+              <a href="/dashboard/meal-plans">Meal Plans</a>
+            </li>
+            <li className={styles.navItem}>
+              <a href="/dashboard/food-intake">Food Intake</a>
+            </li>
+            <li className={styles.navItem}>
+              <a href="/dashboard/shopping-lists">Shopping Lists</a>
+            </li>
+          </ul>
+        </nav>
 
-        <Link href="/dashboard/recipes" className={styles.card}>
-          Recipes
-        </Link>
-
-        <Link href="/dashboard/shopping-lists" className={styles.card}>
-          Shopping List
-        </Link>
+        {/* Main content */}
+        <main className={styles.main}>
+          <p>Select a section from the navigation to get started.</p>
+        </main>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

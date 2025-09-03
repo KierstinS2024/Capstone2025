@@ -1,55 +1,27 @@
-// path: src/app/dashboard/recipes/[id]/edit/page.tsx
+// path: src/app/dashboard/recipes/new/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 /**
- * EditRecipePage
- * - Loads a recipe by id
- * - Allows editing and saving updates
+ * NewRecipePage
+ * - Form to create a new recipe
+ * - Minimal fields for now (name, description, cuisine, instructions)
+ * - Instructions entered as multi-line; we split by newline into an array
  */
-export default function EditRecipePage() {
+export default function NewRecipePage() {
   const router = useRouter();
-  const params = useParams<{ id: string }>();
-  const id = params?.id;
 
+  // Simple local form state
   const [name, setName] = useState("");
   const [cuisine, setCuisine] = useState("");
   const [description, setDescription] = useState("");
-  const [instructionsText, setInstructionsText] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [instructionsText, setInstructionsText] = useState(""); // textarea
   const [error, setError] = useState("");
 
   const getToken = () =>
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  // Load current recipe
-  useEffect(() => {
-    if (!id) return;
-    const load = async () => {
-      try {
-        const token = getToken();
-        const res = await fetch(`/api/recipes/${id}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error(`Failed to fetch recipe (${res.status})`);
-        const data = await res.json();
-        setName(data.name || "");
-        setCuisine(data.cuisine || "");
-        setDescription(data.description || "");
-        setInstructionsText(
-          Array.isArray(data.instructions) ? data.instructions.join("\n") : ""
-        );
-      } catch (err: any) {
-        console.error(err);
-        setError("Unable to load recipe.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,16 +31,16 @@ export default function EditRecipePage() {
       const token = getToken();
       const payload = {
         name,
-        cuisine,
         description,
+        cuisine,
         instructions: instructionsText
           .split("\n")
           .map((s) => s.trim())
           .filter(Boolean),
       };
 
-      const res = await fetch(`/api/recipes/${id}`, {
-        method: "PUT",
+      const res = await fetch("/api/recipes", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -76,30 +48,21 @@ export default function EditRecipePage() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error(`Failed to update recipe (${res.status})`);
-      router.push(`/dashboard/recipes/${id}`);
+      if (!res.ok) throw new Error(`Failed to create recipe (${res.status})`);
+
+      const created = await res.json();
+      router.push(`/dashboard/recipes/${created._id || created.id}`);
     } catch (err: any) {
       console.error(err);
-      setError("Unable to update recipe. Please try again.");
+      setError(
+        "Unable to create recipe. Please check your fields and try again."
+      );
     }
   };
 
-  if (loading)
-    return (
-      <div style={{ maxWidth: 720, margin: "1rem auto", padding: "1rem" }}>
-        <p>Loading…</p>
-      </div>
-    );
-  if (error)
-    return (
-      <div style={{ maxWidth: 720, margin: "1rem auto", padding: "1rem" }}>
-        <p style={{ color: "var(--danger)" }}>⚠️ {error}</p>
-      </div>
-    );
-
   return (
     <div style={{ maxWidth: 720, margin: "1rem auto", padding: "1rem" }}>
-      <h1 style={{ marginBottom: ".75rem" }}>Edit Recipe</h1>
+      <h1 style={{ marginBottom: ".75rem" }}>New Recipe</h1>
       <form onSubmit={handleSubmit}>
         <label>
           Name
@@ -130,6 +93,7 @@ export default function EditRecipePage() {
             rows={6}
             value={instructionsText}
             onChange={(e) => setInstructionsText(e.target.value)}
+            placeholder={`Preheat the oven to 375°F.\nMix the dry ingredients.\nStir in the wet ingredients.`}
           />
         </label>
 
@@ -141,7 +105,7 @@ export default function EditRecipePage() {
 
         <div style={{ display: "flex", gap: ".5rem", marginTop: ".75rem" }}>
           <button type="submit" className="btn">
-            Save
+            Create
           </button>
           <button type="button" className="btn" onClick={() => router.back()}>
             Cancel

@@ -2,15 +2,13 @@
 "use client";
 
 /**
- * DashboardLayout
- *
- * Wraps all dashboard pages with:
- * - ProtectedRoute (ensures only logged-in users can access)
- * - Common layout styling (header, main content area)
+ * DashboardLayout.tsx
+ * -------------------
+ * Wrapper layout for all dashboard pages.
+ * Applies ProtectedRoute and consistent dashboard styling.
  */
 
-import { ReactNode, useContext } from "react";
-import { AuthContext } from "@/context/AuthContext";
+import { ReactNode } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import styles from "./DashboardLayout.module.css";
 
@@ -19,25 +17,10 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { logout, user } = useContext(AuthContext);
-
   return (
     <ProtectedRoute>
-      <div className={styles.layoutContainer}>
-        {/* Header */}
-        <header className={styles.header}>
-          <h1 className={styles.title}>Dashboard</h1>
-          {user && (
-            <div className={styles.userActions}>
-              <span className={styles.userEmail}>{user.email}</span>
-              <button className={styles.logoutButton} onClick={logout}>
-                Logout
-              </button>
-            </div>
-          )}
-        </header>
-
-        {/* Main content */}
+      <div className={styles.dashboardContainer}>
+        {/* Future sidebar/header can be added here */}
         <main className={styles.mainContent}>{children}</main>
       </div>
     </ProtectedRoute>

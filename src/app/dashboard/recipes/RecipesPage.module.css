@@ -53,3 +53,18 @@
   color: var(--error);
   font-weight: bold;
 }
+/* path: src/app/dashboard/recipes/RecipesPage.module.css */
+.container { max-width: 1024px; margin: 0 auto; padding: 1rem; }
+.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+.grid { list-style:none; display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:1rem; padding:0; }
+.card { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding:1rem; box-shadow: var(--shadow); }
+.actions { display:flex; gap:.5rem; margin-top:.5rem; }
+.muted { color: var(--muted); }
+.empty { color: var(--muted); }
+.btn, .btnPrimary {
+  display:inline-block; padding:.5rem .9rem; border-radius:8px; border:1px solid var(--border); text-decoration:none; font-weight:600;
+}
+.btn { background: var(--bg-2); color: var(--text); }
+.btnPrimary { background: var(--primary); color:#fff; border-color: transparent; }
+.btnPrimary:hover { background: var(--primary-600); }
+.error { color: var(--danger); }

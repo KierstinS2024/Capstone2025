@@ -1,8 +1,12 @@
 // path: src/app/api/shopping-lists/items/[itemId]/route.ts
-/**      
- * Shopping List Item CRUD API
- * Handles updating, marking purchased, and deleting individual shopping list items
- * All routes are JWT-protected
+/**
+ * Shopping List Item API
+ * 
+ * Handles operations on individual shopping list items:
+ * - PUT: update quantity, unit, or purchased status
+ * - DELETE: remove an item from a shopping list
+ * 
+ * All routes are JWT-protected.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -10,38 +14,41 @@ import connectToDatabase from "@/lib/db";
 import ShoppingList from "@/models/ShoppingList";
 import { verifyToken } from "@/lib/auth";
 
-// Connect to MongoDB
+// Ensure DB connection
 connectToDatabase();
 
 /**
  * PUT /api/shopping-lists/items/[itemId]
- * Update a shopping list item (quantity, unit, purchased status)
+ * Update a shopping list item's quantity, unit, or purchased status
  */
 export async function PUT(req: NextRequest, { params }: { params: { itemId: string } }) {
   try {
-    const token = req.headers.get("Authorization")?.split(" ")[1];
-    const userId = verifyToken(token);
+    const authHeader = req.headers.get("Authorization");
+    const userId = verifyToken(authHeader);
+    if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const { quantity, unit, purchased } = await req.json();
     const { itemId } = params;
+    if (!itemId) return NextResponse.json({ message: "Item ID is required" }, { status: 400 });
 
-    if (!itemId) return NextResponse.json({ message: "Item ID required" }, { status: 400 });
+    const updates = await req.json(); // { quantity?, unit?, purchased? }
 
-    // Find the list containing this item
-    const list = await ShoppingList.findOne({ "items._id": itemId, userId });
-    if (!list) return NextResponse.json({ message: "Item not found" }, { status: 404 });
+    // Find the shopping list containing this item for the current user
+    const shoppingList = await ShoppingList.findOne({ "items._id": itemId, userId });
+    if (!shoppingList) return NextResponse.json({ message: "Item not found" }, { status: 404 });
 
-    const item = list.items.id(itemId);
+    const item = shoppingList.items.id(itemId);
     if (!item) return NextResponse.json({ message: "Item not found" }, { status: 404 });
 
-    if (quantity !== undefined) item.quantity = quantity;
-    if (unit !== undefined) item.unit = unit;
-    if (purchased !== undefined) item.purchased = purchased;
+    // Apply updates
+    if (updates.quantity !== undefined) item.quantity = updates.quantity;
+    if (updates.unit !== undefined) item.unit = updates.unit;
+    if (updates.purchased !== undefined) item.purchased = updates.purchased;
 
-    await list.save();
+    await shoppingList.save();
 
     return NextResponse.json({ data: item });
   } catch (err) {
+    console.error("Error updating shopping list item:", err);
     return NextResponse.json(
       { message: err instanceof Error ? err.message : "Failed to update item" },
       { status: 500 }
@@ -51,28 +58,31 @@ export async function PUT(req: NextRequest, { params }: { params: { itemId: stri
 
 /**
  * DELETE /api/shopping-lists/items/[itemId]
- * Delete a shopping list item
+ * Delete a single item from a shopping list
  */
 export async function DELETE(req: NextRequest, { params }: { params: { itemId: string } }) {
   try {
-    const token = req.headers.get("Authorization")?.split(" ")[1];
-    const userId = verifyToken(token);
+    const authHeader = req.headers.get("Authorization");
+    const userId = verifyToken(authHeader);
+    if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const { itemId } = params;
-    if (!itemId) return NextResponse.json({ message: "Item ID required" }, { status: 400 });
+    if (!itemId) return NextResponse.json({ message: "Item ID is required" }, { status: 400 });
 
-    // Find the list containing this item
-    const list = await ShoppingList.findOne({ "items._id": itemId, userId });
-    if (!list) return NextResponse.json({ message: "Item not found" }, { status: 404 });
+    // Find the shopping list containing this item for the current user
+    const shoppingList = await ShoppingList.findOne({ "items._id": itemId, userId });
+    if (!shoppingList) return NextResponse.json({ message: "Item not found" }, { status: 404 });
 
-    const item = list.items.id(itemId);
+    const item = shoppingList.items.id(itemId);
     if (!item) return NextResponse.json({ message: "Item not found" }, { status: 404 });
 
-    item.remove(); // Remove item from subdocument array
-    await list.save();
+    // Remove the item
+    item.remove();
+    await shoppingList.save();
 
-    return NextResponse.json({ data: { id: itemId, message: "Item deleted" } });
+    return NextResponse.json({ data: { id: itemId, message: "Item deleted successfully" } });
   } catch (err) {
+    console.error("Error deleting shopping list item:", err);
     return NextResponse.json(
       { message: err instanceof Error ? err.message : "Failed to delete item" },
       { status: 500 }
