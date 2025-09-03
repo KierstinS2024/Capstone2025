@@ -1,63 +1,93 @@
 // path: src/app/meal-plans/page.tsx
 /**
- * MealPlansListPage
- * Displays all meal plans for the logged-in user
- * Allows creating a new meal plan or navigating to a detail page
+ * Meal Plans List Page
+ * ---------------------
+ * Displays all meal plans for the logged-in user.
+ * From here, the user can:
+ *  - View their saved plans
+ *  - Navigate to create a new plan
+ *  - Click on a plan to edit it
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
 
-interface MealPlan {
-  _id: string;
-  weekStartDate: string;
-  notes?: string;
-}
+export default function MealPlansPage() {
+  // Store all meal plans retrieved from the backend
+  const [mealPlans, setMealPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default function MealPlansListPage() {
-  const { token } = useAuth();
-  const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
-
+  // Fetch meal plans when component first loads
   useEffect(() => {
+    const fetchMealPlans = async () => {
+      try {
+        const res = await fetch("/api/meal-plans", {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setMealPlans(data.data || []);
+        } else {
+          console.error("Failed to fetch meal plans");
+        }
+      } catch (err) {
+        console.error("Error loading meal plans:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchMealPlans();
   }, []);
 
-  const fetchMealPlans = async () => {
-    const res = await fetch("/api/meal-plans", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    setMealPlans(data.data || []);
-  };
+  if (loading) {
+    return <p style={{ padding: "20px" }}>Loading meal plans...</p>;
+  }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Meal Plans</h1>
+    <div style={{ padding: "20px" }}>
+      <h1>My Meal Plans</h1>
 
-      <Link
-        href="/meal-plans/create"
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4 inline-block"
-      >
-        Create New Meal Plan
-      </Link>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-        {mealPlans.map((plan) => (
-          <Link
-            key={plan._id}
-            href={`/meal-plans/${plan._id}`}
-            className="border p-4 rounded hover:shadow"
-          >
-            <h2 className="font-bold">
-              Week of {new Date(plan.weekStartDate).toDateString()}
-            </h2>
-            {plan.notes && <p>{plan.notes}</p>}
-          </Link>
-        ))}
+      {/* Button to create a new plan */}
+      <div style={{ marginBottom: "20px" }}>
+        <Link href="/meal-plans/new">
+          <button>Create New Meal Plan</button>
+        </Link>
       </div>
+
+      {/* If no plans exist, show helpful message */}
+      {mealPlans.length === 0 ? (
+        <p>You don’t have any meal plans yet. Create one to get started!</p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0 }}>
+          {mealPlans.map((plan) => (
+            <li
+              key={plan._id}
+              style={{
+                border: "1px solid #ccc",
+                padding: "10px",
+                marginBottom: "10px",
+                borderRadius: "4px",
+              }}
+            >
+              {/* Link to edit the selected plan */}
+              <Link href={`/meal-plans/${plan._id}`}>
+                <strong>Week of {plan.weekStartDate.split("T")[0]}</strong>
+              </Link>
+              <p>{plan.notes || "No notes"}</p>
+              <p>
+                Entries:{" "}
+                {plan.entries?.length
+                  ? plan.entries.length
+                  : "No recipes added"}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

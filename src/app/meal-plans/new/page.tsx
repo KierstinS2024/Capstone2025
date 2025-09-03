@@ -1,49 +1,35 @@
-// path: src/app/meal-plans/[id]/page.tsx
+// path: src/app/meal-plans/new/page.tsx
 /**
- * Edit Meal Plan Page
- * --------------------
- * Loads an existing meal plan and lets the user modify:
- * - Week start date
- * - Notes
- * - Entries (recipes, days, meal types, servings)
+ * Create Meal Plan Page
+ * ----------------------
+ * Lets the user build a new weekly meal plan.
+ * They can add entries (recipe + day + meal type + servings),
+ * and submit to save the plan in the backend.
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function EditMealPlanPage() {
-  const params = useParams();
+export default function NewMealPlanPage() {
   const router = useRouter();
+
+  // Local state for the form
   const [weekStartDate, setWeekStartDate] = useState("");
   const [notes, setNotes] = useState("");
   const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch existing meal plan when component mounts
-  useEffect(() => {
-    const fetchMealPlan = async () => {
-      try {
-        const res = await fetch(`/api/meal-plans/${params.id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setWeekStartDate(data.data.weekStartDate.split("T")[0]);
-          setNotes(data.data.notes || "");
-          setEntries(data.data.entries || []);
-        } else {
-          console.error("Failed to load meal plan");
-        }
-      } catch (err) {
-        console.error("Error fetching meal plan:", err);
-      }
-    };
-    fetchMealPlan();
-  }, [params.id]);
+  // Add an empty entry row to the plan
+  const handleAddEntry = () => {
+    setEntries([
+      ...entries,
+      { recipeId: "", dayOfWeek: "Monday", mealType: "Breakfast", servings: 1 },
+    ]);
+  };
 
-  // Update entry in state
+  // Update a specific entry by index
   const handleEntryChange = (
     index: number,
     field: string,
@@ -54,20 +40,12 @@ export default function EditMealPlanPage() {
     setEntries(updated);
   };
 
-  // Add new blank entry row
-  const handleAddEntry = () => {
-    setEntries([
-      ...entries,
-      { recipeId: "", dayOfWeek: "Monday", mealType: "Breakfast", servings: 1 },
-    ]);
-  };
-
-  // Save updated plan
+  // Save new meal plan to backend
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/meal-plans/${params.id}`, {
-        method: "PUT",
+      const res = await fetch("/api/meal-plans", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -76,12 +54,12 @@ export default function EditMealPlanPage() {
       });
 
       if (res.ok) {
-        router.push("/meal-plans");
+        router.push("/meal-plans"); // Go back to meal plan list
       } else {
-        console.error("Failed to update meal plan");
+        console.error("Failed to create meal plan");
       }
     } catch (err) {
-      console.error("Error updating meal plan:", err);
+      console.error("Error creating meal plan:", err);
     } finally {
       setLoading(false);
     }
@@ -89,7 +67,7 @@ export default function EditMealPlanPage() {
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>Edit Meal Plan</h1>
+      <h1>Create Meal Plan</h1>
 
       {/* Week start date input */}
       <label>
@@ -114,7 +92,7 @@ export default function EditMealPlanPage() {
         </label>
       </div>
 
-      {/* Entries */}
+      {/* Dynamic list of entries */}
       <h2>Entries</h2>
       {entries.map((entry, idx) => (
         <div
@@ -171,7 +149,7 @@ export default function EditMealPlanPage() {
 
       <div style={{ marginTop: "20px" }}>
         <button onClick={handleSubmit} disabled={loading}>
-          {loading ? "Saving..." : "Save Changes"}
+          {loading ? "Saving..." : "Save Meal Plan"}
         </button>
       </div>
     </div>
