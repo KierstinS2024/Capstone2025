@@ -2,10 +2,12 @@
 /**
  * Edit Meal Plan Page
  * --------------------
- * Loads an existing meal plan and lets the user modify:
- * - Week start date
- * - Notes
- * - Entries (recipes, days, meal types, servings)
+ * Loads an existing meal plan from the backend by ID.
+ * Lets the user:
+ *  - Update week start date
+ *  - Edit notes
+ *  - Add / edit / remove entries (recipe, day, meal type, servings)
+ *  - Save changes back to the backend
  */
 
 "use client";
@@ -14,23 +16,29 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 export default function EditMealPlanPage() {
-  const params = useParams();
+  const params = useParams(); // read the dynamic :id param from URL
   const router = useRouter();
+
+  // Local state for meal plan fields
   const [weekStartDate, setWeekStartDate] = useState("");
   const [notes, setNotes] = useState("");
   const [entries, setEntries] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  // Fetch existing meal plan when component mounts
+  // Load existing meal plan on mount
   useEffect(() => {
     const fetchMealPlan = async () => {
       try {
         const res = await fetch(`/api/meal-plans/${params.id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
+
         if (res.ok) {
           const data = await res.json();
-          setWeekStartDate(data.data.weekStartDate.split("T")[0]);
+          setWeekStartDate(
+            data.data.weekStartDate ? data.data.weekStartDate.split("T")[0] : ""
+          ); // trim time safely
           setNotes(data.data.notes || "");
           setEntries(data.data.entries || []);
         } else {
@@ -38,12 +46,15 @@ export default function EditMealPlanPage() {
         }
       } catch (err) {
         console.error("Error fetching meal plan:", err);
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchMealPlan();
   }, [params.id]);
 
-  // Update entry in state
+  // Update a field in an entry
   const handleEntryChange = (
     index: number,
     field: string,
@@ -54,7 +65,7 @@ export default function EditMealPlanPage() {
     setEntries(updated);
   };
 
-  // Add new blank entry row
+  // Add a new blank entry row
   const handleAddEntry = () => {
     setEntries([
       ...entries,
@@ -62,9 +73,16 @@ export default function EditMealPlanPage() {
     ]);
   };
 
-  // Save updated plan
+  // Remove an entry row
+  const handleRemoveEntry = (index: number) => {
+    const updated = [...entries];
+    updated.splice(index, 1);
+    setEntries(updated);
+  };
+
+  // Save updated meal plan to backend
   const handleSubmit = async () => {
-    setLoading(true);
+    setSaving(true);
     try {
       const res = await fetch(`/api/meal-plans/${params.id}`, {
         method: "PUT",
@@ -76,16 +94,20 @@ export default function EditMealPlanPage() {
       });
 
       if (res.ok) {
-        router.push("/meal-plans");
+        router.push("/meal-plans"); // go back to list page
       } else {
         console.error("Failed to update meal plan");
       }
     } catch (err) {
       console.error("Error updating meal plan:", err);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return <p style={{ padding: "20px" }}>Loading meal plan...</p>;
+  }
 
   return (
     <div style={{ padding: "20px" }}>
@@ -101,7 +123,7 @@ export default function EditMealPlanPage() {
         />
       </label>
 
-      {/* Notes textarea */}
+      {/* Notes field */}
       <div>
         <label>
           Notes:
@@ -114,7 +136,7 @@ export default function EditMealPlanPage() {
         </label>
       </div>
 
-      {/* Entries */}
+      {/* Entries list */}
       <h2>Entries</h2>
       {entries.map((entry, idx) => (
         <div
@@ -165,13 +187,23 @@ export default function EditMealPlanPage() {
               handleEntryChange(idx, "servings", parseInt(e.target.value))
             }
           />
+          <button
+            type="button"
+            onClick={() => handleRemoveEntry(idx)}
+            style={{ marginLeft: "10px" }}
+          >
+            Remove
+          </button>
         </div>
       ))}
+
+      {/* Add entry button */}
       <button onClick={handleAddEntry}>+ Add Entry</button>
 
+      {/* Save button */}
       <div style={{ marginTop: "20px" }}>
-        <button onClick={handleSubmit} disabled={loading}>
-          {loading ? "Saving..." : "Save Changes"}
+        <button onClick={handleSubmit} disabled={saving}>
+          {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
     </div>

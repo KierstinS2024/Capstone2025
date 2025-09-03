@@ -75,7 +75,12 @@ export default function MealPlansPage() {
             >
               {/* Link to edit the selected plan */}
               <Link href={`/meal-plans/${plan._id}`}>
-                <strong>Week of {plan.weekStartDate.split("T")[0]}</strong>
+                <strong>
+                  Week of{" "}
+                  {plan.weekStartDate
+                    ? plan.weekStartDate.split("T")[0]
+                    : "Unknown"}
+                </strong>
               </Link>
               <p>{plan.notes || "No notes"}</p>
               <p>
