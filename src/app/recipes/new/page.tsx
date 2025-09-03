@@ -1,59 +1,39 @@
-// path: src/app/recipes/[id]/page.tsx
+// path: src/app/recipes/new/page.tsx
 /**
- * Edit Recipe Page
- * ----------------
- * Load an existing recipe by ID.
- * Users can:
- *  - Update name, description, cuisine
- *  - Add/edit/remove ingredients
- *  - Add/edit/remove instructions
- *  - Save changes back to backend
+ * Create Recipe Page
+ * ------------------
+ * Lets the user create a new recipe.
+ * Form includes:
+ *  - Name, description, cuisine
+ *  - Dynamic list of ingredients (ingredientId, quantity, unit)
+ *  - Dynamic list of instructions
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function EditRecipePage() {
-  const params = useParams();
+export default function NewRecipePage() {
   const router = useRouter();
 
+  // Local state for form fields
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [cuisine, setCuisine] = useState("");
   const [ingredients, setIngredients] = useState<any[]>([]);
   const [instructions, setInstructions] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Load recipe data
-  useEffect(() => {
-    const fetchRecipe = async () => {
-      try {
-        const res = await fetch(`/api/recipes/${params.id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setName(data.data.name);
-          setDescription(data.data.description || "");
-          setCuisine(data.data.cuisine || "");
-          setIngredients(data.data.ingredients || []);
-          setInstructions(data.data.instructions || []);
-        } else {
-          console.error("Failed to fetch recipe");
-        }
-      } catch (err) {
-        console.error("Error loading recipe:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRecipe();
-  }, [params.id]);
+  // Add a new ingredient row
+  const handleAddIngredient = () => {
+    setIngredients([
+      ...ingredients,
+      { ingredientId: "", quantity: 1, unit: "" },
+    ]);
+  };
 
-  // Ingredient handlers
+  // Update ingredient fields
   const handleIngredientChange = (
     index: number,
     field: string,
@@ -63,36 +43,39 @@ export default function EditRecipePage() {
     (updated[index] as any)[field] = value;
     setIngredients(updated);
   };
-  const handleAddIngredient = () =>
-    setIngredients([
-      ...ingredients,
-      { ingredientId: "", quantity: 1, unit: "" },
-    ]);
+
+  // Remove ingredient row
   const handleRemoveIngredient = (index: number) => {
     const updated = [...ingredients];
     updated.splice(index, 1);
     setIngredients(updated);
   };
 
-  // Instruction handlers
+  // Add a new instruction
+  const handleAddInstruction = () => {
+    setInstructions([...instructions, ""]);
+  };
+
+  // Update instruction text
   const handleInstructionChange = (index: number, value: string) => {
     const updated = [...instructions];
     updated[index] = value;
     setInstructions(updated);
   };
-  const handleAddInstruction = () => setInstructions([...instructions, ""]);
+
+  // Remove instruction
   const handleRemoveInstruction = (index: number) => {
     const updated = [...instructions];
     updated.splice(index, 1);
     setInstructions(updated);
   };
 
-  // Save updates
+  // Save new recipe to backend
   const handleSubmit = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/recipes/${params.id}`, {
-        method: "PUT",
+      const res = await fetch("/api/recipes", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -109,20 +92,18 @@ export default function EditRecipePage() {
       if (res.ok) {
         router.push("/recipes");
       } else {
-        console.error("Failed to update recipe");
+        console.error("Failed to create recipe");
       }
     } catch (err) {
-      console.error("Error updating recipe:", err);
+      console.error("Error creating recipe:", err);
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p style={{ padding: "20px" }}>Loading recipe...</p>;
-
   return (
     <div style={{ padding: "20px" }}>
-      <h1>Edit Recipe</h1>
+      <h1>Create Recipe</h1>
 
       <label>
         Name:
@@ -137,9 +118,9 @@ export default function EditRecipePage() {
         <label>
           Description:
           <textarea
+            value={description}
             rows={3}
             cols={40}
-            value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
         </label>
@@ -231,7 +212,7 @@ export default function EditRecipePage() {
 
       <div style={{ marginTop: "20px" }}>
         <button onClick={handleSubmit} disabled={saving}>
-          {saving ? "Saving..." : "Save Changes"}
+          {saving ? "Saving..." : "Save Recipe"}
         </button>
       </div>
     </div>
