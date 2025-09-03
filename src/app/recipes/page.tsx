@@ -2,11 +2,11 @@
 /**
  * Recipes List Page
  * -----------------
- * Shows all recipes for the logged-in user.
- * Users can:
- *  - View recipe name, cuisine, and number of ingredients
- *  - Click a recipe to edit it
+ * Displays all recipes for the logged-in user.
+ * From here, the user can:
+ *  - View all recipes
  *  - Navigate to create a new recipe
+ *  - Click on a recipe to edit it
  */
 
 "use client";
@@ -18,7 +18,7 @@ export default function RecipesPage() {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch recipes when component mounts
+  // Fetch all recipes when the page loads
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
@@ -32,7 +32,7 @@ export default function RecipesPage() {
           console.error("Failed to fetch recipes");
         }
       } catch (err) {
-        console.error("Error loading recipes:", err);
+        console.error("Error fetching recipes:", err);
       } finally {
         setLoading(false);
       }
@@ -47,15 +47,16 @@ export default function RecipesPage() {
     <div style={{ padding: "20px" }}>
       <h1>My Recipes</h1>
 
-      {/* Button to create new recipe */}
+      {/* Button to create a new recipe */}
       <div style={{ marginBottom: "20px" }}>
         <Link href="/recipes/new">
           <button>Create New Recipe</button>
         </Link>
       </div>
 
+      {/* List of recipes */}
       {recipes.length === 0 ? (
-        <p>No recipes yet. Add one to get started!</p>
+        <p>You don’t have any recipes yet. Create one to get started!</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0 }}>
           {recipes.map((recipe) => (
@@ -71,9 +72,14 @@ export default function RecipesPage() {
               <Link href={`/recipes/${recipe._id}`}>
                 <strong>{recipe.name}</strong>
               </Link>
-              <p>Cuisine: {recipe.cuisine || "Not specified"}</p>
+              <p>{recipe.description}</p>
               <p>
-                Ingredients: {recipe.ingredients?.length || "No ingredients"}
+                Ingredients:{" "}
+                {recipe.ingredients?.length ? recipe.ingredients.length : "0"}
+              </p>
+              <p>
+                Instructions:{" "}
+                {recipe.instructions?.length ? recipe.instructions.length : "0"}
               </p>
             </li>
           ))}
