@@ -1,4 +1,5 @@
 /* src/components/MealPlanCard.module.css */
+@import "@/styles/variables.css";
 
 .card {
   border: 1px solid #e2e8f0;

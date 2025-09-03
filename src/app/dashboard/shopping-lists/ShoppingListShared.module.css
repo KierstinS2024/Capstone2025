@@ -1,4 +1,6 @@
 /* ShoppingListsShared.module.css */
+@import "@/styles/variables.css";
+
 .container {
   padding: 1rem;
   max-width: 800px;

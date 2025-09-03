@@ -7,6 +7,16 @@ export default function LandingPage() {
   return (
     <main className={styles.container}>
       <div className={styles.content}>
+        {/* Optional decorative circle */}
+        <div className={styles.decorCircle}></div>
+
+        {/* Hero illustration (replace with actual SVG or image) */}
+        <img
+          src="/illustrations/meal-planner.svg"
+          alt="Meal Planner Illustration"
+          className={styles.hero}
+        />
+
         <h1 className={styles.title}>Your Personal Meal Planner</h1>
         <p className={styles.subtitle}>
           Discover new recipes, create meal plans, and organize your shopping
@@ -14,10 +24,10 @@ export default function LandingPage() {
         </p>
         <div className={styles.actions}>
           <Link href="/auth/signup" className={styles.primaryButton}>
-            Get Started
+            🥗 Get Started
           </Link>
           <Link href="/auth/login" className={styles.secondaryButton}>
-            Log In
+            🔑 Log In
           </Link>
         </div>
       </div>

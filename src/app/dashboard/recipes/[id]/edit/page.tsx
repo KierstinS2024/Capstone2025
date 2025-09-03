@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import RecipeForm from "@/components/RecipeForm";
+import styles from "../../RecipesShared.module.css";
 
 export default function EditRecipePage() {
   const { id } = useParams<{ id: string }>();

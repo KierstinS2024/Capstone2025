@@ -4,7 +4,8 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import styles from "./CreateRecipePage.module.css";
+import styles from "../../RecipesShared.module.css";
+
 
 interface Ingredient {
   name: string;

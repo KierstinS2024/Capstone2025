@@ -1,67 +1,157 @@
 // src/context/AuthContext.tsx
 "use client";
 
-import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { get, post, setTokenGetter } from "@/lib/api";
 
-interface AuthContextProps {
-  user: any | null;
+type User = {
+  _id: string;
+  email: string;
+  name?: string;
+  // add any other fields your /api/auth/me returns
+};
+
+type AuthState = {
   token: string | null;
-  login: (token: string, user: any) => void;
+  user: User | null;
+  loading: boolean;
+};
+
+type AuthContextValue = {
+  token: string | null;
+  user: User | null;
+  loading: boolean;
+  isAuthed: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
   logout: () => void;
-}
+  refreshMe: () => Promise<void>;
+};
 
-export const AuthContext = createContext<AuthContextProps>({
-  user: null,
-  token: null,
-  login: () => {},
-  logout: () => {},
-});
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<any | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true); // ✅ new
-  const router = useRouter();
+const STORAGE_KEY = "auth_v1";
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<AuthState>({
+    token: null,
+    user: null,
+    loading: true,
+  });
+
+  // Keep a ref in sync so api.ts can always read the latest token.
+  const tokenRef = useRef<string | null>(null);
+  tokenRef.current = state.token;
 
   useEffect(() => {
-    // On mount, restore saved session from localStorage
-    const savedToken = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("user");
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false); // ✅ only render children after hydration
+    // Allow api.ts to pull the token when needed
+    setTokenGetter(() => tokenRef.current);
   }, []);
 
-  const login = (token: string, user: any) => {
-    setToken(token);
-    setUser(user);
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
-    router.push("/dashboard");
-  };
+  // Restore from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw =
+        typeof window !== "undefined"
+          ? localStorage.getItem(STORAGE_KEY)
+          : null;
+      if (raw) {
+        const parsed = JSON.parse(raw) as { token: string; user: User | null };
+        setState({
+          token: parsed.token ?? null,
+          user: parsed.user ?? null,
+          loading: false,
+        });
+      } else {
+        setState((s) => ({ ...s, loading: false }));
+      }
+    } catch {
+      setState((s) => ({ ...s, loading: false }));
+    }
+  }, []);
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/auth/login");
-  };
+  // Persist to localStorage whenever token/user changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (state.token) {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ token: state.token, user: state.user })
+      );
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [state.token, state.user]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading session...</p>
-      </div>
+  const refreshMe = useCallback(async () => {
+    if (!state.token) return;
+    try {
+      const me = await get<User>("/api/auth/me", true);
+      setState((s) => ({ ...s, user: me }));
+    } catch {
+      // If /me fails (expired token), log out silently
+      setState({ token: null, user: null, loading: false });
+    }
+  }, [state.token]);
+
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await post<{ token: string; user: User }>(
+      "/api/auth/login",
+      { email, password },
+      false
     );
-  }
+    setState({ token: res.token, user: res.user, loading: false });
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  const signup = useCallback(async (email: string, password: string) => {
+    const res = await post<{ token: string; user: User }>(
+      "/api/auth/register",
+      { email, password },
+      false
+    );
+    setState({ token: res.token, user: res.user, loading: false });
+  }, []);
+
+  const logout = useCallback(() => {
+    setState({ token: null, user: null, loading: false });
+  }, []);
+
+  const value = useMemo<AuthContextValue>(() => {
+    return {
+      token: state.token,
+      user: state.user,
+      loading: state.loading,
+      isAuthed: Boolean(state.token),
+      login,
+      signup,
+      logout,
+      refreshMe,
+    };
+  }, [
+    state.token,
+    state.user,
+    state.loading,
+    login,
+    signup,
+    logout,
+    refreshMe,
+  ]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+  return ctx;
+}

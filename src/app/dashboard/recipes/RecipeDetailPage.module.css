@@ -5,20 +5,29 @@
   margin: 2rem auto;
   padding: 1rem;
   background-color: var(--bg-page);
-  border-radius: 12px;
 }
 
 .title {
   font-size: 1.8rem;
   font-weight: 700;
-  color: var(--text-primary);
   margin-bottom: 0.5rem;
+  color: var(--text-primary);
 }
 
-.source {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
+.description,
+.instructions {
+  background-color: var(--bg-card);
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
   margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.sectionTitle {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
 }
 
 .ingredientList {
@@ -30,17 +39,8 @@
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border-light);
   border-radius: 8px;
-  background-color: var(--bg-card);
   margin-bottom: 0.5rem;
-}
-
-.instructions {
   background-color: var(--bg-card);
-  padding: 0.75rem;
-  border-radius: 10px;
-  border: 1px solid var(--border-light);
-  margin-top: 1rem;
-  color: var(--text-primary);
 }
 
 .backButton {
@@ -51,8 +51,19 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .backButton:hover {
   background-color: var(--accent-secondary);
+}
+
+.message {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.error {
+  color: var(--error);
+  font-weight: bold;
 }

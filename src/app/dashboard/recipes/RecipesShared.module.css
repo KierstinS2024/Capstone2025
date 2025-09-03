@@ -1,32 +1,40 @@
+/* src/app/dashboard/recipes/RecipesShared.module.css */
+
 @import "@/styles/variables.css";
 
 .container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 2rem auto;
   padding: 1rem;
   background-color: var(--bg-page);
-  border-radius: 12px;
 }
 
 .title {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
-}
-
-.source {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
   margin-bottom: 1rem;
+  color: var(--text-primary);
 }
 
-.ingredientList {
+.message {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.error {
+  color: var(--error);
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+.list {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
-.ingredientItem {
+.listItem {
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border-light);
   border-radius: 8px;
@@ -34,16 +42,17 @@
   margin-bottom: 0.5rem;
 }
 
-.instructions {
-  background-color: var(--bg-card);
-  padding: 0.75rem;
-  border-radius: 10px;
-  border: 1px solid var(--border-light);
-  margin-top: 1rem;
+.link {
+  text-decoration: none;
   color: var(--text-primary);
+  font-weight: 500;
 }
 
-.backButton {
+.link:hover {
+  color: var(--accent-primary);
+}
+
+.button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
   background-color: var(--accent-primary);
@@ -51,8 +60,9 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-.backButton:hover {
+.button:hover {
   background-color: var(--accent-secondary);
 }

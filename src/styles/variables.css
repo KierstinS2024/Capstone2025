@@ -1,0 +1,37 @@
+/* path: src/styles/variables.css */
+
+/* =================================================
+   Global Color System
+   - Define light & dark theme variables here
+   - All other styles should pull from these values
+================================================= */
+
+:root {
+  /* ---------- Light Theme Colors ---------- */
+  --color-bg: #f9fafb; /* page background */
+  --color-text: #111827; /* main text */
+  --color-card-bg: #ffffff; /* card / container background */
+
+  --color-primary: #2563eb; /* blue button background */
+  --color-primary-hover: #1d4ed8; /* blue button hover */
+  --color-border: #d1d5db; /* light gray borders */
+
+  --color-success-bg: #d1fae5;
+  --color-success-text: #065f46;
+
+  --color-error-bg: #fee2e2;
+  --color-error-text: #b91c1c;
+
+  /* ---------- Dark Theme Colors ---------- */
+  --color-bg-dark: #1f2937;
+  --color-text-dark: #f9fafb;
+  --color-card-bg-dark: #374151;
+
+  --color-border-dark: #4b5563;
+
+  --color-success-bg-dark: #064e3b;
+  --color-success-text-dark: #d1fae5;
+
+  --color-error-bg-dark: #7f1d1d;
+  --color-error-text-dark: #fee2e2;
+}

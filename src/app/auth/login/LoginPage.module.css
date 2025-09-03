@@ -1,4 +1,5 @@
 /* path: src/app/auth/login/LoginPage.module.css */
+@import "@/styles/variables.css";
 
 /* Page container centers the form */
 .container {

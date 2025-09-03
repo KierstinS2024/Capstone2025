@@ -1,4 +1,5 @@
 /* src/app/dashboard/shopping-lists/[id]/ShoppingListDetailPage.module.css */
+@import "@/styles/variables.css";
 
 .container {
   max-width: 800px;

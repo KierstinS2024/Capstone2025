@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import styles from "./ExternalRecipePage.module.css";
+import styles from "../../RecipesShared.module.css";
 
 // Define the type for the external recipe
 interface ExternalRecipe {

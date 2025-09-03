@@ -1,5 +1,7 @@
 /* src/app/dashboard/layout.module.css */
 /* Container for the whole dashboard page */
+@import "@/styles/variables.css";
+
 .dashboard {
   min-height: 100vh;
   display: flex;
