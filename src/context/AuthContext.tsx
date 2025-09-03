@@ -1,16 +1,11 @@
-// src/context/AuthContext.tsx
-"use client";
-
+// path: src/context/AuthContext.tsx
 /**
- * AuthContext.tsx
- * ----------------
- * Provides global authentication state and helpers:
- * - user info
- * - JWT token
- * - login, signup, logout
- * 
- * Wrap the app with <AuthProvider> in layout.tsx
+ * AuthContext
+ * Provides authentication state and methods to the app
+ * Handles login, signup, logout, and storing token/user in localStorage
  */
+
+"use client";
 
 import {
   createContext,
@@ -20,31 +15,24 @@ import {
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
-
-export interface User {
-  email: string;
-  avatarUrl?: string;
-  preferences?: Record<string, any>;
-}
 
 interface AuthContextType {
-  user: User | null;
+  user: any;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  signup: (email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
 
-  // Load auth from localStorage on mount
   useEffect(() => {
+    // Load auth state from localStorage
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
     if (storedToken && storedUser) {
@@ -54,46 +42,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const res = await axios.post("/api/auth/login", { email, password });
-      const { token, user } = res.data;
-      setToken(token);
-      setUser(user);
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      router.push("/dashboard");
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || "Login failed");
-    }
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Login failed");
+
+    setToken(data.token);
+    setUser(data.user);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    router.push("/recipes");
   };
 
   const signup = async (email: string, password: string) => {
-    try {
-      await axios.post("/api/auth/signup", { email, password });
-      router.push("/auth/login");
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || "Signup failed");
-    }
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Signup failed");
+
+    setToken(data.token);
+    setUser(data.user);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    router.push("/recipes");
   };
 
   const logout = () => {
-    setUser(null);
     setToken(null);
+    setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    router.push("/auth/login");
+    router.push("/login");
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, signup }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-// Custom hook for consuming AuthContext
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
-};
+}

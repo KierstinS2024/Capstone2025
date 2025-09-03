@@ -1,73 +1,72 @@
-// src/app/recipes/[id]/page.tsx
+// path: src/app/recipes/[id]/page.tsx
+/**
+ * RecipeDetailPage
+ * Shows detailed info about a single recipe
+ * Displays ingredients, instructions, and cuisine
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+
+interface Ingredient {
+  ingredientId: string;
+  quantity: number;
+  unit: string;
+}
 
 interface Recipe {
   _id: string;
   name: string;
-  description?: string;
-  instructions: string;
-  nutritionInfo?: string;
+  description: string;
   cuisine?: string;
+  instructions: string[];
+  ingredients: Ingredient[];
 }
 
-export default function RecipePage() {
-  const router = useRouter();
-  const params = useParams();
-
-  // Type-safe extraction of id
-  const id = params && typeof params.id === "string" ? params.id : null;
-
+export default function RecipeDetailPage() {
+  const { id } = useParams();
+  const { token } = useAuth();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) {
-      setError("Invalid recipe ID");
-      setLoading(false);
-      return;
-    }
-
-    async function fetchRecipe() {
-      try {
-        const res = await fetch(`/api/recipes/${id}`);
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.message || "Recipe not found");
-          return;
-        }
-        setRecipe(data.recipe);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load recipe");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchRecipe();
+    if (id) fetchRecipe();
   }, [id]);
 
-  if (loading) return <p>Loading recipe...</p>;
-  if (error) return <p>Error: {error}</p>;
-  if (!recipe) return <p>Recipe not found.</p>;
+  // Fetch single recipe by ID
+  const fetchRecipe = async () => {
+    const res = await fetch(`/api/recipes/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    setRecipe(data.recipe || null);
+  };
+
+  if (!recipe) return <p>Loading...</p>;
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">{recipe.name}</h1>
-      {recipe.cuisine && <p className="mb-2">Cuisine: {recipe.cuisine}</p>}
-      {recipe.description && <p className="mb-4">{recipe.description}</p>}
-      <h2 className="text-xl font-semibold mb-2">Instructions</h2>
-      <p className="mb-4 whitespace-pre-line">{recipe.instructions}</p>
-      {recipe.nutritionInfo && (
-        <>
-          <h2 className="text-xl font-semibold mb-2">Nutrition Info</h2>
-          <p>{recipe.nutritionInfo}</p>
-        </>
-      )}
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-2">{recipe.name}</h1>
+      {recipe.cuisine && <p className="italic mb-4">{recipe.cuisine}</p>}
+      <p className="mb-4">{recipe.description}</p>
+
+      <h2 className="font-bold mb-2">Ingredients</h2>
+      <ul className="list-disc pl-6 mb-4">
+        {recipe.ingredients.map((ing) => (
+          <li key={ing.ingredientId}>
+            {ing.quantity} {ing.unit} (ID: {ing.ingredientId})
+          </li>
+        ))}
+      </ul>
+
+      <h2 className="font-bold mb-2">Instructions</h2>
+      <ol className="list-decimal pl-6">
+        {recipe.instructions.map((step, idx) => (
+          <li key={idx}>{step}</li>
+        ))}
+      </ol>
     </div>
   );
 }
