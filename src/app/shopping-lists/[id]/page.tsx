@@ -2,17 +2,18 @@
 /**
  * Edit Shopping List Page
  * ------------------------
- * Loads a shopping list by ID and allows:
- *  - Editing title
- *  - Adding/removing/updating items
- *  - Marking items as purchased
- *  - Saving updates to backend
+ * Loads an existing shopping list by ID.
+ * Lets the user:
+ *  - Update the title
+ *  - Add/edit/remove items (ingredient, quantity, unit, purchased)
+ *  - Save changes to the backend
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import styles from "./page.module.css";
 
 export default function EditShoppingListPage() {
   const params = useParams();
@@ -23,18 +24,21 @@ export default function EditShoppingListPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Load list from backend
+  // Load shopping list
   useEffect(() => {
     const fetchList = async () => {
       try {
         const res = await fetch(`/api/shopping-lists/${params.id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
+
         if (res.ok) {
           const data = await res.json();
-          setTitle(data.data.title || "");
+          setTitle(data.data.title);
           setItems(data.data.items || []);
-        } else console.error("Failed to load shopping list");
+        } else {
+          console.error("Failed to load shopping list");
+        }
       } catch (err) {
         console.error("Error fetching shopping list:", err);
       } finally {
@@ -44,16 +48,14 @@ export default function EditShoppingListPage() {
     fetchList();
   }, [params.id]);
 
-  const handleItemChange = (
-    index: number,
-    field: string,
-    value: string | number | boolean
-  ) => {
+  // Update an item
+  const handleItemChange = (index: number, field: string, value: any) => {
     const updated = [...items];
-    (updated[index] as any)[field] = value;
+    updated[index][field] = value;
     setItems(updated);
   };
 
+  // Add new item row
   const handleAddItem = () => {
     setItems([
       ...items,
@@ -61,12 +63,14 @@ export default function EditShoppingListPage() {
     ]);
   };
 
+  // Remove an item row
   const handleRemoveItem = (index: number) => {
     const updated = [...items];
     updated.splice(index, 1);
     setItems(updated);
   };
 
+  // Save changes
   const handleSubmit = async () => {
     setSaving(true);
     try {
@@ -79,8 +83,11 @@ export default function EditShoppingListPage() {
         body: JSON.stringify({ title, items }),
       });
 
-      if (res.ok) router.push("/shopping-lists");
-      else console.error("Failed to update shopping list");
+      if (res.ok) {
+        router.push("/shopping-lists");
+      } else {
+        console.error("Failed to update shopping list");
+      }
     } catch (err) {
       console.error("Error updating shopping list:", err);
     } finally {
@@ -89,31 +96,20 @@ export default function EditShoppingListPage() {
   };
 
   if (loading)
-    return <p style={{ padding: "20px" }}>Loading shopping list...</p>;
+    return <p className={styles.container}>Loading shopping list...</p>;
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div className={styles.container}>
       <h1>Edit Shopping List</h1>
 
       <label>
-        Title:
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+        List Title:
+        <input value={title} onChange={(e) => setTitle(e.target.value)} />
       </label>
 
       <h2>Items</h2>
       {items.map((item, idx) => (
-        <div
-          key={idx}
-          style={{
-            border: "1px solid #ccc",
-            padding: "10px",
-            marginBottom: "10px",
-          }}
-        >
+        <div key={idx} className={styles.card}>
           <input
             type="text"
             placeholder="Ingredient ID"
@@ -124,11 +120,10 @@ export default function EditShoppingListPage() {
           />
           <input
             type="number"
-            min="1"
-            placeholder="Quantity"
+            min="0"
             value={item.quantity}
             onChange={(e) =>
-              handleItemChange(idx, "quantity", parseInt(e.target.value))
+              handleItemChange(idx, "quantity", parseFloat(e.target.value))
             }
           />
           <input
@@ -138,7 +133,6 @@ export default function EditShoppingListPage() {
             onChange={(e) => handleItemChange(idx, "unit", e.target.value)}
           />
           <label>
-            Purchased:
             <input
               type="checkbox"
               checked={item.purchased}
@@ -146,6 +140,7 @@ export default function EditShoppingListPage() {
                 handleItemChange(idx, "purchased", e.target.checked)
               }
             />
+            Purchased
           </label>
           <button
             type="button"

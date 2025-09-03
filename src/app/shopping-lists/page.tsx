@@ -3,22 +3,23 @@
  * Shopping Lists List Page
  * ------------------------
  * Displays all shopping lists for the logged-in user.
- * Users can:
- *  - See existing lists
+ * Lets the user:
+ *  - View their saved lists
  *  - Navigate to create a new list
- *  - Click on a list to view/edit
+ *  - Click on a list to edit it
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import styles from "./page.module.css"; // CSS Module for scoped styles
 
 export default function ShoppingListsPage() {
   const [lists, setLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch shopping lists from backend
+  // Fetch all shopping lists for the user
   useEffect(() => {
     const fetchLists = async () => {
       try {
@@ -33,7 +34,7 @@ export default function ShoppingListsPage() {
           console.error("Failed to fetch shopping lists");
         }
       } catch (err) {
-        console.error("Error fetching shopping lists:", err);
+        console.error("Error loading shopping lists:", err);
       } finally {
         setLoading(false);
       }
@@ -43,39 +44,30 @@ export default function ShoppingListsPage() {
   }, []);
 
   if (loading)
-    return <p style={{ padding: "20px" }}>Loading shopping lists...</p>;
+    return <p className={styles.container}>Loading shopping lists...</p>;
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div className={styles.container}>
       <h1>My Shopping Lists</h1>
 
       {/* Button to create a new list */}
-      <div style={{ marginBottom: "20px" }}>
+      <div className={styles.actions}>
         <Link href="/shopping-lists/new">
           <button>Create New Shopping List</button>
         </Link>
       </div>
 
-      {/* Display lists or empty message */}
+      {/* No lists yet */}
       {lists.length === 0 ? (
-        <p>No shopping lists yet. Create one to get started!</p>
+        <p>You don’t have any shopping lists yet. Create one to get started!</p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
+        <ul className={styles.list}>
           {lists.map((list) => (
-            <li
-              key={list._id}
-              style={{
-                border: "1px solid #ccc",
-                padding: "10px",
-                marginBottom: "10px",
-                borderRadius: "4px",
-              }}
-            >
+            <li key={list._id} className={styles.card}>
               <Link href={`/shopping-lists/${list._id}`}>
                 <strong>{list.title}</strong>
               </Link>
               <p>Items: {list.items?.length || 0}</p>
-              <p>Created: {new Date(list.createdAt).toLocaleDateString()}</p>
             </li>
           ))}
         </ul>
