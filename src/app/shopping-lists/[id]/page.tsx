@@ -1,19 +1,18 @@
 // path: src/app/shopping-lists/[id]/page.tsx
 /**
  * Edit Shopping List Page
- * ------------------------
- * Loads an existing shopping list by ID.
+ * -----------------------
+ * Loads an existing shopping list from the backend.
  * Lets the user:
- *  - Update the title
- *  - Add/edit/remove items (ingredient, quantity, unit, purchased)
- *  - Save changes to the backend
+ *  - Update title
+ *  - Add / edit / remove items (ingredient, quantity, unit, purchased)
+ *  - Save changes back to the backend
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import styles from "./page.module.css";
 
 export default function EditShoppingListPage() {
   const params = useParams();
@@ -24,14 +23,13 @@ export default function EditShoppingListPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Load shopping list
+  // Load existing list
   useEffect(() => {
     const fetchList = async () => {
       try {
         const res = await fetch(`/api/shopping-lists/${params.id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-
         if (res.ok) {
           const data = await res.json();
           setTitle(data.data.title);
@@ -45,17 +43,16 @@ export default function EditShoppingListPage() {
         setLoading(false);
       }
     };
+
     fetchList();
   }, [params.id]);
 
-  // Update an item
   const handleItemChange = (index: number, field: string, value: any) => {
     const updated = [...items];
-    updated[index][field] = value;
+    (updated[index] as any)[field] = value;
     setItems(updated);
   };
 
-  // Add new item row
   const handleAddItem = () => {
     setItems([
       ...items,
@@ -63,14 +60,12 @@ export default function EditShoppingListPage() {
     ]);
   };
 
-  // Remove an item row
   const handleRemoveItem = (index: number) => {
     const updated = [...items];
     updated.splice(index, 1);
     setItems(updated);
   };
 
-  // Save changes
   const handleSubmit = async () => {
     setSaving(true);
     try {
@@ -96,20 +91,31 @@ export default function EditShoppingListPage() {
   };
 
   if (loading)
-    return <p className={styles.container}>Loading shopping list...</p>;
+    return <p style={{ padding: "20px" }}>Loading shopping list...</p>;
 
   return (
-    <div className={styles.container}>
+    <div style={{ padding: "20px" }}>
       <h1>Edit Shopping List</h1>
 
       <label>
-        List Title:
-        <input value={title} onChange={(e) => setTitle(e.target.value)} />
+        Title:
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
       </label>
 
       <h2>Items</h2>
       {items.map((item, idx) => (
-        <div key={idx} className={styles.card}>
+        <div
+          key={idx}
+          style={{
+            border: "1px solid #ccc",
+            padding: "10px",
+            marginBottom: "10px",
+          }}
+        >
           <input
             type="text"
             placeholder="Ingredient ID"
@@ -120,10 +126,10 @@ export default function EditShoppingListPage() {
           />
           <input
             type="number"
-            min="0"
+            min="1"
             value={item.quantity}
             onChange={(e) =>
-              handleItemChange(idx, "quantity", parseFloat(e.target.value))
+              handleItemChange(idx, "quantity", parseInt(e.target.value))
             }
           />
           <input
@@ -133,6 +139,7 @@ export default function EditShoppingListPage() {
             onChange={(e) => handleItemChange(idx, "unit", e.target.value)}
           />
           <label>
+            Purchased:
             <input
               type="checkbox"
               checked={item.purchased}
@@ -140,7 +147,6 @@ export default function EditShoppingListPage() {
                 handleItemChange(idx, "purchased", e.target.checked)
               }
             />
-            Purchased
           </label>
           <button
             type="button"
@@ -151,6 +157,7 @@ export default function EditShoppingListPage() {
           </button>
         </div>
       ))}
+
       <button onClick={handleAddItem}>+ Add Item</button>
 
       <div style={{ marginTop: "20px" }}>

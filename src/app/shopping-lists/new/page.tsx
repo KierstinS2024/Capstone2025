@@ -2,27 +2,25 @@
 /**
  * Create Shopping List Page
  * -------------------------
- * Lets the user build a shopping list manually.
- * They can:
- *  - Add items with ingredient, quantity, and unit
- *  - Mark items as purchased (default false)
- *  - Submit the list to save in the backend
+ * Lets the user create a new shopping list.
+ * They can add items (ingredient ID, quantity, unit, purchased)
+ * and submit to save the list to the backend.
  */
 
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import styles from "./page.module.css";
 
 export default function NewShoppingListPage() {
   const router = useRouter();
 
+  // Form state
   const [title, setTitle] = useState("");
   const [items, setItems] = useState<any[]>([]);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Add a blank item row
+  // Add blank item row
   const handleAddItem = () => {
     setItems([
       ...items,
@@ -30,23 +28,23 @@ export default function NewShoppingListPage() {
     ]);
   };
 
-  // Update an item by index
+  // Update item
   const handleItemChange = (index: number, field: string, value: any) => {
     const updated = [...items];
-    updated[index][field] = value;
+    (updated[index] as any)[field] = value;
     setItems(updated);
   };
 
-  // Remove an item row
+  // Remove item row
   const handleRemoveItem = (index: number) => {
     const updated = [...items];
     updated.splice(index, 1);
     setItems(updated);
   };
 
-  // Save new shopping list
+  // Submit new shopping list
   const handleSubmit = async () => {
-    setSaving(true);
+    setLoading(true);
     try {
       const res = await fetch("/api/shopping-lists", {
         method: "POST",
@@ -65,24 +63,33 @@ export default function NewShoppingListPage() {
     } catch (err) {
       console.error("Error creating shopping list:", err);
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className={styles.container}>
+    <div style={{ padding: "20px" }}>
       <h1>Create Shopping List</h1>
 
-      {/* Title input */}
       <label>
-        List Title:
-        <input value={title} onChange={(e) => setTitle(e.target.value)} />
+        Title:
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
       </label>
 
-      {/* Items list */}
       <h2>Items</h2>
       {items.map((item, idx) => (
-        <div key={idx} className={styles.card}>
+        <div
+          key={idx}
+          style={{
+            border: "1px solid #ccc",
+            padding: "10px",
+            marginBottom: "10px",
+          }}
+        >
           <input
             type="text"
             placeholder="Ingredient ID"
@@ -93,10 +100,10 @@ export default function NewShoppingListPage() {
           />
           <input
             type="number"
-            min="0"
+            min="1"
             value={item.quantity}
             onChange={(e) =>
-              handleItemChange(idx, "quantity", parseFloat(e.target.value))
+              handleItemChange(idx, "quantity", parseInt(e.target.value))
             }
           />
           <input
@@ -105,6 +112,16 @@ export default function NewShoppingListPage() {
             value={item.unit}
             onChange={(e) => handleItemChange(idx, "unit", e.target.value)}
           />
+          <label>
+            Purchased:
+            <input
+              type="checkbox"
+              checked={item.purchased}
+              onChange={(e) =>
+                handleItemChange(idx, "purchased", e.target.checked)
+              }
+            />
+          </label>
           <button
             type="button"
             onClick={() => handleRemoveItem(idx)}
@@ -114,11 +131,12 @@ export default function NewShoppingListPage() {
           </button>
         </div>
       ))}
+
       <button onClick={handleAddItem}>+ Add Item</button>
 
       <div style={{ marginTop: "20px" }}>
-        <button onClick={handleSubmit} disabled={saving}>
-          {saving ? "Saving..." : "Save Shopping List"}
+        <button onClick={handleSubmit} disabled={loading}>
+          {loading ? "Saving..." : "Save Shopping List"}
         </button>
       </div>
     </div>

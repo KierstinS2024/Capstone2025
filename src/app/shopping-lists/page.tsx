@@ -3,8 +3,8 @@
  * Shopping Lists List Page
  * ------------------------
  * Displays all shopping lists for the logged-in user.
- * Lets the user:
- *  - View their saved lists
+ * From here, the user can:
+ *  - View existing lists
  *  - Navigate to create a new list
  *  - Click on a list to edit it
  */
@@ -13,13 +13,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import styles from "./page.module.css"; // CSS Module for scoped styles
 
 export default function ShoppingListsPage() {
   const [lists, setLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch all shopping lists for the user
   useEffect(() => {
     const fetchLists = async () => {
       try {
@@ -43,31 +41,39 @@ export default function ShoppingListsPage() {
     fetchLists();
   }, []);
 
-  if (loading)
-    return <p className={styles.container}>Loading shopping lists...</p>;
+  if (loading) {
+    return <p style={{ padding: "20px" }}>Loading shopping lists...</p>;
+  }
 
   return (
-    <div className={styles.container}>
+    <div style={{ padding: "20px" }}>
       <h1>My Shopping Lists</h1>
 
-      {/* Button to create a new list */}
-      <div className={styles.actions}>
+      {/* Button to create a new shopping list */}
+      <div style={{ marginBottom: "20px" }}>
         <Link href="/shopping-lists/new">
           <button>Create New Shopping List</button>
         </Link>
       </div>
 
-      {/* No lists yet */}
       {lists.length === 0 ? (
         <p>You don’t have any shopping lists yet. Create one to get started!</p>
       ) : (
-        <ul className={styles.list}>
+        <ul style={{ listStyle: "none", padding: 0 }}>
           {lists.map((list) => (
-            <li key={list._id} className={styles.card}>
+            <li
+              key={list._id}
+              style={{
+                border: "1px solid #ccc",
+                padding: "10px",
+                marginBottom: "10px",
+                borderRadius: "4px",
+              }}
+            >
               <Link href={`/shopping-lists/${list._id}`}>
                 <strong>{list.title}</strong>
               </Link>
-              <p>Items: {list.items?.length || 0}</p>
+              <p>Items: {list.items?.length || "No items added"}</p>
             </li>
           ))}
         </ul>
