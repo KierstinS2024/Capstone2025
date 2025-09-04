@@ -1,14 +1,15 @@
-/* src/app/dashboard/recipes/RecipesShared.module.css */
+/* Path: src/app/dashboard/recipes/RecipesShared.module.css */
 
-@import "@/styles/variables.css";
-
+/* ===== Shared Container ===== */
 .container {
   max-width: 900px;
   margin: 2rem auto;
   padding: 1rem;
   background-color: var(--bg-page);
+  border-radius: var(--radius);
 }
 
+/* ===== Shared Titles ===== */
 .title {
   font-size: 2rem;
   font-weight: 700;
@@ -16,6 +17,7 @@
   color: var(--text-primary);
 }
 
+/* ===== Shared Messages ===== */
 .message {
   font-size: 1rem;
   color: var(--text-secondary);
@@ -28,6 +30,7 @@
   margin: 1rem 0;
 }
 
+/* ===== Shared List ===== */
 .list {
   list-style: none;
   padding: 0;
@@ -37,7 +40,7 @@
 .listItem {
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border-light);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background-color: var(--bg-card);
   margin-bottom: 0.5rem;
 }
@@ -52,14 +55,16 @@
   color: var(--accent-primary);
 }
 
+/* ===== Shared Button ===== */
 .button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
   background-color: var(--accent-primary);
   color: var(--bg-card);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
+  font-weight: 500;
   transition: background-color 0.2s ease;
 }
 

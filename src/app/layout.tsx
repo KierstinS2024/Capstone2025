@@ -1,22 +1,17 @@
-/** src/app/layout.tsx
+// path: src/app/layout.tsx
+/**
  * RootLayout
  * ----------
- * Wraps the entire app, providing global context providers.
- * - AuthProvider wraps all children
- * - ThemeProvider wraps all children for dark/light mode
- * - Imports global CSS and variables
+ * Wraps the app with global providers.
+ * - ThemeProvider: light/dark mode
+ * - AuthProvider: authentication
+ * - Imports CSS variables and global styles
  */
 
-import "@/styles/variables.css"; // CSS variables for colors and themes
-import "@/styles/globals.css"; // optional resets/fonts
-import { AuthProvider } from "../context/AuthContext";
-import { ThemeProvider } from "../context/ThemeContext";
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Capstone2025",
-  description: "Nutrition & meal planning app",
-};
+import "../styles/globals.css";
+import "../styles/variables.css";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 export default function RootLayout({
   children,
@@ -25,15 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body
-        style={{
-          backgroundColor: "var(--color-bg)",
-          color: "var(--color-text)",
-          fontFamily: "system-ui, sans-serif",
-          margin: 0,
-          minHeight: "100vh",
-        }}
-      >
+      <body>
         <ThemeProvider>
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>

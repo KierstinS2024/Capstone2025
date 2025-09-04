@@ -4,14 +4,9 @@
 /**
  * NavBar
  * ------
- * - Displays main app navigation links
- * - Provides a dark/light mode toggle using ThemeContext
- * - Includes a logout button from AuthContext
- *
- * Notes:
- * - Links highlight on hover
- * - Dark/light mode toggle updates global CSS variables via ThemeContext
- * - Buttons have accessible labels and consistent styling
+ * - Displays navigation links
+ * - Adds a **single toggle button** that switches the **entire app** light/dark
+ * - Includes logout button
  */
 
 import Link from "next/link";
@@ -20,15 +15,12 @@ import { useTheme } from "@/context/ThemeContext";
 import styles from "./NavBar.module.css";
 
 export default function NavBar() {
-  // Get auth methods
   const { logout } = useAuth();
-
-  // Get current theme and toggle function
   const { theme, toggleTheme } = useTheme();
 
   return (
     <nav className={styles.nav}>
-      {/* Navigation Links */}
+      {/* Links */}
       <div className={styles.links}>
         <Link href="/dashboard">Dashboard</Link>
         <Link href="/dashboard/recipes">Recipes</Link>
@@ -37,18 +29,16 @@ export default function NavBar() {
         <Link href="/food-intake">Food Intake</Link>
       </div>
 
-      {/* Action Buttons: Theme toggle + Logout */}
+      {/* Actions */}
       <div className={styles.actions}>
-        {/* Dark/Light toggle */}
         <button
           className={styles.toggleButton}
           onClick={toggleTheme}
           title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
         >
-          {theme === "light" ? "Dark" : "Light"}
+          {theme === "light" ? "Dark Mode" : "Light Mode"}
         </button>
 
-        {/* Logout */}
         <button className={styles.logoutButton} onClick={logout}>
           Logout
         </button>

@@ -1,0 +1,95 @@
+/** src/app/page.module.css
+ * Landing Page Styles
+ * -------------------
+ * Earthy color palette, soft edges, minimal shadows.
+ * Layout:
+ *  - Hero: split text + illustration
+ *  - Features: 3 cards
+ *  - CTA footer: centered
+ */
+
+/* Container background matches public pages */
+.container {
+  background: var(--bg-landing);
+  color: var(--text-landing);
+  font-family: var(--font, system-ui, sans-serif);
+}
+
+/* ------------------- Hero ------------------- */
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4rem 2rem;
+}
+.text {
+  max-width: 500px;
+}
+.text h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+.text p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+.actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Placeholder block for hero image/illustration */
+.illustration {
+  width: 400px;
+  height: 300px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ------------------- Features ------------------- */
+.features {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding: 4rem 2rem;
+}
+.card {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  max-width: 250px;
+  text-align: center;
+}
+
+/* ------------------- CTA ------------------- */
+.cta {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--secondary-earth);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  margin: 4rem 2rem;
+}
+
+/* ------------------- Buttons ------------------- */
+.btnPrimary {
+  background: var(--primary-earth);
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-lg);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+}
+.btnSecondary {
+  background: transparent;
+  color: var(--primary-earth);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--primary-earth);
+  cursor: pointer;
+  font-weight: 600;
+}

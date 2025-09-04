@@ -1,11 +1,21 @@
-/* src/app/dashboard/recipes/external/[id]/page.tsx */
-"use client"; // Using client-side hooks for fetching data
+// path: src/app/dashboard/recipes/external/[id]/page.tsx
+"use client";
+
+/**
+ * ExternalRecipePage
+ * ------------------
+ * Displays detailed information for an external (Spoonacular) recipe.
+ * - Fetches from backend proxy API: /api/external/recipes/:id
+ * - Shows title, image, cuisines, summary, and instructions
+ * - Gracefully handles loading/error states
+ * - Includes navigation back to recipes list
+ */
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import styles from "../../RecipesShared.module.css";
+import NavBar from "@/components/NavBar";
+import styles from "./ExternalRecipePage.module.css";
 
-// Define the type for the external recipe
 interface ExternalRecipe {
   id: number;
   title: string;
@@ -24,71 +34,74 @@ export default function ExternalRecipePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch recipe by ID when component mounts or ID changes
   useEffect(() => {
     if (!id) return;
 
-    async function fetchRecipe() {
+    const fetchRecipe = async () => {
       setLoading(true);
+      setError(null);
       try {
         const res = await fetch(`/api/external/recipes/${id}`);
         const data = await res.json();
 
-        if (data.error) {
-          setError(data.error);
-        } else {
-          setRecipe(data);
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "Failed to fetch recipe");
         }
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load recipe");
+
+        setRecipe(data);
+      } catch (err: any) {
+        console.error("Error fetching external recipe:", err);
+        setError(err.message || "Error loading recipe");
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchRecipe();
   }, [id]);
 
-  if (loading) return <p>Loading recipe...</p>;
-  if (error) return <p>Error: {error}</p>;
-  if (!recipe) return <p>Recipe not found</p>;
+  if (loading) return <p className={styles.source}>Loading recipe...</p>;
+  if (error) return <p className={styles.source}>Error: {error}</p>;
+  if (!recipe) return <p className={styles.source}>Recipe not found.</p>;
 
   return (
-    <div className={styles.container}>
-      {/* Recipe title */}
-      <h1 className={styles.title}>{recipe.title}</h1>
+    <div>
+      <NavBar />
+      <main className={styles.container}>
+        {/* Title */}
+        <h1 className={styles.title}>{recipe.title}</h1>
 
-      {/* Recipe image */}
-      {recipe.image && (
-        <img src={recipe.image} alt={recipe.title} className={styles.image} />
-      )}
+        {/* Image */}
+        {recipe.image && (
+          <img src={recipe.image} alt={recipe.title} className={styles.image} />
+        )}
 
-      {/* Cuisine info */}
-      {recipe.cuisines && (
-        <p className={styles.cuisine}>Cuisine: {recipe.cuisines.join(", ")}</p>
-      )}
+        {/* Cuisine */}
+        {recipe.cuisines && recipe.cuisines.length > 0 && (
+          <p className={styles.source}>Cuisine: {recipe.cuisines.join(", ")}</p>
+        )}
 
-      {/* Summary section */}
-      {recipe.summary && (
-        <div
-          className={styles.section}
-          dangerouslySetInnerHTML={{ __html: recipe.summary }}
-        />
-      )}
+        {/* Summary */}
+        {recipe.summary && (
+          <div
+            className={styles.instructions}
+            dangerouslySetInnerHTML={{ __html: recipe.summary }}
+          />
+        )}
 
-      {/* Instructions section */}
-      {recipe.instructions && (
-        <div className={`${styles.section} ${styles.instructions}`}>
-          <h2>Instructions:</h2>
-          <div dangerouslySetInnerHTML={{ __html: recipe.instructions }} />
-        </div>
-      )}
+        {/* Instructions */}
+        {recipe.instructions && (
+          <div className={styles.instructions}>
+            <h2>Instructions</h2>
+            <div dangerouslySetInnerHTML={{ __html: recipe.instructions }} />
+          </div>
+        )}
 
-      {/* Go back button */}
-      <button className={styles.button} onClick={() => router.back()}>
-        Go Back
-      </button>
+        {/* Back Navigation */}
+        <button className={styles.backButton} onClick={() => router.back()}>
+          ← Back to Recipes
+        </button>
+      </main>
     </div>
   );
 }

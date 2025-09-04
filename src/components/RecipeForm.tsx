@@ -5,15 +5,14 @@
  * RecipeForm Component
  * --------------------
  * Reusable form for creating or editing a user-submitted recipe.
- * Includes:
- * - Recipe title
- * - Description
+ * Handles:
+ * - Recipe title & description
  * - Dynamic list of ingredients (name, quantity, unit)
  * - Step-by-step instructions
  * - Cuisine selection
- *
- * Accepts optional initialData for editing an existing recipe.
- * Automatically handles authentication via the token from AuthContext.
+ * 
+ * Accepts optional `initialData` for editing.
+ * Uses AuthContext to include JWT in API requests.
  */
 
 import { useState } from "react";
@@ -24,10 +23,10 @@ interface Ingredient {
   name: string;
   quantity: string;
   unit: string;
+  ingredientId?: string; // optional, for external ingredients
 }
 
 interface RecipeFormProps {
-  /** Optional recipe data when editing an existing recipe */
   initialData?: {
     _id?: string;
     name: string;
@@ -36,8 +35,7 @@ interface RecipeFormProps {
     instructions: string[];
     cuisine: string;
   };
-  /** Optional callback invoked after successful save */
-  onSave?: () => void;
+  onSave?: () => void; // optional callback after save
 }
 
 export default function RecipeForm({ initialData, onSave }: RecipeFormProps) {
@@ -60,29 +58,52 @@ export default function RecipeForm({ initialData, onSave }: RecipeFormProps) {
   );
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- Handlers for dynamic ingredient fields ---
+  // --- Ingredient handlers ---
   const handleIngredientChange = (
     index: number,
     field: keyof Ingredient,
     value: string
   ) => {
-    const updatedIngredients = [...recipeIngredients];
-    updatedIngredients[index][field] = value;
-    setRecipeIngredients(updatedIngredients);
+    const updated = [...recipeIngredients];
+    updated[index][field] = value;
+    setRecipeIngredients(updated);
   };
 
-  // --- Handlers for dynamic instruction fields ---
+  const addIngredient = () => {
+    setRecipeIngredients([
+      ...recipeIngredients,
+      { name: "", quantity: "", unit: "" },
+    ]);
+  };
+
+  const removeIngredient = (index: number) => {
+    const updated = [...recipeIngredients];
+    updated.splice(index, 1);
+    setRecipeIngredients(updated);
+  };
+
+  // --- Instruction handlers ---
   const handleInstructionChange = (index: number, value: string) => {
-    const updatedInstructions = [...recipeInstructions];
-    updatedInstructions[index] = value;
-    setRecipeInstructions(updatedInstructions);
+    const updated = [...recipeInstructions];
+    updated[index] = value;
+    setRecipeInstructions(updated);
   };
 
-  // --- Form submission handler ---
+  const addInstruction = () => {
+    setRecipeInstructions([...recipeInstructions, ""]);
+  };
+
+  const removeInstruction = (index: number) => {
+    const updated = [...recipeInstructions];
+    updated.splice(index, 1);
+    setRecipeInstructions(updated);
+  };
+
+  // --- Form submission ---
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    // --- Validation ---
+    // --- Basic validation ---
     if (!recipeTitle.trim()) return alert("Title is required");
     if (!recipeDescription.trim()) return alert("Description is required");
     if (!recipeIngredients.every((ing) => ing.name && ing.quantity && ing.unit))
@@ -93,21 +114,22 @@ export default function RecipeForm({ initialData, onSave }: RecipeFormProps) {
 
     setIsSaving(true);
 
-    // --- Map ingredients to API format ---
-    const mappedIngredients = recipeIngredients.map((ingredient) => ({
-      ingredientId: null, // Placeholder for future Ingredient collection integration
-      quantity: Number(ingredient.quantity),
-      unit: ingredient.unit,
+    // --- Map ingredients for backend with guaranteed ingredientId ---
+    const mappedIngredients = recipeIngredients.map((ing, index) => ({
+      ingredientId: ing.ingredientId || `user-${index}`, // always defined
+      name: ing.name,
+      quantity: ing.quantity, // string is fine
+      unit: ing.unit,
     }));
 
     try {
       const apiEndpoint = initialData?._id
         ? `/api/recipes/${initialData._id}`
         : "/api/recipes";
-      const httpMethod = initialData?._id ? "PUT" : "POST";
+      const method = initialData?._id ? "PUT" : "POST";
 
       const response = await fetch(apiEndpoint, {
-        method: httpMethod,
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -115,17 +137,17 @@ export default function RecipeForm({ initialData, onSave }: RecipeFormProps) {
         body: JSON.stringify({
           name: recipeTitle,
           description: recipeDescription,
-          ingredients: mappedIngredients,
           instructions: recipeInstructions,
           cuisine: recipeCuisine,
           userSubmitted: true,
+          ingredients: mappedIngredients,
         }),
       });
 
       if (response.ok) {
         alert("✅ Recipe saved successfully!");
-        onSave?.(); // Trigger optional callback
-        router.push("/dashboard/recipes"); // Redirect to recipe list
+        onSave?.();
+        router.push("/dashboard/recipes");
       } else {
         const data = await response.json();
         alert(`❌ Error saving recipe: ${data.message || "Unknown error"}`);
@@ -147,77 +169,75 @@ export default function RecipeForm({ initialData, onSave }: RecipeFormProps) {
         maxWidth: "600px",
       }}
     >
-      {/* Recipe Title */}
+      {/* Title & Description */}
       <input
         placeholder="Recipe Title"
         value={recipeTitle}
         onChange={(e) => setRecipeTitle(e.target.value)}
       />
-
-      {/* Recipe Description */}
       <textarea
         placeholder="Recipe Description"
         value={recipeDescription}
         onChange={(e) => setRecipeDescription(e.target.value)}
       />
 
-      {/* Ingredients Section */}
+      {/* Ingredients */}
       <h3>Ingredients</h3>
-      {recipeIngredients.map((ingredient, index) => (
-        <div key={index} style={{ display: "flex", gap: "0.5rem" }}>
+      {recipeIngredients.map((ing, idx) => (
+        <div key={idx} style={{ display: "flex", gap: "0.5rem" }}>
           <input
             placeholder="Name"
-            value={ingredient.name}
+            value={ing.name}
             onChange={(e) =>
-              handleIngredientChange(index, "name", e.target.value)
+              handleIngredientChange(idx, "name", e.target.value)
             }
           />
           <input
             placeholder="Quantity"
-            value={ingredient.quantity}
+            value={ing.quantity}
             onChange={(e) =>
-              handleIngredientChange(index, "quantity", e.target.value)
+              handleIngredientChange(idx, "quantity", e.target.value)
             }
           />
           <input
             placeholder="Unit"
-            value={ingredient.unit}
+            value={ing.unit}
             onChange={(e) =>
-              handleIngredientChange(index, "unit", e.target.value)
+              handleIngredientChange(idx, "unit", e.target.value)
             }
           />
+          {recipeIngredients.length > 1 && (
+            <button type="button" onClick={() => removeIngredient(idx)}>
+              ❌
+            </button>
+          )}
         </div>
       ))}
-      <button
-        type="button"
-        onClick={() =>
-          setRecipeIngredients([
-            ...recipeIngredients,
-            { name: "", quantity: "", unit: "" },
-          ])
-        }
-      >
+      <button type="button" onClick={addIngredient}>
         + Add Ingredient
       </button>
 
-      {/* Instructions Section */}
+      {/* Instructions */}
       <h3>Instructions</h3>
-      {recipeInstructions.map((step, index) => (
-        <input
-          key={index}
-          placeholder={`Step ${index + 1}`}
-          value={step}
-          onChange={(e) => handleInstructionChange(index, e.target.value)}
-        />
+      {recipeInstructions.map((step, idx) => (
+        <div key={idx} style={{ display: "flex", gap: "0.5rem" }}>
+          <input
+            placeholder={`Step ${idx + 1}`}
+            value={step}
+            onChange={(e) => handleInstructionChange(idx, e.target.value)}
+          />
+          {recipeInstructions.length > 1 && (
+            <button type="button" onClick={() => removeInstruction(idx)}>
+              ❌
+            </button>
+          )}
+        </div>
       ))}
-      <button
-        type="button"
-        onClick={() => setRecipeInstructions([...recipeInstructions, ""])}
-      >
+      <button type="button" onClick={addInstruction}>
         + Add Step
       </button>
 
-      {/* Cuisine Selection */}
+      {/* Cuisine */}
       <h3>Cuisine</h3>
       <select
         value={recipeCuisine}
@@ -228,9 +248,24 @@ export default function RecipeForm({ initialData, onSave }: RecipeFormProps) {
         <option value="Mexican">Mexican</option>
         <option value="Indian">Indian</option>
         <option value="American">American</option>
+        <option value="Chinese">Chinese</option>
+        <option value="Japanese">Japanese</option>
+        <option value="Thai">Thai</option>
+        <option value="French">French</option>
+        <option value="Mediterranean">Mediterranean</option>
+        <option value="Spanish">Spanish</option>
+        <option value="Korean">Korean</option>
+        <option value="Vietnamese">Vietnamese</option>
+        <option value="Middle Eastern">Middle Eastern</option>
+        <option value="Caribbean">Caribbean</option>
+        <option value="African">African</option>
+        <option value="German">German</option>
+        <option value="British">British</option>
+        <option value="Russian">Russian</option>
+        <option value="Other">Other</option>
       </select>
 
-      {/* Submit Button */}
+      {/* Submit */}
       <button type="submit" disabled={isSaving}>
         {isSaving ? "Saving..." : "Save Recipe"}
       </button>

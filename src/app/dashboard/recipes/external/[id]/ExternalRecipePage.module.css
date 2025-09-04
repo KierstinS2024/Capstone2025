@@ -1,4 +1,17 @@
+/* src/app/dashboard/recipes/external/[id]/ExternalRecipePage.module.css */
+
 @import "@/styles/variables.css";
+
+/* ExternalRecipePage.module.css */
+.image {
+  width: 100%;
+  max-width: 500px;
+  display: block;
+  margin: 1rem auto;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  background-color: var(--card);
+}
 
 .container {
   max-width: 800px;

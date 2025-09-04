@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     // Extract the `query` parameter from the URL
     const { searchParams } = new URL(req.url);
-    const query = searchParams.get("query");
+    const query = searchParams.get("search");
 
     // Return early if no query was provided
     if (!query) {

@@ -18,15 +18,19 @@ import { useRouter } from "next/navigation";
 export default function NewRecipePage() {
   const router = useRouter();
 
+  /** Handler after successfully saving a recipe */
+  const handleRecipeSave = () => {
+    router.push("/dashboard/recipes"); // Redirect back to Recipes Dashboard
+  };
+
   return (
     <ProtectedRoute>
       <NavBar />
       <main style={{ padding: "20px" }}>
         <h1>Add a New Recipe</h1>
-        {/* RecipeForm with no initialData for creating a new recipe */}
-        <RecipeForm
-          onSave={() => router.push("/dashboard/recipes")} // Redirect after save
-        />
+
+        {/* RecipeForm component with no initial data */}
+        <RecipeForm onSave={handleRecipeSave} />
       </main>
     </ProtectedRoute>
   );

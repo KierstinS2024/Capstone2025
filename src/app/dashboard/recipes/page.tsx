@@ -1,157 +1,188 @@
-// path: src/app/dashboard/recipes/page.tsx
+// Path: src/app/dashboard/recipes/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import NavBar from "@/components/NavBar";
-import styles from "./RecipesPage.module.css"; // page-specific styles
-import sharedStyles from "./RecipesShared.module.css"; // shared styles
+/**
+ * RecipesPage
+ * --------------------
+ * Dashboard for viewing, searching, creating, and editing recipes.
+ * - Fetches both user-submitted and Spoonacular recipes
+ * - Integrates SearchBar and RecipeForm
+ * - Renders recipes in a responsive grid using RecipeCard
+ * - Edit/Delete only for user recipes
+ * - Auto-refreshes recipe list after creating or editing a recipe
+ */
 
-type Recipe = {
-  _id: string;
+import { useState, useEffect } from "react";
+import RecipeCard from "@/components/RecipeCard";
+import SearchBar from "@/components/SearchBar";
+import RecipeForm from "@/components/RecipeForm";
+import styles from "./RecipesPage.module.css";
+import sharedStyles from "./RecipesShared.module.css";
+
+interface Ingredient {
   name: string;
-  description?: string;
-  userSubmitted: boolean;
-  imageUrl?: string; // optional thumbnail
-};
+  quantity: string;
+  unit: string;
+  ingredientId?: string;
+}
 
-export default function RecipesDashboardPage() {
-  const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
+interface Recipe {
+  _id?: string;
+  name: string;
+  description: string;
+  cuisine: string;
+  ingredients: Ingredient[];
+  instructions: string[];
+  source: "user" | "spoonacular";
+  externalId?: string;
+}
+
+export default function RecipesPage() {
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
-  const [spoonacularRecipes, setSpoonacularRecipes] = useState<Recipe[]>([]);
+  const [spoonRecipes, setSpoonRecipes] = useState<Recipe[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
 
-  // Fetch recipes
-  const fetchRecipes = async (search = "") => {
-    if (!token) return;
+  const fetchRecipes = async (query: string) => {
     setLoading(true);
-    setError(null);
+    setError("");
+
     try {
-      const res = await fetch(
-        `/api/recipes?search=${encodeURIComponent(search)}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      // Fetch user recipes
+      const userRes = await fetch(
+        `/api/recipes?search=${encodeURIComponent(query)}`
       );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to fetch recipes");
-
-      // Separate user-submitted vs others (Spoonacular)
-      const users: Recipe[] = data.recipes.filter(
-        (r: Recipe) => r.userSubmitted
-      );
-      const spoonacular: Recipe[] = data.recipes.filter(
-        (r: Recipe) => !r.userSubmitted
-      );
-
+      const userData = await userRes.json();
+      const users: Recipe[] = (userData.recipes || []).map((r: any) => ({
+        _id: r._id,
+        name: r.name,
+        description: r.description || "",
+        cuisine: r.cuisine || "",
+        ingredients: (r.ingredients || []).map((ing: any) => ({
+          name: ing.name,
+          quantity: String(ing.quantity),
+          unit: ing.unit,
+          ingredientId: ing.ingredientId,
+        })),
+        instructions: r.instructions || [],
+        source: "user",
+      }));
       setUserRecipes(users);
-      setSpoonacularRecipes(spoonacular);
-    } catch (err: any) {
-      setError(err.message || "Error fetching recipes");
+
+      // Fetch Spoonacular recipes
+      const spoonRes = await fetch(
+        `/api/external/recipes?search=${encodeURIComponent(query)}`
+      );
+      const spoonData = await spoonRes.json();
+      const spoons: Recipe[] = (spoonData.recipes || []).map((r: any) => ({
+        name: r.title,
+        description: r.summary || "",
+        cuisine: r.cuisine || "",
+        ingredients: (r.extendedIngredients || []).map((ing: any) => ({
+          name: ing.name || "",
+          quantity: String(ing.amount || ""),
+          unit: ing.unit || "",
+        })),
+        instructions: (r.analyzedInstructions || []).map(
+          (step: any) => step.step || ""
+        ),
+        source: "spoonacular",
+        externalId: r.id.toString(),
+      }));
+      setSpoonRecipes(spoons);
+    } catch (err) {
+      console.error("Error fetching recipes:", err);
+      setError("Failed to load recipes. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRecipes();
+    fetchRecipes("");
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchRecipes(searchTerm);
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    fetchRecipes(query);
   };
 
-  const handleClickRecipe = (id: string) => {
-    router.push(`/dashboard/recipes/${id}`);
+  const handleSave = () => {
+    setEditingRecipe(null);
+    fetchRecipes(searchQuery);
   };
 
   return (
-    <div>
-      <NavBar />
+    <div className={styles.container}>
+      <h1 className={styles.title}>Recipes Dashboard</h1>
 
-      <div className={styles.container}>
-        <h1 className={styles.title}>Recipes</h1>
+      <SearchBar onSearch={handleSearch} />
 
-        {/* Search bar */}
-        <form onSubmit={handleSearch} className={sharedStyles.form}>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search recipes..."
-            className={sharedStyles.input}
+      {!editingRecipe && (
+        <button
+          className={sharedStyles.button}
+          onClick={() =>
+            setEditingRecipe({
+              name: "",
+              description: "",
+              ingredients: [{ name: "", quantity: "", unit: "" }],
+              instructions: [""],
+              cuisine: "",
+              source: "user",
+            })
+          }
+          style={{ marginBottom: "1rem" }}
+        >
+          Create New Recipe
+        </button>
+      )}
+
+      {editingRecipe && (
+        <RecipeForm initialData={editingRecipe} onSave={handleSave} />
+      )}
+
+      {error && <p className={styles.error}>{error}</p>}
+      {loading && <p className={styles.message}>Loading recipes...</p>}
+      {!loading && !error && userRecipes.length + spoonRecipes.length === 0 && (
+        <p className={styles.empty}>No recipes found.</p>
+      )}
+
+      <div className={styles.grid}>
+        {userRecipes.map((recipe) => (
+          <RecipeCard
+            key={recipe._id}
+            recipe={recipe}
+            showActions={true}
+            onEdit={() => setEditingRecipe(recipe)}
+            onDelete={async () => {
+              if (!confirm(`Delete recipe "${recipe.name}"?`)) return;
+              try {
+                const token = localStorage.getItem("token");
+                if (!token) return alert("You must be logged in");
+                const res = await fetch(`/api/recipes/${recipe._id}`, {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (res.ok) {
+                  fetchRecipes(searchQuery);
+                  alert("Recipe deleted");
+                } else {
+                  const data = await res.json();
+                  alert(`Error deleting: ${data.message || "Unknown error"}`);
+                }
+              } catch (err) {
+                alert(`Network error: ${err}`);
+              }
+            }}
           />
-          <button type="submit" className={sharedStyles.button}>
-            Search
-          </button>
-        </form>
+        ))}
 
-        {error && <p className={sharedStyles.error}>{error}</p>}
-        {loading && <p className={sharedStyles.message}>Loading recipes...</p>}
-
-        {/* User-submitted recipes */}
-        <section style={{ marginTop: "2rem" }}>
-          <h2>User Recipes</h2>
-          {userRecipes.length === 0 ? (
-            <p className={sharedStyles.empty}>No user recipes found.</p>
-          ) : (
-            <div className={styles.grid}>
-              {userRecipes.map((r) => (
-                <div
-                  key={r._id}
-                  className={styles.card}
-                  onClick={() => handleClickRecipe(r._id)}
-                  style={{ cursor: "pointer" }}
-                >
-                  {r.imageUrl && (
-                    <img
-                      src={r.imageUrl}
-                      alt={r.name}
-                      className={styles.cardImage}
-                    />
-                  )}
-                  <div className={styles.cardTitle}>{r.name}</div>
-                  <div className={styles.cardSubtitle}>User submitted</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Spoonacular recipes */}
-        <section style={{ marginTop: "2rem" }}>
-          <h2>Spoonacular Recipes</h2>
-          {spoonacularRecipes.length === 0 ? (
-            <p className={sharedStyles.empty}>No Spoonacular recipes found.</p>
-          ) : (
-            <div className={styles.grid}>
-              {spoonacularRecipes.map((r) => (
-                <div
-                  key={r._id}
-                  className={styles.card}
-                  onClick={() => handleClickRecipe(r._id)}
-                  style={{ cursor: "pointer" }}
-                >
-                  {r.imageUrl && (
-                    <img
-                      src={r.imageUrl}
-                      alt={r.name}
-                      className={styles.cardImage}
-                    />
-                  )}
-                  <div className={styles.cardTitle}>{r.name}</div>
-                  <div className={styles.cardSubtitle}>Spoonacular</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        {spoonRecipes.map((recipe) => (
+          <RecipeCard key={recipe.externalId} recipe={recipe} />
+        ))}
       </div>
     </div>
   );
