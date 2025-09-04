@@ -1,16 +1,16 @@
-// path: src/app/layout.tsx
-/**
+/** src/app/layout.tsx
  * RootLayout
  * ----------
  * Wraps the entire app, providing global context providers.
- *
- * Notes:
- *  - Metadata is exported (server component)
- *  - AuthProvider wraps all children
- *  - No "use client" at the top; this allows exporting metadata
+ * - AuthProvider wraps all children
+ * - ThemeProvider wraps all children for dark/light mode
+ * - Imports global CSS and variables
  */
 
+import "@/styles/variables.css"; // CSS variables for colors and themes
+import "@/styles/globals.css"; // optional resets/fonts
 import { AuthProvider } from "../context/AuthContext";
+import { ThemeProvider } from "../context/ThemeContext";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -25,8 +25,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <AuthProvider>{children}</AuthProvider>
+      <body
+        style={{
+          backgroundColor: "var(--color-bg)",
+          color: "var(--color-text)",
+          fontFamily: "system-ui, sans-serif",
+          margin: 0,
+          minHeight: "100vh",
+        }}
+      >
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

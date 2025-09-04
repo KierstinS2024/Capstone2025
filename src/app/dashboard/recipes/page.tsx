@@ -1,156 +1,158 @@
 // path: src/app/dashboard/recipes/page.tsx
-/**
- * RecipesListPage.tsx
- * -------------------
- * Lists recipes with search capability.
- * Combines user-submitted recipes and Spoonacular results.
- * Supports viewing and editing user recipes; links to external Spoonacular recipes.
- */
-
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import NavBar from "@/components/NavBar";
-import SearchBar from "@/components/SearchBar";
-import { getApiClient } from "@/lib/api";
-import axios from "axios";
+import styles from "./RecipesPage.module.css"; // page-specific styles
+import sharedStyles from "./RecipesShared.module.css"; // shared styles
 
-// Recipe type, user or Spoonacular
-interface RecipeItem {
-  _id?: string; // Only user-submitted recipes
+type Recipe = {
+  _id: string;
   name: string;
   description?: string;
-  cuisine?: string;
-  source: "user" | "spoonacular";
-  externalId?: string; // Only Spoonacular recipes
-}
+  userSubmitted: boolean;
+  imageUrl?: string; // optional thumbnail
+};
 
-export default function RecipesListPage() {
-  const [recipeList, setRecipeList] = useState<RecipeItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+export default function RecipesDashboardPage() {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
+  const [spoonacularRecipes, setSpoonacularRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Fetch recipes based on search term.
-   * Pulls from both user-submitted recipes and Spoonacular.
-   */
-  const fetchRecipes = async (searchTerm: string) => {
-    setIsLoading(true);
-    setLoadError(null);
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
+  // Fetch recipes
+  const fetchRecipes = async (search = "") => {
+    if (!token) return;
+    setLoading(true);
+    setError(null);
     try {
-      const userToken = localStorage.getItem("token") || undefined;
-      const apiClient = getApiClient(userToken);
-
-      // Fetch user-submitted recipes
-      const userResponse = await apiClient.get(
-        `/recipes?search=${encodeURIComponent(searchTerm)}`
+      const res = await fetch(
+        `/api/recipes?search=${encodeURIComponent(search)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
-      const userRecipes: RecipeItem[] = (userResponse.data.recipes || []).map(
-        (userRecipe: any) => ({
-          _id: userRecipe._id,
-          name: userRecipe.name,
-          description: userRecipe.description,
-          cuisine: userRecipe.cuisine,
-          source: "user",
-        })
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to fetch recipes");
+
+      // Separate user-submitted vs others (Spoonacular)
+      const users: Recipe[] = data.recipes.filter(
+        (r: Recipe) => r.userSubmitted
+      );
+      const spoonacular: Recipe[] = data.recipes.filter(
+        (r: Recipe) => !r.userSubmitted
       );
 
-      // Fetch Spoonacular recipes
-      const spoonacularResponse = await axios.get(
-        `https://api.spoonacular.com/recipes/complexSearch?query=${encodeURIComponent(
-          searchTerm
-        )}&number=5&apiKey=${process.env.NEXT_PUBLIC_SPOONACULAR_KEY}`
-      );
-      const spoonacularRecipes: RecipeItem[] = (
-        spoonacularResponse.data.results || []
-      ).map((spoonRecipe: any) => ({
-        name: spoonRecipe.title,
-        source: "spoonacular",
-        externalId: spoonRecipe.id.toString(),
-      }));
-
-      setRecipeList([...userRecipes, ...spoonacularRecipes]);
-    } catch (error: any) {
-      console.error("Error fetching recipes:", error);
-      setLoadError(error.message || "Error fetching recipes");
+      setUserRecipes(users);
+      setSpoonacularRecipes(spoonacular);
+    } catch (err: any) {
+      setError(err.message || "Error fetching recipes");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  // Initial load: all user recipes
   useEffect(() => {
-    fetchRecipes("");
+    fetchRecipes();
   }, []);
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchRecipes(searchTerm);
+  };
+
+  const handleClickRecipe = (id: string) => {
+    router.push(`/dashboard/recipes/${id}`);
+  };
+
   return (
-    <ProtectedRoute>
+    <div>
       <NavBar />
-      <div style={{ padding: "20px" }}>
-        <header>
-          <h1>Recipes</h1>
-          <Link href="/dashboard/recipes/new">
-            <button>+ New Recipe</button>
-          </Link>
-        </header>
 
-        <SearchBar onSearch={fetchRecipes} />
+      <div className={styles.container}>
+        <h1 className={styles.title}>Recipes</h1>
 
-        {isLoading && <p>Loading recipes...</p>}
-        {loadError && <p>{loadError}</p>}
+        {/* Search bar */}
+        <form onSubmit={handleSearch} className={sharedStyles.form}>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search recipes..."
+            className={sharedStyles.input}
+          />
+          <button type="submit" className={sharedStyles.button}>
+            Search
+          </button>
+        </form>
 
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {recipeList.map((recipe, index) => {
-            // Build user-friendly Spoonacular URL
-            const spoonacularUrl =
-              recipe.source === "spoonacular" && recipe.externalId
-                ? `https://spoonacular.com/recipes/${recipe.name
-                    .toLowerCase()
-                    .replace(/\s+/g, "-")}-${recipe.externalId}`
-                : undefined;
+        {error && <p className={sharedStyles.error}>{error}</p>}
+        {loading && <p className={sharedStyles.message}>Loading recipes...</p>}
 
-            return (
-              <li
-                key={recipe._id || recipe.externalId || index}
-                style={{
-                  border: "1px solid #ccc",
-                  padding: "10px",
-                  marginBottom: "10px",
-                }}
-              >
-                <h3>{recipe.name}</h3>
-                {recipe.cuisine && <p>Cuisine: {recipe.cuisine}</p>}
-                {recipe.description && <p>{recipe.description}</p>}
-                <div>
-                  {recipe.source === "user" ? (
-                    <>
-                      <Link href={`/dashboard/recipes/${recipe._id}`}>
-                        View
-                      </Link>
-                      {" | "}
-                      <Link href={`/dashboard/recipes/${recipe._id}/edit`}>
-                        Edit
-                      </Link>
-                    </>
-                  ) : (
-                    <a
-                      href={spoonacularUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View on Spoonacular
-                    </a>
+        {/* User-submitted recipes */}
+        <section style={{ marginTop: "2rem" }}>
+          <h2>User Recipes</h2>
+          {userRecipes.length === 0 ? (
+            <p className={sharedStyles.empty}>No user recipes found.</p>
+          ) : (
+            <div className={styles.grid}>
+              {userRecipes.map((r) => (
+                <div
+                  key={r._id}
+                  className={styles.card}
+                  onClick={() => handleClickRecipe(r._id)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {r.imageUrl && (
+                    <img
+                      src={r.imageUrl}
+                      alt={r.name}
+                      className={styles.cardImage}
+                    />
                   )}
+                  <div className={styles.cardTitle}>{r.name}</div>
+                  <div className={styles.cardSubtitle}>User submitted</div>
                 </div>
-              </li>
-            );
-          })}
-          {recipeList.length === 0 && !isLoading && <li>No recipes found.</li>}
-        </ul>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Spoonacular recipes */}
+        <section style={{ marginTop: "2rem" }}>
+          <h2>Spoonacular Recipes</h2>
+          {spoonacularRecipes.length === 0 ? (
+            <p className={sharedStyles.empty}>No Spoonacular recipes found.</p>
+          ) : (
+            <div className={styles.grid}>
+              {spoonacularRecipes.map((r) => (
+                <div
+                  key={r._id}
+                  className={styles.card}
+                  onClick={() => handleClickRecipe(r._id)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {r.imageUrl && (
+                    <img
+                      src={r.imageUrl}
+                      alt={r.name}
+                      className={styles.cardImage}
+                    />
+                  )}
+                  <div className={styles.cardTitle}>{r.name}</div>
+                  <div className={styles.cardSubtitle}>Spoonacular</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }

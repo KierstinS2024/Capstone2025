@@ -1,42 +1,66 @@
-.navbar {
+/* path: src/components/NavBar.module.css */
+/**
+ * NavBar Styles
+ * -------------
+ * - Earthy soft theme
+ * - Rounded buttons and subtle shadows
+ * - Hover effects on links and buttons
+ */
+
+.nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #0070f3;
-  padding: 0.5rem 1rem;
-  color: white;
-}
-
-.logo a {
-  font-weight: bold;
-  color: white;
-  text-decoration: none;
-}
-
-.links {
-  list-style: none;
-  display: flex;
-  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--color-card-bg);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .links a {
-  color: white;
+  margin-right: 1rem;
   text-decoration: none;
+  color: var(--color-text);
+  font-weight: 500;
+  transition: color 0.2s ease;
 }
 
 .links a:hover {
-  text-decoration: underline;
+  color: var(--color-primary);
 }
 
-.logout {
-  background-color: #ff4d4f;
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toggleButton,
+.logoutButton {
+  padding: 0.4rem 0.8rem;
   border: none;
-  color: white;
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.logout:hover {
-  background-color: #ff7875;
+.toggleButton {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+.toggleButton:hover {
+  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.logoutButton {
+  background-color: var(--color-accent);
+  color: #fff;
+}
+.logoutButton:hover {
+  background-color: var(--color-accent-hover, #b55b41);
+  transform: translateY(-1px);
 }

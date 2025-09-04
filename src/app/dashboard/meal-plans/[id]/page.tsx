@@ -10,10 +10,9 @@
  * - Show recipe info for each entry (title fallback to ID if not found)
  * - Generate a shopping list preview by aggregating recipe ingredients
  *
- * Assumptions:
- * - /api/meal-plans/:id returns { mealPlan }
- * - /api/recipes/:id returns { recipe } with { _id, title, ingredients: [{ name, quantity, unit }] }
- * - Ingredient shape is flexible; aggregation is best-effort on (name + unit) keys.
+ * Optimizations:
+ * - Pre-fetch all recipe data (titles + ingredients) once
+ * - Use cached data for shopping list preview
  */
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -38,7 +37,6 @@ export default function MealPlanDetailPage() {
   const params = useParams();
   const { mealPlans, setMealPlans } = useMealPlanContext();
 
-  // Ensure planId is always a string (App Router catch-all can be string|string[])
   const planId = typeof params.id === "string" ? params.id : "";
 
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
@@ -48,29 +46,29 @@ export default function MealPlanDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Add-entry form + edit-entry modal
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<MealPlanEntry | null>(null);
-
-  // For shopping list preview
   const [shoppingPreview, setShoppingPreview] = useState<
     { key: string; name: string; unit?: string; total: number }[]
   >([]);
   const [buildingPreview, setBuildingPreview] = useState(false);
+  const [recipeDataCache, setRecipeDataCache] = useState<
+    Record<string, Recipe>
+  >({});
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  // Redirect to login if no token
+  // Redirect if not authenticated
   useEffect(() => {
     if (!token) router.push("/auth/login");
   }, [token, router]);
 
-  // Fetch meal plan
+  // Fetch meal plan & all recipes used in entries
   useEffect(() => {
     if (!planId || !token) return;
 
-    async function fetchMealPlan() {
+    const fetchMealPlanAndRecipes = async () => {
       setLoading(true);
       setError(null);
 
@@ -84,7 +82,6 @@ export default function MealPlanDetailPage() {
 
         const mp: MealPlan = {
           ...data.mealPlan,
-          // normalize entries to [] to avoid optional chaining noise in UI
           entries: Array.isArray(data.mealPlan.entries)
             ? data.mealPlan.entries
             : [],
@@ -93,20 +90,37 @@ export default function MealPlanDetailPage() {
         setMealPlan(mp);
         setWeekStartDate(new Date(mp.weekStartDate).toISOString().slice(0, 10));
         setNotes(mp.notes || "");
+
+        // Fetch all recipes used in entries
+        const recipeCache: Record<string, Recipe> = {};
+        await Promise.all(
+          mp.entries.map(async (entry) => {
+            if (!entry.recipeId) return;
+            try {
+              const res = await fetch(`/api/recipes/${entry.recipeId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) return;
+              const recipe: Recipe = (await res.json()).recipe;
+              if (recipe?._id) recipeCache[recipe._id] = recipe;
+            } catch {}
+          })
+        );
+
+        setRecipeDataCache(recipeCache);
       } catch (err: any) {
         setError(err.message || "Error loading meal plan");
       } finally {
         setLoading(false);
       }
-    }
+    };
 
-    fetchMealPlan();
+    fetchMealPlanAndRecipes();
   }, [planId, token]);
 
-  // Save plan (date + notes)
+  // Save plan
   const handleUpdatePlan = async () => {
     if (!mealPlan || !token) return;
-
     try {
       setSaving(true);
       const res = await fetch(`/api/meal-plans/${planId}`, {
@@ -159,7 +173,7 @@ export default function MealPlanDetailPage() {
     }
   };
 
-  // Add/Edit entry callback from forms
+  // Add/Edit entry success handler
   const handleEntrySuccess = (entry: MealPlanEntry) => {
     if (!mealPlan) return;
     const exists = mealPlan.entries.some((e) => e._id === entry._id);
@@ -172,22 +186,8 @@ export default function MealPlanDetailPage() {
     setEditingEntry(null);
   };
 
-  // Fetch a single recipe by ID
-  const fetchRecipe = async (recipeId: string): Promise<Recipe | null> => {
-    try {
-      const res = await fetch(`/api/recipes/${recipeId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.recipe as Recipe;
-    } catch {
-      return null;
-    }
-  };
-
-  // Build shopping list preview by aggregating ingredients across entries
-  const buildShoppingPreview = async () => {
+  // Build shopping list using cached recipe data
+  const buildShoppingPreview = () => {
     if (!mealPlan) return;
     setBuildingPreview(true);
 
@@ -197,39 +197,34 @@ export default function MealPlanDetailPage() {
         { name: string; unit?: string; total: number }
       >();
 
-      // Fetch each entry's recipe and accumulate ingredients
-      for (const entry of mealPlan.entries) {
-        const recipe = await fetchRecipe(entry.recipeId);
-        const ings = recipe?.ingredients || [];
-        for (const ing of ings) {
+      mealPlan.entries.forEach((entry) => {
+        const recipe = recipeDataCache[entry.recipeId];
+        const ingredients = recipe?.ingredients || [];
+        ingredients.forEach((ing) => {
           const key = `${(ing.name || "").trim().toLowerCase()}::${(
             ing.unit || ""
           )
             .trim()
             .toLowerCase()}`;
           const current = ingredientMap.get(key) || {
-            name: ing.name || "Unknown ingredient",
+            name: ing.name || "Unknown",
             unit: ing.unit,
             total: 0,
           };
           const qty = typeof ing.quantity === "number" ? ing.quantity : 0;
-          // Multiply by servings if desired — simple approach: qty * entry.servings
           current.total += qty * (entry.servings || 1);
           ingredientMap.set(key, current);
-        }
-      }
+        });
+      });
 
-      const preview = Array.from(ingredientMap.entries()).map(([key, v]) => ({
-        key,
-        name: v.name,
-        unit: v.unit,
-        total: v.total,
-      }));
-
-      setShoppingPreview(preview);
-      if (preview.length === 0) {
-        alert("No ingredients found from recipes to aggregate.");
-      }
+      setShoppingPreview(
+        Array.from(ingredientMap.entries()).map(([key, v]) => ({
+          key,
+          name: v.name,
+          unit: v.unit,
+          total: v.total,
+        }))
+      );
     } catch (err: any) {
       alert(err.message || "Error building shopping list preview");
     } finally {
@@ -250,7 +245,7 @@ export default function MealPlanDetailPage() {
     <div className={styles.container}>
       <h1 className={styles.title}>Meal Plan Details</h1>
 
-      {/* Editable base info */}
+      {/* Base info */}
       <div className={styles.formRow}>
         <label className={styles.label}>
           Week Start Date
@@ -308,9 +303,9 @@ export default function MealPlanDetailPage() {
             <EntryRow
               key={entry._id}
               entry={entry}
+              title={recipeDataCache[entry.recipeId]?.title || ""}
               onEdit={() => setEditingEntry(entry)}
               onDelete={() => handleDeleteEntry(entry._id)}
-              token={token!}
             />
           ))}
         </ul>
@@ -363,42 +358,17 @@ export default function MealPlanDetailPage() {
   );
 }
 
-/**
- * EntryRow
- * Shows one entry with fetched recipe title for nice UX
- */
 function EntryRow({
   entry,
+  title,
   onEdit,
   onDelete,
-  token,
 }: {
   entry: MealPlanEntry;
+  title: string;
   onEdit: () => void;
   onDelete: () => void;
-  token: string;
 }) {
-  const [title, setTitle] = useState<string>("");
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const res = await fetch(`/api/recipes/${entry.recipeId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (active) setTitle(data.recipe?.title || "");
-      } catch {
-        // ignore
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [entry.recipeId, token]);
-
   return (
     <li className={styles.entryItem}>
       <div className={styles.entryMain}>

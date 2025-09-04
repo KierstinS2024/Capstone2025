@@ -3,216 +3,123 @@
 
 /**
  * EditRecipePage
- * --------------
- * Allows a user to edit an existing recipe.
- * Fetches recipe by ID, populates the form, and allows updates.
- * Sends PUT request to /api/recipes/:id with JWT authentication.
+ * ----------------
+ * Allows a user to edit one of their own recipes.
+ * - Fetches the recipe by ID
+ * - Prefills RecipeForm with initialData
+ * - Prevents editing if recipe is not user-submitted
+ * - Redirects unauthenticated users to login
  */
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import NavBar from "@/components/NavBar";
+import RecipeForm from "@/components/RecipeForm";
+import { useAuth } from "@/context/AuthContext";
+
+// Ingredient shape used in recipes
+interface Ingredient {
+  name: string;
+  quantity: string;
+  unit: string;
+}
+
+// Full recipe shape returned by API
+interface UserRecipe {
+  _id: string;
+  name: string;
+  description: string;
+  ingredients: Ingredient[];
+  instructions: string[];
+  cuisine: string;
+  userSubmitted: boolean; // only user-submitted recipes are editable
+}
 
 export default function EditRecipePage() {
-  const { id: recipeId } = useParams(); // Dynamic recipe ID from URL
+  const params = useParams();
+  const { id } = params; // recipe ID from URL
+  const { token } = useAuth(); // JWT from AuthContext
   const router = useRouter();
 
-  // Recipe form state
-  const [title, setTitle] = useState("");
-  const [ingredients, setIngredients] = useState([
-    { name: "", quantity: "", unit: "" },
-  ]);
-  const [instructions, setInstructions] = useState([""]);
-  const [cuisine, setCuisine] = useState("");
-
-  // Loading / error state
+  // --- Local state ---
+  const [recipeData, setRecipeData] = useState<UserRecipe | null>(null);
   const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch recipe data when page loads
+  // Redirect immediately if user is not logged in
   useEffect(() => {
-    if (!recipeId) return;
+    if (!token) router.push("/auth/login");
+  }, [token, router]);
+
+  // Fetch recipe by ID and ensure it is user-submitted
+  useEffect(() => {
+    if (!id || !token) return;
 
     const fetchRecipe = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`/api/recipes/${recipeId}`);
-        const data = await res.json();
+        const res = await fetch(`/api/recipes/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        if (!res.ok) {
-          setErrorMessage(data.message || "Failed to fetch recipe");
-          setLoading(false);
+        const data: UserRecipe = await res.json();
+
+        if (!res.ok || !data) {
+          setError("Recipe not found or you do not have access.");
           return;
         }
 
-        // Populate form with fetched recipe
-        const recipe = data.recipe;
-        setTitle(recipe.name || "");
-        setCuisine(recipe.cuisine || "");
-        setInstructions(recipe.instructions || [""]);
-
-        // Map ingredient objects to form-friendly format
-        if (recipe.ingredients && recipe.ingredients.length > 0) {
-          const mappedIngredients = recipe.ingredients.map((ing: any) => ({
-            name: ing.name || "", // fallback in case no name field
-            quantity: ing.quantity?.toString() || "",
-            unit: ing.unit || "",
-          }));
-          setIngredients(mappedIngredients);
+        if (!data.userSubmitted) {
+          setError(
+            "This recipe cannot be edited because it is not user-submitted."
+          );
+          return;
         }
 
-        setLoading(false);
+        setRecipeData(data);
       } catch (err) {
-        console.error("Error fetching recipe:", err);
-        setErrorMessage("Error fetching recipe");
+        console.error(err);
+        setError("Failed to load recipe.");
+      } finally {
         setLoading(false);
       }
     };
 
     fetchRecipe();
-  }, [recipeId]);
+  }, [id, token]);
 
-  // Update a single ingredient field
-  const handleIngredientChange = (
-    index: number,
-    field: string,
-    value: string
-  ) => {
-    const updatedIngredients = [...ingredients];
-    updatedIngredients[index][field as keyof (typeof updatedIngredients)[0]] =
-      value;
-    setIngredients(updatedIngredients);
-  };
-
-  // Update a single instruction step
-  const handleInstructionChange = (index: number, value: string) => {
-    const updatedInstructions = [...instructions];
-    updatedInstructions[index] = value;
-    setInstructions(updatedInstructions);
-  };
-
-  // Submit updated recipe
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Basic client-side validation
-    if (!title || ingredients.length === 0 || instructions.length === 0) {
-      setErrorMessage("Title, ingredients, and instructions are required");
-      return;
-    }
-
-    const token = localStorage.getItem("token"); // JWT from login
-    if (!token) {
-      setErrorMessage("You must be logged in to edit a recipe");
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/recipes/${recipeId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: title,
-          cuisine,
-          instructions,
-          ingredients,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorMessage(data.message || "Error updating recipe");
-        return;
-      }
-
-      alert("✅ Recipe updated!");
-      router.push(`/dashboard/recipes/${recipeId}`); // Redirect to view page
-    } catch (err) {
-      console.error("Error updating recipe:", err);
-      setErrorMessage("Error updating recipe");
-    }
-  };
-
+  // --- Loading & error states ---
   if (loading) return <p>Loading recipe...</p>;
-  if (errorMessage) return <p style={{ color: "red" }}>{errorMessage}</p>;
+  if (error)
+    return (
+      <div>
+        <p style={{ color: "red" }}>{error}</p>
+        <button onClick={() => router.push("/dashboard/recipes")}>
+          Go Back
+        </button>
+      </div>
+    );
+  if (!recipeData) return null; // safety fallback
 
+  // --- Render RecipeForm with prefilled data ---
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>Edit Recipe</h1>
-
-      {/* Recipe Title */}
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Recipe Title"
-      />
-
-      {/* Ingredients Section */}
-      <h3>Ingredients</h3>
-      {ingredients.map((ing, index) => (
-        <div key={index}>
-          <input
-            placeholder="Ingredient name"
-            value={ing.name}
-            onChange={(e) =>
-              handleIngredientChange(index, "name", e.target.value)
-            }
-          />
-          <input
-            placeholder="Quantity"
-            value={ing.quantity}
-            onChange={(e) =>
-              handleIngredientChange(index, "quantity", e.target.value)
-            }
-          />
-          <input
-            placeholder="Unit (e.g., cups)"
-            value={ing.unit}
-            onChange={(e) =>
-              handleIngredientChange(index, "unit", e.target.value)
-            }
-          />
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() =>
-          setIngredients([...ingredients, { name: "", quantity: "", unit: "" }])
-        }
-      >
-        + Add Ingredient
-      </button>
-
-      {/* Instructions Section */}
-      <h3>Instructions</h3>
-      {instructions.map((step, index) => (
-        <input
-          key={index}
-          placeholder={`Step ${index + 1}`}
-          value={step}
-          onChange={(e) => handleInstructionChange(index, e.target.value)}
+    <ProtectedRoute>
+      <NavBar />
+      <div style={{ padding: "1rem" }}>
+        <h1>Edit Recipe</h1>
+        <RecipeForm
+          initialData={{
+            _id: recipeData._id,
+            name: recipeData.name,
+            description: recipeData.description,
+            ingredients: recipeData.ingredients,
+            instructions: recipeData.instructions,
+            cuisine: recipeData.cuisine,
+          }}
+          onSave={() => router.push("/dashboard/recipes")} // redirect after save
         />
-      ))}
-      <button
-        type="button"
-        onClick={() => setInstructions([...instructions, ""])}
-      >
-        + Add Step
-      </button>
-
-      {/* Cuisine Dropdown */}
-      <h3>Cuisine</h3>
-      <select value={cuisine} onChange={(e) => setCuisine(e.target.value)}>
-        <option value="">--Choose Cuisine--</option>
-        <option value="Italian">Italian</option>
-        <option value="Mexican">Mexican</option>
-        <option value="Indian">Indian</option>
-        <option value="American">American</option>
-      </select>
-
-      {/* Submit */}
-      <button type="submit">Save Changes</button>
-    </form>
+      </div>
+    </ProtectedRoute>
   );
 }

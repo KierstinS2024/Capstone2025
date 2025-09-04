@@ -8,13 +8,14 @@
  * - Creating a new entry (POST /api/meal-plans/:id/entries)
  * - Editing an existing entry (PATCH /api/meal-plans/:id/entries/:entryId)
  *
- * Also fetches recipes for a helpful dropdown (can still paste an ID manually).
+ * Features:
+ * - Live search for recipes (user + Spoonacular)
+ * - Cards with images for intuitive selection
+ * - Manual recipe ID input fallback
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import styles from "./MealPlanEntryForm.module.css";
-
-type RecipeLite = { _id: string; title: string };
 
 export interface MealPlanEntryFormProps {
   mealPlanId: string;
@@ -41,6 +42,13 @@ const DAYS = [
 ];
 const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
+type RecipeLite = {
+  _id: string;
+  title: string;
+  image?: string;
+  source: "user" | "spoonacular";
+};
+
 export default function MealPlanEntryForm({
   mealPlanId,
   token,
@@ -57,35 +65,86 @@ export default function MealPlanEntryForm({
   );
   const [servings, setServings] = useState(initialData?.servings || 1);
   const [loading, setLoading] = useState(false);
-  const [recipes, setRecipes] = useState<RecipeLite[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userRecipes, setUserRecipes] = useState<RecipeLite[]>([]);
+  const [spoonacularRecipes, setSpoonacularRecipes] = useState<RecipeLite[]>(
+    []
+  );
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const isEditing = Boolean(initialData?._id);
 
-  // Optional recipe list for nicer UX
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Close dropdown when clicking outside
   useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (!dropdownRef.current?.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Live search
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setUserRecipes([]);
+      setSpoonacularRecipes([]);
+      return;
+    }
+
     let active = true;
-    (async () => {
+
+    const fetchRecipes = async () => {
       try {
-        const res = await fetch("/api/recipes", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(
+          `/api/recipes/search?q=${encodeURIComponent(searchQuery)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         if (!res.ok) return;
         const data = await res.json();
-        if (active) setRecipes(Array.isArray(data.recipes) ? data.recipes : []);
-      } catch {
-        // Ignore recipe list errors; text entry still works
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [token]);
+        if (!active) return;
 
-  const sortedRecipes = useMemo(
-    () => [...recipes].sort((a, b) => a.title.localeCompare(b.title)),
-    [recipes]
-  );
+        const mapUser: RecipeLite[] = (data.userRecipes || []).map(
+          (r: any) => ({
+            _id: r._id,
+            title: r.name,
+            image: r.image,
+            source: "user",
+          })
+        );
+        const mapSpoon: RecipeLite[] = (data.spoonacularRecipes || []).map(
+          (r: any) => ({
+            _id: r._id,
+            title: r.title,
+            image: r.image,
+            source: "spoonacular",
+          })
+        );
+
+        setUserRecipes(mapUser);
+        setSpoonacularRecipes(mapSpoon);
+        setShowDropdown(true);
+      } catch {
+        // ignore
+      }
+    };
+
+    const debounce = setTimeout(fetchRecipes, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, token]);
+
+  const handleSelectRecipe = (id: string) => {
+    setRecipeId(id);
+    setShowDropdown(false);
+    setSearchQuery("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +160,6 @@ export default function MealPlanEntryForm({
       const endpoint = isEditing
         ? `/api/meal-plans/${mealPlanId}/entries/${initialData!._id}`
         : `/api/meal-plans/${mealPlanId}/entries`;
-
       const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(endpoint, {
@@ -115,10 +173,10 @@ export default function MealPlanEntryForm({
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to save entry");
+
       onSuccess(data.entry);
 
       if (!isEditing) {
-        // reset for add flow
         setRecipeId("");
         setMealType("Breakfast");
         setDayOfWeek("Monday");
@@ -135,31 +193,67 @@ export default function MealPlanEntryForm({
     <form className={styles.form} onSubmit={handleSubmit}>
       {error && <p className={styles.error}>{error}</p>}
 
-      {/* Recipe picker (dropdown + free text ID) */}
+      {/* Recipe search + card dropdown */}
       <label className={styles.label}>
         Recipe
-        <div className={styles.recipeRow}>
-          <select
-            className={styles.select}
-            value={recipeId}
-            onChange={(e) => setRecipeId(e.target.value)}
-          >
-            <option value="">— Select a recipe —</option>
-            {sortedRecipes.map((r) => (
-              <option key={r._id} value={r._id}>
-                {r.title}
-              </option>
-            ))}
-          </select>
+        <input
+          type="text"
+          className={styles.input}
+          placeholder="Search recipes or paste ID"
+          value={searchQuery || recipeId}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onFocus={() => setShowDropdown(!!searchQuery)}
+        />
+        {showDropdown &&
+          (userRecipes.length > 0 || spoonacularRecipes.length > 0) && (
+            <div className={styles.dropdown} ref={dropdownRef}>
+              {userRecipes.length > 0 && (
+                <>
+                  <div style={{ padding: "0.5rem", fontWeight: 600 }}>
+                    Your Recipes
+                  </div>
+                  {userRecipes.map((r) => (
+                    <div
+                      key={r._id}
+                      className={styles.card}
+                      onClick={() => handleSelectRecipe(r._id)}
+                    >
+                      {r.image && (
+                        <img src={r.image} className={styles.thumbnail} />
+                      )}
+                      <div className={styles.cardText}>
+                        <div className={styles.cardTitle}>{r.title}</div>
+                        <div className={styles.cardSource}>User</div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
 
-          <input
-            type="text"
-            className={styles.input}
-            placeholder="…or paste Recipe ID"
-            value={recipeId}
-            onChange={(e) => setRecipeId(e.target.value)}
-          />
-        </div>
+              {spoonacularRecipes.length > 0 && (
+                <>
+                  <div style={{ padding: "0.5rem", fontWeight: 600 }}>
+                    Spoonacular
+                  </div>
+                  {spoonacularRecipes.map((r) => (
+                    <div
+                      key={r._id}
+                      className={styles.card}
+                      onClick={() => handleSelectRecipe(r._id)}
+                    >
+                      {r.image && (
+                        <img src={r.image} className={styles.thumbnail} />
+                      )}
+                      <div className={styles.cardText}>
+                        <div className={styles.cardTitle}>{r.title}</div>
+                        <div className={styles.cardSource}>Spoonacular</div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
       </label>
 
       <label className={styles.label}>
@@ -217,7 +311,6 @@ export default function MealPlanEntryForm({
             ? "Update Entry"
             : "Add Entry"}
         </button>
-
         {onCancel && (
           <button
             type="button"
