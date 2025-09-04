@@ -4,9 +4,9 @@
  * -----------------
  * Displays all recipes for the logged-in user.
  * From here, the user can:
- *  - View all recipes
- *  - Navigate to create a new recipe
- *  - Click on a recipe to edit it
+ *  - View their recipes
+ *  - Create a new recipe
+ *  - Click on a recipe to edit
  */
 
 "use client";
@@ -18,7 +18,7 @@ export default function RecipesPage() {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch all recipes when the page loads
+  // Fetch all recipes for the logged-in user
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
@@ -54,9 +54,9 @@ export default function RecipesPage() {
         </Link>
       </div>
 
-      {/* List of recipes */}
+      {/* No recipes message */}
       {recipes.length === 0 ? (
-        <p>You don’t have any recipes yet. Create one to get started!</p>
+        <p>No recipes found. Create one to get started!</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0 }}>
           {recipes.map((recipe) => (
@@ -74,12 +74,8 @@ export default function RecipesPage() {
               </Link>
               <p>{recipe.description}</p>
               <p>
-                Ingredients:{" "}
-                {recipe.ingredients?.length ? recipe.ingredients.length : "0"}
-              </p>
-              <p>
-                Instructions:{" "}
-                {recipe.instructions?.length ? recipe.instructions.length : "0"}
+                Ingredients: {recipe.ingredients?.length || "None"} |
+                Instructions: {recipe.instructions?.length || "None"}
               </p>
             </li>
           ))}

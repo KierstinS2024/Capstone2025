@@ -1,13 +1,11 @@
 // path: src/app/recipes/[id]/page.tsx
 /**
  * Edit Recipe Page
- * -----------------
- * Loads an existing recipe by ID.
- * Lets the user:
- *  - Update name, description, and cuisine
- *  - Edit, add, or remove ingredients
- *  - Edit, add, or remove instructions
- *  - Save changes back to the backend
+ * ----------------
+ * Loads an existing recipe by ID and lets the user:
+ *  - Edit name, description, cuisine
+ *  - Add/edit/remove ingredients
+ *  - Add/edit/remove instructions
  */
 
 "use client";
@@ -16,40 +14,38 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 export default function EditRecipePage() {
-  const params = useParams(); // Read dynamic :id param
+  const params = useParams();
   const router = useRouter();
 
-  // Local state
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [cuisine, setCuisine] = useState("");
-  const [ingredients, setIngredients] = useState<
-    { name: string; quantity: number; unit: string }[]
-  >([]);
-  const [instructions, setInstructions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Fetch recipe on mount
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [cuisine, setCuisine] = useState("");
+  const [ingredients, setIngredients] = useState<any[]>([]);
+  const [instructions, setInstructions] = useState<string[]>([]);
+
+  // Load recipe from backend
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
         const res = await fetch(`/api/recipes/${params.id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-
         if (res.ok) {
           const data = await res.json();
-          setName(data.data.name || "");
-          setDescription(data.data.description || "");
-          setCuisine(data.data.cuisine || "");
-          setIngredients(data.data.ingredients || []);
-          setInstructions(data.data.instructions || []);
+          const recipe = data.data;
+          setName(recipe.name);
+          setDescription(recipe.description || "");
+          setCuisine(recipe.cuisine || "");
+          setIngredients(recipe.ingredients || []);
+          setInstructions(recipe.instructions || []);
         } else {
-          console.error("Failed to fetch recipe");
+          console.error("Failed to load recipe");
         }
       } catch (err) {
-        console.error("Error fetching recipe:", err);
+        console.error("Error loading recipe:", err);
       } finally {
         setLoading(false);
       }
@@ -58,45 +54,40 @@ export default function EditRecipePage() {
     fetchRecipe();
   }, [params.id]);
 
-  // Ingredient handlers
+  // Ingredient and instruction handlers (same as create)
   const handleIngredientChange = (
     index: number,
-    field: "name" | "quantity" | "unit",
+    field: string,
     value: string | number
   ) => {
     const updated = [...ingredients];
     (updated[index] as any)[field] = value;
     setIngredients(updated);
   };
-
-  const handleAddIngredient = () => {
-    setIngredients([...ingredients, { name: "", quantity: 1, unit: "" }]);
-  };
-
+  const handleAddIngredient = () =>
+    setIngredients([
+      ...ingredients,
+      { ingredientId: "", quantity: 1, unit: "unit" },
+    ]);
   const handleRemoveIngredient = (index: number) => {
     const updated = [...ingredients];
     updated.splice(index, 1);
     setIngredients(updated);
   };
 
-  // Instruction handlers
   const handleInstructionChange = (index: number, value: string) => {
     const updated = [...instructions];
     updated[index] = value;
     setInstructions(updated);
   };
-
-  const handleAddInstruction = () => {
-    setInstructions([...instructions, ""]);
-  };
-
+  const handleAddInstruction = () => setInstructions([...instructions, ""]);
   const handleRemoveInstruction = (index: number) => {
     const updated = [...instructions];
     updated.splice(index, 1);
     setInstructions(updated);
   };
 
-  // Submit updated recipe
+  // Save updated recipe
   const handleSubmit = async () => {
     setSaving(true);
     try {
@@ -115,11 +106,8 @@ export default function EditRecipePage() {
         }),
       });
 
-      if (res.ok) {
-        router.push("/recipes");
-      } else {
-        console.error("Failed to update recipe");
-      }
+      if (res.ok) router.push("/recipes");
+      else console.error("Failed to update recipe");
     } catch (err) {
       console.error("Error updating recipe:", err);
     } finally {
@@ -127,27 +115,21 @@ export default function EditRecipePage() {
     }
   };
 
-  if (loading) {
-    return <p style={{ padding: "20px" }}>Loading recipe...</p>;
-  }
+  if (loading) return <p style={{ padding: "20px" }}>Loading recipe...</p>;
 
   return (
     <div style={{ padding: "20px" }}>
       <h1>Edit Recipe</h1>
 
-      {/* Recipe name */}
-      <div>
-        <label>
-          Name:
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-      </div>
+      <label>
+        Name:
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </label>
 
-      {/* Recipe description */}
       <div>
         <label>
           Description:
@@ -160,7 +142,6 @@ export default function EditRecipePage() {
         </label>
       </div>
 
-      {/* Cuisine */}
       <div>
         <label>
           Cuisine:
@@ -174,7 +155,7 @@ export default function EditRecipePage() {
 
       {/* Ingredients */}
       <h2>Ingredients</h2>
-      {ingredients.map((ingredient, idx) => (
+      {ingredients.map((ing, idx) => (
         <div
           key={idx}
           style={{
@@ -185,17 +166,16 @@ export default function EditRecipePage() {
         >
           <input
             type="text"
-            placeholder="Name"
-            value={ingredient.name}
+            placeholder="Ingredient ID"
+            value={ing.ingredientId}
             onChange={(e) =>
-              handleIngredientChange(idx, "name", e.target.value)
+              handleIngredientChange(idx, "ingredientId", e.target.value)
             }
           />
           <input
             type="number"
             min="0"
-            placeholder="Quantity"
-            value={ingredient.quantity}
+            value={ing.quantity}
             onChange={(e) =>
               handleIngredientChange(
                 idx,
@@ -206,17 +186,12 @@ export default function EditRecipePage() {
           />
           <input
             type="text"
-            placeholder="Unit"
-            value={ingredient.unit}
+            value={ing.unit}
             onChange={(e) =>
               handleIngredientChange(idx, "unit", e.target.value)
             }
           />
-          <button
-            type="button"
-            onClick={() => handleRemoveIngredient(idx)}
-            style={{ marginLeft: "10px" }}
-          >
+          <button type="button" onClick={() => handleRemoveIngredient(idx)}>
             Remove
           </button>
         </div>
@@ -225,26 +200,15 @@ export default function EditRecipePage() {
 
       {/* Instructions */}
       <h2>Instructions</h2>
-      {instructions.map((inst, idx) => (
-        <div
-          key={idx}
-          style={{
-            border: "1px solid #ccc",
-            padding: "10px",
-            marginBottom: "10px",
-          }}
-        >
+      {instructions.map((step, idx) => (
+        <div key={idx} style={{ marginBottom: "10px" }}>
           <textarea
-            value={inst}
             rows={2}
-            cols={50}
+            cols={40}
+            value={step}
             onChange={(e) => handleInstructionChange(idx, e.target.value)}
           />
-          <button
-            type="button"
-            onClick={() => handleRemoveInstruction(idx)}
-            style={{ marginLeft: "10px" }}
-          >
+          <button type="button" onClick={() => handleRemoveInstruction(idx)}>
             Remove
           </button>
         </div>

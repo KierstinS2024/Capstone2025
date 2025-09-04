@@ -1,13 +1,13 @@
 // path: src/app/recipes/new/page.tsx
 /**
  * Create Recipe Page
- * ------------------
- * Lets the user create a new recipe.
+ * -----------------
+ * Allows user to create a new recipe.
  * Features:
- *  - Add recipe name, description, and cuisine
- *  - Dynamically add/remove ingredients with quantity and unit
- *  - Dynamically add/remove instructions
- *  - Submit recipe to backend
+ *  - Name, description, cuisine
+ *  - Ingredients list (ingredientId, quantity, unit)
+ *  - Instructions (ordered list)
+ *  - Nutrition info
  */
 
 "use client";
@@ -18,25 +18,26 @@ import { useRouter } from "next/navigation";
 export default function NewRecipePage() {
   const router = useRouter();
 
-  // Local state
+  // Form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [cuisine, setCuisine] = useState("");
-  const [ingredients, setIngredients] = useState<
-    { name: string; quantity: number; unit: string }[]
-  >([]);
+  const [ingredients, setIngredients] = useState<any[]>([]);
   const [instructions, setInstructions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Add blank ingredient
+  // Add blank ingredient row
   const handleAddIngredient = () => {
-    setIngredients([...ingredients, { name: "", quantity: 1, unit: "" }]);
+    setIngredients([
+      ...ingredients,
+      { ingredientId: "", quantity: 1, unit: "unit" },
+    ]);
   };
 
-  // Update ingredient field
+  // Update ingredient
   const handleIngredientChange = (
     index: number,
-    field: "name" | "quantity" | "unit",
+    field: string,
     value: string | number
   ) => {
     const updated = [...ingredients];
@@ -51,7 +52,7 @@ export default function NewRecipePage() {
     setIngredients(updated);
   };
 
-  // Add blank instruction
+  // Add instruction step
   const handleAddInstruction = () => {
     setInstructions([...instructions, ""]);
   };
@@ -70,7 +71,7 @@ export default function NewRecipePage() {
     setInstructions(updated);
   };
 
-  // Submit recipe to backend
+  // Submit recipe
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -86,11 +87,12 @@ export default function NewRecipePage() {
           cuisine,
           ingredients,
           instructions,
+          userSubmitted: true,
         }),
       });
 
       if (res.ok) {
-        router.push("/recipes"); // Go back to list
+        router.push("/recipes");
       } else {
         console.error("Failed to create recipe");
       }
@@ -105,19 +107,15 @@ export default function NewRecipePage() {
     <div style={{ padding: "20px" }}>
       <h1>Create Recipe</h1>
 
-      {/* Recipe name */}
-      <div>
-        <label>
-          Name:
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-      </div>
+      <label>
+        Name:
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </label>
 
-      {/* Recipe description */}
       <div>
         <label>
           Description:
@@ -130,7 +128,6 @@ export default function NewRecipePage() {
         </label>
       </div>
 
-      {/* Cuisine */}
       <div>
         <label>
           Cuisine:
@@ -144,7 +141,7 @@ export default function NewRecipePage() {
 
       {/* Ingredients */}
       <h2>Ingredients</h2>
-      {ingredients.map((ingredient, idx) => (
+      {ingredients.map((ing, idx) => (
         <div
           key={idx}
           style={{
@@ -155,17 +152,16 @@ export default function NewRecipePage() {
         >
           <input
             type="text"
-            placeholder="Name"
-            value={ingredient.name}
+            placeholder="Ingredient ID"
+            value={ing.ingredientId}
             onChange={(e) =>
-              handleIngredientChange(idx, "name", e.target.value)
+              handleIngredientChange(idx, "ingredientId", e.target.value)
             }
           />
           <input
             type="number"
             min="0"
-            placeholder="Quantity"
-            value={ingredient.quantity}
+            value={ing.quantity}
             onChange={(e) =>
               handleIngredientChange(
                 idx,
@@ -176,17 +172,12 @@ export default function NewRecipePage() {
           />
           <input
             type="text"
-            placeholder="Unit"
-            value={ingredient.unit}
+            value={ing.unit}
             onChange={(e) =>
               handleIngredientChange(idx, "unit", e.target.value)
             }
           />
-          <button
-            type="button"
-            onClick={() => handleRemoveIngredient(idx)}
-            style={{ marginLeft: "10px" }}
-          >
+          <button type="button" onClick={() => handleRemoveIngredient(idx)}>
             Remove
           </button>
         </div>
@@ -195,33 +186,22 @@ export default function NewRecipePage() {
 
       {/* Instructions */}
       <h2>Instructions</h2>
-      {instructions.map((inst, idx) => (
-        <div
-          key={idx}
-          style={{
-            border: "1px solid #ccc",
-            padding: "10px",
-            marginBottom: "10px",
-          }}
-        >
+      {instructions.map((step, idx) => (
+        <div key={idx} style={{ marginBottom: "10px" }}>
           <textarea
-            value={inst}
             rows={2}
-            cols={50}
+            cols={40}
+            value={step}
             onChange={(e) => handleInstructionChange(idx, e.target.value)}
           />
-          <button
-            type="button"
-            onClick={() => handleRemoveInstruction(idx)}
-            style={{ marginLeft: "10px" }}
-          >
+          <button type="button" onClick={() => handleRemoveInstruction(idx)}>
             Remove
           </button>
         </div>
       ))}
       <button onClick={handleAddInstruction}>+ Add Instruction</button>
 
-      {/* Submit */}
+      {/* Save button */}
       <div style={{ marginTop: "20px" }}>
         <button onClick={handleSubmit} disabled={loading}>
           {loading ? "Saving..." : "Save Recipe"}
