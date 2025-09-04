@@ -1,10 +1,10 @@
-// src/app/auth/login/page.tsx
+// path: src/app/auth/login/page.tsx
 /**
  * LoginPage.tsx
  * ----------------
  * Login form page.
- * Uses AuthContext to log in users and redirect to dashboard on success.
- * Fully styled with CSS Modules and semantic class names.
+ * Uses AuthContext to authenticate the user.
+ * Form includes email and password fields, loading state, and error handling.
  */
 
 "use client";
@@ -27,48 +27,40 @@ const LoginPage = () => {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={styles.pageContainer}>
-      <form className={styles.formWrapper} onSubmit={handleSubmit}>
-        <h2 className={styles.formTitle}>Login</h2>
+    <div className={styles.container}>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <h2>Login</h2>
 
-        {error && <p className={styles.errorMessage}>{error}</p>}
+        {error && <p className={styles.errorMsg}>{error}</p>}
 
-        <div className={styles.inputContainer}>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            className={styles.inputField}
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
+        <label htmlFor="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          className={styles.inputField}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-        <div className={styles.inputContainer}>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            className={styles.inputField}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+        <label htmlFor="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          className={styles.inputField}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-        <button
-          type="submit"
-          className={styles.submitButton}
-          disabled={loading}
-        >
+        <button type="submit" className={styles.btnPrimary} disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>

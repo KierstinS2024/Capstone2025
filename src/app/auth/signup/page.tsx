@@ -1,9 +1,10 @@
-// src/app/auth/signup/page.tsx
+// path: src/app/auth/signup/page.tsx
 /**
  * SignupPage.tsx
  * ----------------
  * Signup form page.
  * Uses AuthContext to create a new user account.
+ * Form includes email and password fields, loading state, and error handling.
  */
 
 "use client";
@@ -26,7 +27,7 @@ const SignupPage = () => {
     try {
       await signup(email, password);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Signup failed");
     } finally {
       setLoading(false);
     }
@@ -36,22 +37,30 @@ const SignupPage = () => {
     <div className={styles.container}>
       <form className={styles.form} onSubmit={handleSubmit}>
         <h2>Sign Up</h2>
-        {error && <p className={styles.error}>{error}</p>}
-        <label>Email</label>
+
+        {error && <p className={styles.errorMsg}>{error}</p>}
+
+        <label htmlFor="email">Email</label>
         <input
+          id="email"
           type="email"
+          className={styles.inputField}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <label>Password</label>
+
+        <label htmlFor="password">Password</label>
         <input
+          id="password"
           type="password"
+          className={styles.inputField}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button type="submit" disabled={loading}>
+
+        <button type="submit" className={styles.btnPrimary} disabled={loading}>
           {loading ? "Signing up..." : "Sign Up"}
         </button>
       </form>
