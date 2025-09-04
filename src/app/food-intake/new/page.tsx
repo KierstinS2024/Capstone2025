@@ -1,12 +1,10 @@
 // path: src/app/food-intake/new/page.tsx
 /**
- * New Food Intake Page
- * -------------------
- * Lets the user log a new food intake entry:
- *  - Select a recipe or ingredient
- *  - Enter quantity
- *  - Select unit
- *  - Submit to save to backend
+ * Create Food Intake Entry Page
+ * -----------------------------
+ * Lets the user log a new food intake entry.
+ * User can choose a recipe or ingredient, specify quantity, unit, and date.
+ * Submits the data to the backend and redirects to the list page.
  */
 
 "use client";
@@ -17,17 +15,16 @@ import { useRouter } from "next/navigation";
 export default function NewFoodIntakePage() {
   const router = useRouter();
 
-  // Form state
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [recipeId, setRecipeId] = useState("");
   const [ingredientId, setIngredientId] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [unit, setUnit] = useState("unit");
-  const [saving, setSaving] = useState(false);
+  const [unit, setUnit] = useState("grams");
+  const [date, setDate] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Submit new entry to backend
+  // Save new entry to backend
   const handleSubmit = async () => {
-    setSaving(true);
+    setLoading(true);
     try {
       const res = await fetch("/api/food-intake", {
         method: "POST",
@@ -35,24 +32,24 @@ export default function NewFoodIntakePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ date, recipeId, ingredientId, quantity, unit }),
+        body: JSON.stringify({ recipeId, ingredientId, quantity, unit, date }),
       });
 
       if (res.ok) {
         router.push("/food-intake");
       } else {
-        console.error("Failed to log food intake");
+        console.error("Failed to create food intake entry");
       }
     } catch (err) {
-      console.error("Error saving food intake:", err);
+      console.error("Error creating food intake entry:", err);
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>Log Food Intake</h1>
+      <h1>Log New Food Intake</h1>
 
       {/* Date input */}
       <label>
@@ -72,7 +69,7 @@ export default function NewFoodIntakePage() {
             type="text"
             value={recipeId}
             onChange={(e) => setRecipeId(e.target.value)}
-            placeholder="Leave empty if using ingredient"
+            placeholder="Enter recipe ID (optional)"
           />
         </label>
       </div>
@@ -83,7 +80,7 @@ export default function NewFoodIntakePage() {
             type="text"
             value={ingredientId}
             onChange={(e) => setIngredientId(e.target.value)}
-            placeholder="Leave empty if using recipe"
+            placeholder="Enter ingredient ID (optional)"
           />
         </label>
       </div>
@@ -94,8 +91,7 @@ export default function NewFoodIntakePage() {
           Quantity:
           <input
             type="number"
-            min="0.1"
-            step="0.1"
+            min="0"
             value={quantity}
             onChange={(e) => setQuantity(parseFloat(e.target.value))}
           />
@@ -112,10 +108,10 @@ export default function NewFoodIntakePage() {
         </label>
       </div>
 
-      {/* Save button */}
+      {/* Submit button */}
       <div style={{ marginTop: "20px" }}>
-        <button onClick={handleSubmit} disabled={saving}>
-          {saving ? "Saving..." : "Save Food Intake"}
+        <button onClick={handleSubmit} disabled={loading}>
+          {loading ? "Saving..." : "Save Entry"}
         </button>
       </div>
     </div>

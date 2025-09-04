@@ -1,13 +1,13 @@
 // path: src/app/food-intake/[id]/page.tsx
 /**
- * Edit Food Intake Page
- * --------------------
- * Loads an existing food intake entry by ID.
+ * Edit Food Intake Entry Page
+ * ---------------------------
+ * Loads an existing food intake entry from the backend by ID.
  * Lets the user:
  *  - Update date
  *  - Change recipe or ingredient
  *  - Update quantity and unit
- *  - Save changes back to backend
+ *  - Save changes back to the backend
  */
 
 "use client";
@@ -16,32 +16,33 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 export default function EditFoodIntakePage() {
-  const params = useParams();
+  const params = useParams(); // Read dynamic [id] param
   const router = useRouter();
 
-  const [date, setDate] = useState("");
+  // Local state for the food intake fields
   const [recipeId, setRecipeId] = useState("");
   const [ingredientId, setIngredientId] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [unit, setUnit] = useState("unit");
+  const [unit, setUnit] = useState("grams");
+  const [date, setDate] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Load existing entry
+  // Fetch existing entry when component mounts
   useEffect(() => {
     const fetchEntry = async () => {
       try {
         const res = await fetch(`/api/food-intake/${params.id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
+
         if (res.ok) {
           const data = await res.json();
-          const entry = data.data;
-          setDate(entry.date.split("T")[0]);
-          setRecipeId(entry.recipeId || "");
-          setIngredientId(entry.ingredientId || "");
-          setQuantity(entry.quantity);
-          setUnit(entry.unit);
+          setRecipeId(data.data.recipeId || "");
+          setIngredientId(data.data.ingredientId || "");
+          setQuantity(data.data.quantity);
+          setUnit(data.data.unit);
+          setDate(data.data.date.split("T")[0]); // trim time
         } else {
           console.error("Failed to load food intake entry");
         }
@@ -51,9 +52,11 @@ export default function EditFoodIntakePage() {
         setLoading(false);
       }
     };
+
     fetchEntry();
   }, [params.id]);
 
+  // Save updated entry to backend
   const handleSubmit = async () => {
     setSaving(true);
     try {
@@ -63,27 +66,30 @@ export default function EditFoodIntakePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ date, recipeId, ingredientId, quantity, unit }),
+        body: JSON.stringify({ recipeId, ingredientId, quantity, unit, date }),
       });
 
       if (res.ok) {
-        router.push("/food-intake");
+        router.push("/food-intake"); // back to list
       } else {
-        console.error("Failed to update food intake");
+        console.error("Failed to update food intake entry");
       }
     } catch (err) {
-      console.error("Error updating food intake:", err);
+      console.error("Error updating food intake entry:", err);
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p style={{ padding: "20px" }}>Loading entry...</p>;
+  if (loading) {
+    return <p style={{ padding: "20px" }}>Loading food intake entry...</p>;
+  }
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>Edit Food Intake</h1>
+      <h1>Edit Food Intake Entry</h1>
 
+      {/* Date input */}
       <label>
         Date:
         <input
@@ -93,6 +99,7 @@ export default function EditFoodIntakePage() {
         />
       </label>
 
+      {/* Recipe / Ingredient selection */}
       <div>
         <label>
           Recipe ID:
@@ -100,11 +107,10 @@ export default function EditFoodIntakePage() {
             type="text"
             value={recipeId}
             onChange={(e) => setRecipeId(e.target.value)}
-            placeholder="Leave empty if using ingredient"
+            placeholder="Enter recipe ID (optional)"
           />
         </label>
       </div>
-
       <div>
         <label>
           Ingredient ID:
@@ -112,24 +118,23 @@ export default function EditFoodIntakePage() {
             type="text"
             value={ingredientId}
             onChange={(e) => setIngredientId(e.target.value)}
-            placeholder="Leave empty if using recipe"
+            placeholder="Enter ingredient ID (optional)"
           />
         </label>
       </div>
 
+      {/* Quantity and unit */}
       <div>
         <label>
           Quantity:
           <input
             type="number"
-            min="0.1"
-            step="0.1"
+            min="0"
             value={quantity}
             onChange={(e) => setQuantity(parseFloat(e.target.value))}
           />
         </label>
       </div>
-
       <div>
         <label>
           Unit:
@@ -141,6 +146,7 @@ export default function EditFoodIntakePage() {
         </label>
       </div>
 
+      {/* Save button */}
       <div style={{ marginTop: "20px" }}>
         <button onClick={handleSubmit} disabled={saving}>
           {saving ? "Saving..." : "Save Changes"}
