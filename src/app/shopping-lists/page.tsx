@@ -4,9 +4,9 @@
  * ------------------------
  * Displays all shopping lists for the logged-in user.
  * From here, the user can:
- *  - View existing lists
- *  - Navigate to create a new list
- *  - Click on a list to edit it
+ *  - View saved shopping lists
+ *  - Navigate to create a new shopping list
+ *  - Click on a shopping list to edit it
  */
 
 "use client";
@@ -18,13 +18,13 @@ export default function ShoppingListsPage() {
   const [lists, setLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Fetch all shopping lists for the user
   useEffect(() => {
     const fetchLists = async () => {
       try {
         const res = await fetch("/api/shopping-lists", {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-
         if (res.ok) {
           const data = await res.json();
           setLists(data.data || []);
@@ -32,7 +32,7 @@ export default function ShoppingListsPage() {
           console.error("Failed to fetch shopping lists");
         }
       } catch (err) {
-        console.error("Error loading shopping lists:", err);
+        console.error("Error fetching shopping lists:", err);
       } finally {
         setLoading(false);
       }
@@ -41,23 +41,23 @@ export default function ShoppingListsPage() {
     fetchLists();
   }, []);
 
-  if (loading) {
+  if (loading)
     return <p style={{ padding: "20px" }}>Loading shopping lists...</p>;
-  }
 
   return (
     <div style={{ padding: "20px" }}>
       <h1>My Shopping Lists</h1>
 
-      {/* Button to create a new shopping list */}
+      {/* Create new list button */}
       <div style={{ marginBottom: "20px" }}>
         <Link href="/shopping-lists/new">
           <button>Create New Shopping List</button>
         </Link>
       </div>
 
+      {/* List all shopping lists */}
       {lists.length === 0 ? (
-        <p>You don’t have any shopping lists yet. Create one to get started!</p>
+        <p>You have no shopping lists yet. Create one to get started!</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0 }}>
           {lists.map((list) => (
@@ -73,7 +73,7 @@ export default function ShoppingListsPage() {
               <Link href={`/shopping-lists/${list._id}`}>
                 <strong>{list.title}</strong>
               </Link>
-              <p>Items: {list.items?.length || "No items added"}</p>
+              <p>Items: {list.items?.length || 0}</p>
             </li>
           ))}
         </ul>

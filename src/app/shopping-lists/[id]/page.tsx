@@ -2,11 +2,11 @@
 /**
  * Edit Shopping List Page
  * -----------------------
- * Loads an existing shopping list from the backend.
- * Lets the user:
- *  - Update title
- *  - Add / edit / remove items (ingredient, quantity, unit, purchased)
- *  - Save changes back to the backend
+ * Loads an existing shopping list by ID.
+ * Allows the user to:
+ *  - Edit title
+ *  - Add / edit / remove items
+ *  - Save updates to backend
  */
 
 "use client";
@@ -23,7 +23,7 @@ export default function EditShoppingListPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Load existing list
+  // Load shopping list
   useEffect(() => {
     const fetchList = async () => {
       try {
@@ -47,25 +47,29 @@ export default function EditShoppingListPage() {
     fetchList();
   }, [params.id]);
 
+  // Update item field
   const handleItemChange = (index: number, field: string, value: any) => {
     const updated = [...items];
     (updated[index] as any)[field] = value;
     setItems(updated);
   };
 
+  // Add item
   const handleAddItem = () => {
     setItems([
       ...items,
-      { ingredientId: "", quantity: 1, unit: "", purchased: false },
+      { ingredientId: "", quantity: 1, unit: "pcs", purchased: false },
     ]);
   };
 
+  // Remove item
   const handleRemoveItem = (index: number) => {
     const updated = [...items];
     updated.splice(index, 1);
     setItems(updated);
   };
 
+  // Save updates
   const handleSubmit = async () => {
     setSaving(true);
     try {
@@ -77,12 +81,8 @@ export default function EditShoppingListPage() {
         },
         body: JSON.stringify({ title, items }),
       });
-
-      if (res.ok) {
-        router.push("/shopping-lists");
-      } else {
-        console.error("Failed to update shopping list");
-      }
+      if (res.ok) router.push("/shopping-lists");
+      else console.error("Failed to update shopping list");
     } catch (err) {
       console.error("Error updating shopping list:", err);
     } finally {
@@ -98,7 +98,7 @@ export default function EditShoppingListPage() {
       <h1>Edit Shopping List</h1>
 
       <label>
-        Title:
+        List Title:
         <input
           type="text"
           value={title}
@@ -126,7 +126,7 @@ export default function EditShoppingListPage() {
           />
           <input
             type="number"
-            min="1"
+            min="0"
             value={item.quantity}
             onChange={(e) =>
               handleItemChange(idx, "quantity", parseInt(e.target.value))
@@ -138,16 +138,6 @@ export default function EditShoppingListPage() {
             value={item.unit}
             onChange={(e) => handleItemChange(idx, "unit", e.target.value)}
           />
-          <label>
-            Purchased:
-            <input
-              type="checkbox"
-              checked={item.purchased}
-              onChange={(e) =>
-                handleItemChange(idx, "purchased", e.target.checked)
-              }
-            />
-          </label>
           <button
             type="button"
             onClick={() => handleRemoveItem(idx)}

@@ -2,9 +2,11 @@
 /**
  * Create Shopping List Page
  * -------------------------
- * Lets the user create a new shopping list.
- * They can add items (ingredient ID, quantity, unit, purchased)
- * and submit to save the list to the backend.
+ * Allows the user to build a new shopping list.
+ * They can:
+ *  - Add items (ingredient + quantity + unit)
+ *  - Mark items as purchased (default false)
+ *  - Submit list to backend
  */
 
 "use client";
@@ -15,27 +17,27 @@ import { useRouter } from "next/navigation";
 export default function NewShoppingListPage() {
   const router = useRouter();
 
-  // Form state
+  // Local state
   const [title, setTitle] = useState("");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Add blank item row
+  // Add a blank item row
   const handleAddItem = () => {
     setItems([
       ...items,
-      { ingredientId: "", quantity: 1, unit: "", purchased: false },
+      { ingredientId: "", quantity: 1, unit: "pcs", purchased: false },
     ]);
   };
 
-  // Update item
+  // Update item field
   const handleItemChange = (index: number, field: string, value: any) => {
     const updated = [...items];
     (updated[index] as any)[field] = value;
     setItems(updated);
   };
 
-  // Remove item row
+  // Remove item
   const handleRemoveItem = (index: number) => {
     const updated = [...items];
     updated.splice(index, 1);
@@ -55,11 +57,8 @@ export default function NewShoppingListPage() {
         body: JSON.stringify({ title, items }),
       });
 
-      if (res.ok) {
-        router.push("/shopping-lists");
-      } else {
-        console.error("Failed to create shopping list");
-      }
+      if (res.ok) router.push("/shopping-lists");
+      else console.error("Failed to create shopping list");
     } catch (err) {
       console.error("Error creating shopping list:", err);
     } finally {
@@ -72,7 +71,7 @@ export default function NewShoppingListPage() {
       <h1>Create Shopping List</h1>
 
       <label>
-        Title:
+        List Title:
         <input
           type="text"
           value={title}
@@ -100,7 +99,7 @@ export default function NewShoppingListPage() {
           />
           <input
             type="number"
-            min="1"
+            min="0"
             value={item.quantity}
             onChange={(e) =>
               handleItemChange(idx, "quantity", parseInt(e.target.value))
@@ -112,16 +111,6 @@ export default function NewShoppingListPage() {
             value={item.unit}
             onChange={(e) => handleItemChange(idx, "unit", e.target.value)}
           />
-          <label>
-            Purchased:
-            <input
-              type="checkbox"
-              checked={item.purchased}
-              onChange={(e) =>
-                handleItemChange(idx, "purchased", e.target.checked)
-              }
-            />
-          </label>
           <button
             type="button"
             onClick={() => handleRemoveItem(idx)}
