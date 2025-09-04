@@ -2,7 +2,7 @@
 /**
  * Edit Shopping List Page
  * ----------------------
- * Edit an existing shopping list and its items.
+ * Edit existing shopping list and its items.
  */
 
 "use client";
@@ -16,7 +16,7 @@ export default function EditShoppingListPage() {
   const params = useParams();
   const router = useRouter();
   const [name, setName] = useState("");
-  const [items, setItems] = useState<string[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -28,9 +28,9 @@ export default function EditShoppingListPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setName(data.name || "");
-          setItems(data.items || []);
-        } else console.error("Failed to fetch shopping list");
+          setName(data.data.name || "");
+          setItems(data.data.items || []);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -40,12 +40,17 @@ export default function EditShoppingListPage() {
     fetchList();
   }, [params.id]);
 
-  const handleAddItem = () => setItems([...items, ""]);
-  const handleItemChange = (index: number, value: string) => {
+  const handleItemChange = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
     const updated = [...items];
-    updated[index] = value;
+    (updated[index] as any)[field] = value;
     setItems(updated);
   };
+
+  const handleAddItem = () => setItems([...items, { name: "", quantity: 1 }]);
   const handleRemoveItem = (index: number) => {
     const updated = [...items];
     updated.splice(index, 1);
@@ -64,7 +69,6 @@ export default function EditShoppingListPage() {
         body: JSON.stringify({ name, items }),
       });
       if (res.ok) router.push("/shopping-lists");
-      else console.error("Failed to update shopping list");
     } catch (err) {
       console.error(err);
     } finally {
@@ -72,34 +76,60 @@ export default function EditShoppingListPage() {
     }
   };
 
-  if (loading) return <p style={{ padding: "20px" }}>Loading list…</p>;
+  if (loading)
+    return <p style={{ padding: "20px" }}>Loading shopping list...</p>;
 
   return (
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>Edit Shopping List</h1>
-        <label>Name:</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} />
+        <label>
+          Name:{" "}
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+
         <h2>Items</h2>
         {items.map((item, idx) => (
-          <div key={idx}>
+          <div
+            key={idx}
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px",
+              marginBottom: "10px",
+            }}
+          >
             <input
-              type="text"
-              value={item}
-              onChange={(e) => handleItemChange(idx, e.target.value)}
+              placeholder="Item Name"
+              value={item.name}
+              onChange={(e) => handleItemChange(idx, "name", e.target.value)}
             />
-            <button type="button" onClick={() => handleRemoveItem(idx)}>
+            <input
+              type="number"
+              min={1}
+              value={item.quantity}
+              onChange={(e) =>
+                handleItemChange(idx, "quantity", parseInt(e.target.value))
+              }
+            />
+            <button
+              onClick={() => handleRemoveItem(idx)}
+              style={{ marginLeft: "10px" }}
+            >
               Remove
             </button>
           </div>
         ))}
-        <button type="button" onClick={handleAddItem}>
-          + Add Item
-        </button>
-        <button onClick={handleSubmit} disabled={saving}>
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
+        <button onClick={handleAddItem}>+ Add Item</button>
+        <div style={{ marginTop: "20px" }}>
+          <button onClick={handleSubmit} disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
       </div>
     </ProtectedRoute>
   );

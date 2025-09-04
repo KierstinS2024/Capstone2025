@@ -1,9 +1,9 @@
-// NavBar.tsx
+// path: src/components/NavBar.tsx
 /**
  * NavBar.tsx
- * -----------
- * Global navigation for authenticated users.
- * Shows links to main modules and a Logout button.
+ * ----------
+ * Navigation bar for authenticated users.
+ * Shows links to main modules and logout button.
  */
 
 "use client";
@@ -17,15 +17,13 @@ export default function NavBar() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("userName");
     router.push("/auth/login");
   };
 
   return (
-    <nav className={styles.navbar}>
-      <div className={styles.logo}>
-        <Link href="/dashboard">Capstone2025</Link>
-      </div>
-      <ul className={styles.links}>
+    <nav className={styles.nav}>
+      <ul className={styles.menu}>
         <li>
           <Link href="/dashboard">Dashboard</Link>
         </li>
@@ -41,10 +39,10 @@ export default function NavBar() {
         <li>
           <Link href="/food-intake">Food Intake</Link>
         </li>
+        <li>
+          <button onClick={handleLogout}>Logout</button>
+        </li>
       </ul>
-      <button onClick={handleLogout} className={styles.logout}>
-        Logout
-      </button>
     </nav>
   );
 }

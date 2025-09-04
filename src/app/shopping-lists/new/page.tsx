@@ -1,8 +1,8 @@
 // path: src/app/shopping-lists/new/page.tsx
 /**
- * New Shopping List Page
- * ---------------------
- * Form to create a new shopping list with items.
+ * Create Shopping List Page
+ * ------------------------
+ * Users can create a new shopping list and add items.
  */
 
 "use client";
@@ -15,15 +15,23 @@ import NavBar from "@/components/NavBar";
 export default function NewShoppingListPage() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [items, setItems] = useState<string[]>([""]);
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  const handleAddItem = () => setItems([...items, ""]);
-  const handleItemChange = (index: number, value: string) => {
+  const handleAddItem = () => {
+    setItems([...items, { name: "", quantity: 1 }]);
+  };
+
+  const handleItemChange = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
     const updated = [...items];
-    updated[index] = value;
+    (updated[index] as any)[field] = value;
     setItems(updated);
   };
+
   const handleRemoveItem = (index: number) => {
     const updated = [...items];
     updated.splice(index, 1);
@@ -31,7 +39,7 @@ export default function NewShoppingListPage() {
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
+    setSaving(true);
     try {
       const res = await fetch("/api/shopping-lists", {
         method: "POST",
@@ -46,7 +54,7 @@ export default function NewShoppingListPage() {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -55,27 +63,52 @@ export default function NewShoppingListPage() {
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>Create Shopping List</h1>
-        <label>Name:</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} />
+        <label>
+          Name:{" "}
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+
         <h2>Items</h2>
         {items.map((item, idx) => (
-          <div key={idx}>
+          <div
+            key={idx}
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px",
+              marginBottom: "10px",
+            }}
+          >
             <input
-              type="text"
-              value={item}
-              onChange={(e) => handleItemChange(idx, e.target.value)}
+              placeholder="Item Name"
+              value={item.name}
+              onChange={(e) => handleItemChange(idx, "name", e.target.value)}
             />
-            <button type="button" onClick={() => handleRemoveItem(idx)}>
+            <input
+              type="number"
+              min={1}
+              value={item.quantity}
+              onChange={(e) =>
+                handleItemChange(idx, "quantity", parseInt(e.target.value))
+              }
+            />
+            <button
+              onClick={() => handleRemoveItem(idx)}
+              style={{ marginLeft: "10px" }}
+            >
               Remove
             </button>
           </div>
         ))}
-        <button type="button" onClick={handleAddItem}>
-          + Add Item
-        </button>
-        <button onClick={handleSubmit} disabled={loading}>
-          {loading ? "Saving..." : "Save List"}
-        </button>
+        <button onClick={handleAddItem}>+ Add Item</button>
+        <div style={{ marginTop: "20px" }}>
+          <button onClick={handleSubmit} disabled={saving}>
+            {saving ? "Saving..." : "Save Shopping List"}
+          </button>
+        </div>
       </div>
     </ProtectedRoute>
   );

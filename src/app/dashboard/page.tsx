@@ -1,9 +1,14 @@
 // path: src/app/dashboard/page.tsx
 /**
- * Dashboard Page
- * ----------------
- * Landing page after login for authenticated users.
- * Displays a personalized greeting and navigation to modules.
+ * DashboardPage.tsx
+ * -----------------
+ * Main landing page after login.
+ * Displays personalized greeting and links to all modules:
+ * - Recipes
+ * - Meal Plans
+ * - Shopping Lists
+ * - Food Intake
+ * All protected by JWT and NavBar.
  */
 
 "use client";
@@ -17,9 +22,8 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState("User");
 
   useEffect(() => {
-    // Ideally fetch from auth context or API
-    const name = localStorage.getItem("userName");
-    if (name) setUserName(name);
+    const storedName = localStorage.getItem("userName");
+    if (storedName) setUserName(storedName);
   }, []);
 
   return (
@@ -27,7 +31,8 @@ export default function DashboardPage() {
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>Welcome, {userName}!</h1>
-        <ul>
+        <p>Select a module to get started:</p>
+        <ul style={{ listStyle: "none", padding: 0 }}>
           <li>
             <Link href="/dashboard/recipes">Recipes</Link>
           </li>

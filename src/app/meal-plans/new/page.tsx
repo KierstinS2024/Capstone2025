@@ -1,8 +1,8 @@
 // path: src/app/meal-plans/new/page.tsx
 /**
- * New Meal Plan Page
- * -----------------
- * Form to create a new weekly meal plan with entries.
+ * Create Meal Plan Page
+ * ----------------------
+ * Users can add a new weekly meal plan with entries.
  */
 
 "use client";
@@ -17,7 +17,7 @@ export default function NewMealPlanPage() {
   const [weekStartDate, setWeekStartDate] = useState("");
   const [notes, setNotes] = useState("");
   const [entries, setEntries] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleAddEntry = () => {
     setEntries([
@@ -26,14 +26,18 @@ export default function NewMealPlanPage() {
     ]);
   };
 
-  const handleEntryChange = (index: number, field: string, value: any) => {
+  const handleEntryChange = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
     const updated = [...entries];
-    updated[index][field] = value;
+    (updated[index] as any)[field] = value;
     setEntries(updated);
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
+    setSaving(true);
     try {
       const res = await fetch("/api/meal-plans", {
         method: "POST",
@@ -48,7 +52,7 @@ export default function NewMealPlanPage() {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -57,23 +61,37 @@ export default function NewMealPlanPage() {
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>Create Meal Plan</h1>
-        <label>Week Start Date:</label>
-        <input
-          type="date"
-          value={weekStartDate}
-          onChange={(e) => setWeekStartDate(e.target.value)}
-        />
-        <label>Notes:</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-        />
+        <label>
+          Week Start Date:{" "}
+          <input
+            type="date"
+            value={weekStartDate}
+            onChange={(e) => setWeekStartDate(e.target.value)}
+          />
+        </label>
+        <div>
+          <label>
+            Notes:{" "}
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              cols={40}
+            />
+          </label>
+        </div>
+
         <h2>Entries</h2>
         {entries.map((entry, idx) => (
-          <div key={idx}>
+          <div
+            key={idx}
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px",
+              marginBottom: "10px",
+            }}
+          >
             <input
-              type="text"
               placeholder="Recipe ID"
               value={entry.recipeId}
               onChange={(e) =>
@@ -94,8 +112,8 @@ export default function NewMealPlanPage() {
                 "Friday",
                 "Saturday",
                 "Sunday",
-              ].map((day) => (
-                <option key={day}>{day}</option>
+              ].map((d) => (
+                <option key={d}>{d}</option>
               ))}
             </select>
             <select
@@ -104,8 +122,8 @@ export default function NewMealPlanPage() {
                 handleEntryChange(idx, "mealType", e.target.value)
               }
             >
-              {["Breakfast", "Lunch", "Dinner"].map((meal) => (
-                <option key={meal}>{meal}</option>
+              {["Breakfast", "Lunch", "Dinner"].map((m) => (
+                <option key={m}>{m}</option>
               ))}
             </select>
             <input
@@ -119,9 +137,11 @@ export default function NewMealPlanPage() {
           </div>
         ))}
         <button onClick={handleAddEntry}>+ Add Entry</button>
-        <button onClick={handleSubmit} disabled={loading}>
-          {loading ? "Saving..." : "Save Meal Plan"}
-        </button>
+        <div style={{ marginTop: "20px" }}>
+          <button onClick={handleSubmit} disabled={saving}>
+            {saving ? "Saving..." : "Save Meal Plan"}
+          </button>
+        </div>
       </div>
     </ProtectedRoute>
   );

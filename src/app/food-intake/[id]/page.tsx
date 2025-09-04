@@ -1,8 +1,8 @@
 // path: src/app/food-intake/[id]/page.tsx
 /**
- * Edit Food Intake Page
- * --------------------
- * Edit an existing logged food entry.
+ * Edit Food Intake Entry Page
+ * ---------------------------
+ * Users can edit an existing food intake entry.
  */
 
 "use client";
@@ -15,10 +15,10 @@ import NavBar from "@/components/NavBar";
 export default function EditFoodIntakePage() {
   const params = useParams();
   const router = useRouter();
-
-  const [name, setName] = useState("");
-  const [calories, setCalories] = useState<number>(0);
   const [date, setDate] = useState("");
+  const [mealType, setMealType] = useState("Breakfast");
+  const [recipeId, setRecipeId] = useState("");
+  const [servings, setServings] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -30,10 +30,11 @@ export default function EditFoodIntakePage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setName(data.name || "");
-          setCalories(data.calories || 0);
-          setDate(data.date?.split("T")[0] || "");
-        } else console.error("Failed to fetch food intake entry");
+          setDate(data.data.date || "");
+          setMealType(data.data.mealType || "Breakfast");
+          setRecipeId(data.data.recipeId || "");
+          setServings(data.data.servings || 1);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -52,10 +53,10 @@ export default function EditFoodIntakePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ name, calories, date }),
+        body: JSON.stringify({ date, mealType, recipeId, servings }),
       });
       if (res.ok) router.push("/food-intake");
-      else console.error("Failed to update entry");
+      else console.error("Failed to update food intake entry");
     } catch (err) {
       console.error(err);
     } finally {
@@ -63,30 +64,60 @@ export default function EditFoodIntakePage() {
     }
   };
 
-  if (loading) return <p style={{ padding: "20px" }}>Loading entry…</p>;
+  if (loading)
+    return <p style={{ padding: "20px" }}>Loading food intake entry...</p>;
 
   return (
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>Edit Food Intake Entry</h1>
-        <label>Name:</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} />
-        <label>Calories:</label>
-        <input
-          type="number"
-          value={calories}
-          onChange={(e) => setCalories(parseInt(e.target.value))}
-        />
-        <label>Date:</label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-        <button onClick={handleSubmit} disabled={saving}>
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
+
+        <label>
+          Date:
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </label>
+
+        <label>
+          Meal Type:
+          <select
+            value={mealType}
+            onChange={(e) => setMealType(e.target.value)}
+          >
+            {["Breakfast", "Lunch", "Dinner"].map((meal) => (
+              <option key={meal}>{meal}</option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Recipe ID:
+          <input
+            type="text"
+            value={recipeId}
+            onChange={(e) => setRecipeId(e.target.value)}
+          />
+        </label>
+
+        <label>
+          Servings:
+          <input
+            type="number"
+            min={1}
+            value={servings}
+            onChange={(e) => setServings(parseInt(e.target.value))}
+          />
+        </label>
+
+        <div style={{ marginTop: "20px" }}>
+          <button onClick={handleSubmit} disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
       </div>
     </ProtectedRoute>
   );

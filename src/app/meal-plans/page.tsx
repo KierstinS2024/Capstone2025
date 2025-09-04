@@ -1,9 +1,9 @@
 // path: src/app/meal-plans/page.tsx
 /**
  * Meal Plans List Page
- * --------------------
- * Displays all meal plans for the logged-in user.
- * Users can view, edit, or create new plans.
+ * ---------------------
+ * Lists all meal plans for the logged-in user.
+ * Users can create a new plan or edit existing ones.
  */
 
 "use client";
@@ -28,7 +28,7 @@ export default function MealPlansPage() {
           setMealPlans(data.data || []);
         } else console.error("Failed to fetch meal plans");
       } catch (err) {
-        console.error("Error loading meal plans:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -36,24 +36,35 @@ export default function MealPlansPage() {
     fetchMealPlans();
   }, []);
 
+  if (loading) return <p style={{ padding: "20px" }}>Loading meal plans...</p>;
+
   return (
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>My Meal Plans</h1>
-        <Link href="/meal-plans/new">+ Create New Meal Plan</Link>
-        {loading ? (
-          <p>Loading meal plans…</p>
-        ) : mealPlans.length === 0 ? (
-          <p>You don’t have any meal plans yet. Create one to get started!</p>
+        <Link href="/meal-plans/new">
+          <button>Create New Meal Plan</button>
+        </Link>
+
+        {mealPlans.length === 0 ? (
+          <p>No meal plans yet. Create one!</p>
         ) : (
-          <ul>
+          <ul style={{ listStyle: "none", padding: 0 }}>
             {mealPlans.map((plan) => (
-              <li key={plan._id}>
+              <li
+                key={plan._id}
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "10px",
+                  marginBottom: "10px",
+                }}
+              >
                 <Link href={`/meal-plans/${plan._id}`}>
-                  Week of {plan.weekStartDate.split("T")[0]}
+                  <strong>Week of {plan.weekStartDate.split("T")[0]}</strong>
                 </Link>
                 <p>{plan.notes || "No notes"}</p>
+                <p>Entries: {plan.entries?.length || "No recipes added"}</p>
               </li>
             ))}
           </ul>

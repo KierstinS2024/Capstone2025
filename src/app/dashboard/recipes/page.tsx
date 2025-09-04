@@ -1,8 +1,8 @@
 // path: src/app/dashboard/recipes/page.tsx
 /**
- * Recipes List Page
- * ----------------
- * Lists all user recipes and provides navigation to create or edit.
+ * RecipesListPage.tsx
+ * -------------------
+ * Lists user recipes with links to view, edit, or create new recipes.
  */
 
 "use client";
@@ -23,16 +23,17 @@ interface Recipe {
 export default function RecipesListPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRecipes = async () => {
-      const token = localStorage.getItem("token") || undefined;
-      const client = getApiClient(token);
       try {
+        const token = localStorage.getItem("token") || undefined;
+        const client = getApiClient(token);
         const res = await client.get("/recipes");
-        setRecipes(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch recipes:", err);
+        setRecipes(res.data.recipes || []);
+      } catch (err: any) {
+        setError(err.message || "Error loading recipes");
       } finally {
         setLoading(false);
       }
@@ -44,19 +45,36 @@ export default function RecipesListPage() {
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
-        <h1>Recipes</h1>
-        <Link href="/dashboard/recipes/new">+ New Recipe</Link>
-        {loading ? (
-          <p>Loading recipes…</p>
-        ) : recipes.length === 0 ? (
-          <p>No recipes yet. Create your first one!</p>
-        ) : (
-          <ul>
+        <header>
+          <h1>Recipes</h1>
+          <Link href="/dashboard/recipes/new">
+            <button>+ New Recipe</button>
+          </Link>
+        </header>
+        {loading && <p>Loading recipes...</p>}
+        {error && <p>{error}</p>}
+        {!loading && !error && (
+          <ul style={{ listStyle: "none", padding: 0 }}>
             {recipes.map((r) => (
-              <li key={r._id}>
-                <Link href={`/dashboard/recipes/${r._id}`}>{r.name}</Link>
+              <li
+                key={r._id}
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "10px",
+                  marginBottom: "10px",
+                }}
+              >
+                <h3>{r.name}</h3>
+                {r.cuisine && <p>{r.cuisine}</p>}
+                {r.description && <p>{r.description}</p>}
+                <div>
+                  <Link href={`/dashboard/recipes/${r._id}`}>View</Link>
+                  {" | "}
+                  <Link href={`/dashboard/recipes/${r._id}/edit`}>Edit</Link>
+                </div>
               </li>
             ))}
+            {recipes.length === 0 && <li>No recipes yet. Create one!</li>}
           </ul>
         )}
       </div>

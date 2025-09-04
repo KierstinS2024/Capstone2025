@@ -1,8 +1,8 @@
 // path: src/app/food-intake/new/page.tsx
 /**
- * New Food Intake Page
- * -------------------
- * Form to log a new food entry for the user.
+ * Create Food Intake Entry Page
+ * -----------------------------
+ * Users can add a new food intake entry with recipe, meal type, servings, and date.
  */
 
 "use client";
@@ -14,13 +14,14 @@ import NavBar from "@/components/NavBar";
 
 export default function NewFoodIntakePage() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [calories, setCalories] = useState<number>(0);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [loading, setLoading] = useState(false);
+  const [date, setDate] = useState("");
+  const [mealType, setMealType] = useState("Breakfast");
+  const [recipeId, setRecipeId] = useState("");
+  const [servings, setServings] = useState(1);
+  const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
-    setLoading(true);
+    setSaving(true);
     try {
       const res = await fetch("/api/food-intake", {
         method: "POST",
@@ -28,14 +29,14 @@ export default function NewFoodIntakePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ name, calories, date }),
+        body: JSON.stringify({ date, mealType, recipeId, servings }),
       });
       if (res.ok) router.push("/food-intake");
       else console.error("Failed to create food intake entry");
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -43,24 +44,53 @@ export default function NewFoodIntakePage() {
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
-        <h1>Log Food Intake</h1>
-        <label>Name:</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} />
-        <label>Calories:</label>
-        <input
-          type="number"
-          value={calories}
-          onChange={(e) => setCalories(parseInt(e.target.value))}
-        />
-        <label>Date:</label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-        <button onClick={handleSubmit} disabled={loading}>
-          {loading ? "Saving..." : "Save Entry"}
-        </button>
+        <h1>New Food Intake Entry</h1>
+
+        <label>
+          Date:
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </label>
+
+        <label>
+          Meal Type:
+          <select
+            value={mealType}
+            onChange={(e) => setMealType(e.target.value)}
+          >
+            {["Breakfast", "Lunch", "Dinner"].map((meal) => (
+              <option key={meal}>{meal}</option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Recipe ID:
+          <input
+            type="text"
+            value={recipeId}
+            onChange={(e) => setRecipeId(e.target.value)}
+          />
+        </label>
+
+        <label>
+          Servings:
+          <input
+            type="number"
+            min={1}
+            value={servings}
+            onChange={(e) => setServings(parseInt(e.target.value))}
+          />
+        </label>
+
+        <div style={{ marginTop: "20px" }}>
+          <button onClick={handleSubmit} disabled={saving}>
+            {saving ? "Saving..." : "Save Entry"}
+          </button>
+        </div>
       </div>
     </ProtectedRoute>
   );

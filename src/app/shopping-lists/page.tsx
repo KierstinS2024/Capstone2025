@@ -2,8 +2,8 @@
 /**
  * Shopping Lists List Page
  * ------------------------
- * Displays all shopping lists for the logged-in user.
- * Users can view, edit, or create new shopping lists.
+ * Lists all shopping lists for the logged-in user.
+ * Users can create a new list or edit existing ones.
  */
 
 "use client";
@@ -36,24 +36,35 @@ export default function ShoppingListsPage() {
     fetchLists();
   }, []);
 
+  if (loading)
+    return <p style={{ padding: "20px" }}>Loading shopping lists...</p>;
+
   return (
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>My Shopping Lists</h1>
-        <Link href="/shopping-lists/new">+ Create New List</Link>
-        {loading ? (
-          <p>Loading shopping lists…</p>
-        ) : lists.length === 0 ? (
-          <p>No shopping lists yet. Create your first one!</p>
+        <Link href="/shopping-lists/new">
+          <button>Create New Shopping List</button>
+        </Link>
+
+        {lists.length === 0 ? (
+          <p>No shopping lists yet. Create one!</p>
         ) : (
-          <ul>
+          <ul style={{ listStyle: "none", padding: 0 }}>
             {lists.map((list) => (
-              <li key={list._id}>
+              <li
+                key={list._id}
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "10px",
+                  marginBottom: "10px",
+                }}
+              >
                 <Link href={`/shopping-lists/${list._id}`}>
-                  {list.name || `List ${list._id}`}
+                  <strong>{list.name}</strong>
                 </Link>
-                <p>{list.items?.length || 0} items</p>
+                <p>Items: {list.items?.length || "No items added"}</p>
               </li>
             ))}
           </ul>

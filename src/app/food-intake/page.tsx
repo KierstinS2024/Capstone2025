@@ -1,9 +1,9 @@
 // path: src/app/food-intake/page.tsx
 /**
  * Food Intake List Page
- * --------------------
- * Displays all logged food entries for the user.
- * Users can view, edit, or add new entries.
+ * ---------------------
+ * Lists all food intake entries for the logged-in user.
+ * Users can create a new entry or edit existing ones.
  */
 
 "use client";
@@ -36,24 +36,37 @@ export default function FoodIntakePage() {
     fetchEntries();
   }, []);
 
+  if (loading)
+    return <p style={{ padding: "20px" }}>Loading food intake entries...</p>;
+
   return (
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>Food Intake</h1>
-        <Link href="/food-intake/new">+ Log New Food</Link>
-        {loading ? (
-          <p>Loading food entries…</p>
-        ) : entries.length === 0 ? (
-          <p>No food entries logged yet.</p>
+        <Link href="/food-intake/new">
+          <button>+ New Entry</button>
+        </Link>
+
+        {entries.length === 0 ? (
+          <p>No food intake entries yet. Add one!</p>
         ) : (
-          <ul>
+          <ul style={{ listStyle: "none", padding: 0 }}>
             {entries.map((entry) => (
-              <li key={entry._id}>
+              <li
+                key={entry._id}
+                style={{
+                  border: "1px solid #ccc",
+                  padding: "10px",
+                  marginBottom: "10px",
+                }}
+              >
                 <Link href={`/food-intake/${entry._id}`}>
-                  {entry.name} — {entry.calories} kcal
+                  <strong>{entry.date}</strong>
                 </Link>
-                <p>{new Date(entry.date).toLocaleDateString()}</p>
+                <p>Meal: {entry.mealType}</p>
+                <p>Recipe: {entry.recipeName || "N/A"}</p>
+                <p>Servings: {entry.servings}</p>
               </li>
             ))}
           </ul>
