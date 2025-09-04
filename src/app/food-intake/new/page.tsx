@@ -1,28 +1,24 @@
 // path: src/app/food-intake/new/page.tsx
 /**
- * Create Food Intake Entry Page
- * -----------------------------
- * Lets the user log a new food intake entry.
- * User can choose a recipe or ingredient, specify quantity, unit, and date.
- * Submits the data to the backend and redirects to the list page.
+ * New Food Intake Page
+ * -------------------
+ * Form to log a new food entry for the user.
  */
 
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import NavBar from "@/components/NavBar";
 
 export default function NewFoodIntakePage() {
   const router = useRouter();
-
-  const [recipeId, setRecipeId] = useState("");
-  const [ingredientId, setIngredientId] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const [unit, setUnit] = useState("grams");
-  const [date, setDate] = useState("");
+  const [name, setName] = useState("");
+  const [calories, setCalories] = useState<number>(0);
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
 
-  // Save new entry to backend
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -32,88 +28,40 @@ export default function NewFoodIntakePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ recipeId, ingredientId, quantity, unit, date }),
+        body: JSON.stringify({ name, calories, date }),
       });
-
-      if (res.ok) {
-        router.push("/food-intake");
-      } else {
-        console.error("Failed to create food intake entry");
-      }
+      if (res.ok) router.push("/food-intake");
+      else console.error("Failed to create food intake entry");
     } catch (err) {
-      console.error("Error creating food intake entry:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Log New Food Intake</h1>
-
-      {/* Date input */}
-      <label>
-        Date:
+    <ProtectedRoute>
+      <NavBar />
+      <div style={{ padding: "20px" }}>
+        <h1>Log Food Intake</h1>
+        <label>Name:</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} />
+        <label>Calories:</label>
+        <input
+          type="number"
+          value={calories}
+          onChange={(e) => setCalories(parseInt(e.target.value))}
+        />
+        <label>Date:</label>
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
-      </label>
-
-      {/* Recipe / Ingredient selection */}
-      <div>
-        <label>
-          Recipe ID:
-          <input
-            type="text"
-            value={recipeId}
-            onChange={(e) => setRecipeId(e.target.value)}
-            placeholder="Enter recipe ID (optional)"
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          Ingredient ID:
-          <input
-            type="text"
-            value={ingredientId}
-            onChange={(e) => setIngredientId(e.target.value)}
-            placeholder="Enter ingredient ID (optional)"
-          />
-        </label>
-      </div>
-
-      {/* Quantity and unit */}
-      <div>
-        <label>
-          Quantity:
-          <input
-            type="number"
-            min="0"
-            value={quantity}
-            onChange={(e) => setQuantity(parseFloat(e.target.value))}
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          Unit:
-          <input
-            type="text"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-          />
-        </label>
-      </div>
-
-      {/* Submit button */}
-      <div style={{ marginTop: "20px" }}>
         <button onClick={handleSubmit} disabled={loading}>
           {loading ? "Saving..." : "Save Entry"}
         </button>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

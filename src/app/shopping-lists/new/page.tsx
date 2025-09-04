@@ -1,50 +1,35 @@
 // path: src/app/shopping-lists/new/page.tsx
 /**
- * Create Shopping List Page
- * -------------------------
- * Allows the user to build a new shopping list.
- * They can:
- *  - Add items (ingredient + quantity + unit)
- *  - Mark items as purchased (default false)
- *  - Submit list to backend
+ * New Shopping List Page
+ * ---------------------
+ * Form to create a new shopping list with items.
  */
 
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import NavBar from "@/components/NavBar";
 
 export default function NewShoppingListPage() {
   const router = useRouter();
-
-  // Local state
-  const [title, setTitle] = useState("");
-  const [items, setItems] = useState<any[]>([]);
+  const [name, setName] = useState("");
+  const [items, setItems] = useState<string[]>([""]);
   const [loading, setLoading] = useState(false);
 
-  // Add a blank item row
-  const handleAddItem = () => {
-    setItems([
-      ...items,
-      { ingredientId: "", quantity: 1, unit: "pcs", purchased: false },
-    ]);
-  };
-
-  // Update item field
-  const handleItemChange = (index: number, field: string, value: any) => {
+  const handleAddItem = () => setItems([...items, ""]);
+  const handleItemChange = (index: number, value: string) => {
     const updated = [...items];
-    (updated[index] as any)[field] = value;
+    updated[index] = value;
     setItems(updated);
   };
-
-  // Remove item
   const handleRemoveItem = (index: number) => {
     const updated = [...items];
     updated.splice(index, 1);
     setItems(updated);
   };
 
-  // Submit new shopping list
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -54,80 +39,44 @@ export default function NewShoppingListPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ title, items }),
+        body: JSON.stringify({ name, items }),
       });
-
       if (res.ok) router.push("/shopping-lists");
       else console.error("Failed to create shopping list");
     } catch (err) {
-      console.error("Error creating shopping list:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Create Shopping List</h1>
-
-      <label>
-        List Title:
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-      </label>
-
-      <h2>Items</h2>
-      {items.map((item, idx) => (
-        <div
-          key={idx}
-          style={{
-            border: "1px solid #ccc",
-            padding: "10px",
-            marginBottom: "10px",
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Ingredient ID"
-            value={item.ingredientId}
-            onChange={(e) =>
-              handleItemChange(idx, "ingredientId", e.target.value)
-            }
-          />
-          <input
-            type="number"
-            min="0"
-            value={item.quantity}
-            onChange={(e) =>
-              handleItemChange(idx, "quantity", parseInt(e.target.value))
-            }
-          />
-          <input
-            type="text"
-            placeholder="Unit"
-            value={item.unit}
-            onChange={(e) => handleItemChange(idx, "unit", e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => handleRemoveItem(idx)}
-            style={{ marginLeft: "10px" }}
-          >
-            Remove
-          </button>
-        </div>
-      ))}
-
-      <button onClick={handleAddItem}>+ Add Item</button>
-
-      <div style={{ marginTop: "20px" }}>
+    <ProtectedRoute>
+      <NavBar />
+      <div style={{ padding: "20px" }}>
+        <h1>Create Shopping List</h1>
+        <label>Name:</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} />
+        <h2>Items</h2>
+        {items.map((item, idx) => (
+          <div key={idx}>
+            <input
+              type="text"
+              value={item}
+              onChange={(e) => handleItemChange(idx, e.target.value)}
+            />
+            <button type="button" onClick={() => handleRemoveItem(idx)}>
+              Remove
+            </button>
+          </div>
+        ))}
+        <button type="button" onClick={handleAddItem}>
+          + Add Item
+        </button>
         <button onClick={handleSubmit} disabled={loading}>
-          {loading ? "Saving..." : "Save Shopping List"}
+          {loading ? "Saving..." : "Save List"}
         </button>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

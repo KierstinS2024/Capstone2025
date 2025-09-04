@@ -3,22 +3,20 @@
  * Shopping Lists List Page
  * ------------------------
  * Displays all shopping lists for the logged-in user.
- * From here, the user can:
- *  - View saved shopping lists
- *  - Navigate to create a new shopping list
- *  - Click on a shopping list to edit it
+ * Users can view, edit, or create new shopping lists.
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import NavBar from "@/components/NavBar";
 
 export default function ShoppingListsPage() {
   const [lists, setLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch all shopping lists for the user
   useEffect(() => {
     const fetchLists = async () => {
       try {
@@ -28,56 +26,39 @@ export default function ShoppingListsPage() {
         if (res.ok) {
           const data = await res.json();
           setLists(data.data || []);
-        } else {
-          console.error("Failed to fetch shopping lists");
-        }
+        } else console.error("Failed to fetch shopping lists");
       } catch (err) {
-        console.error("Error fetching shopping lists:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchLists();
   }, []);
 
-  if (loading)
-    return <p style={{ padding: "20px" }}>Loading shopping lists...</p>;
-
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>My Shopping Lists</h1>
-
-      {/* Create new list button */}
-      <div style={{ marginBottom: "20px" }}>
-        <Link href="/shopping-lists/new">
-          <button>Create New Shopping List</button>
-        </Link>
+    <ProtectedRoute>
+      <NavBar />
+      <div style={{ padding: "20px" }}>
+        <h1>My Shopping Lists</h1>
+        <Link href="/shopping-lists/new">+ Create New List</Link>
+        {loading ? (
+          <p>Loading shopping lists…</p>
+        ) : lists.length === 0 ? (
+          <p>No shopping lists yet. Create your first one!</p>
+        ) : (
+          <ul>
+            {lists.map((list) => (
+              <li key={list._id}>
+                <Link href={`/shopping-lists/${list._id}`}>
+                  {list.name || `List ${list._id}`}
+                </Link>
+                <p>{list.items?.length || 0} items</p>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-
-      {/* List all shopping lists */}
-      {lists.length === 0 ? (
-        <p>You have no shopping lists yet. Create one to get started!</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {lists.map((list) => (
-            <li
-              key={list._id}
-              style={{
-                border: "1px solid #ccc",
-                padding: "10px",
-                marginBottom: "10px",
-                borderRadius: "4px",
-              }}
-            >
-              <Link href={`/shopping-lists/${list._id}`}>
-                <strong>{list.title}</strong>
-              </Link>
-              <p>Items: {list.items?.length || 0}</p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    </ProtectedRoute>
   );
 }

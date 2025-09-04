@@ -1,43 +1,48 @@
-// path: src/components/NavBar.tsx
+// NavBar.tsx
 /**
  * NavBar.tsx
- * ----------
- * Persistent navigation bar for logged-in users.
- * Links to Dashboard, Recipes, Meal Plans, Shopping Lists, Food Intake
- * Includes Logout button to clear token and redirect to login.
+ * -----------
+ * Global navigation for authenticated users.
+ * Shows links to main modules and a Logout button.
  */
 
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import styles from "./NavBar.module.css";
 
 export default function NavBar() {
   const router = useRouter();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    router.push("/login");
+    router.push("/auth/login");
   };
 
   return (
-    <nav style={{ padding: "10px", borderBottom: "1px solid #ccc" }}>
-      <Link href="/dashboard" style={{ marginRight: "15px" }}>
-        Dashboard
-      </Link>
-      <Link href="/dashboard/recipes" style={{ marginRight: "15px" }}>
-        Recipes
-      </Link>
-      <Link href="/meal-plans" style={{ marginRight: "15px" }}>
-        Meal Plans
-      </Link>
-      <Link href="/shopping-lists" style={{ marginRight: "15px" }}>
-        Shopping Lists
-      </Link>
-      <Link href="/food-intake" style={{ marginRight: "15px" }}>
-        Food Intake
-      </Link>
-      <button onClick={handleLogout} style={{ marginLeft: "20px" }}>
+    <nav className={styles.navbar}>
+      <div className={styles.logo}>
+        <Link href="/dashboard">Capstone2025</Link>
+      </div>
+      <ul className={styles.links}>
+        <li>
+          <Link href="/dashboard">Dashboard</Link>
+        </li>
+        <li>
+          <Link href="/dashboard/recipes">Recipes</Link>
+        </li>
+        <li>
+          <Link href="/meal-plans">Meal Plans</Link>
+        </li>
+        <li>
+          <Link href="/shopping-lists">Shopping Lists</Link>
+        </li>
+        <li>
+          <Link href="/food-intake">Food Intake</Link>
+        </li>
+      </ul>
+      <button onClick={handleLogout} className={styles.logout}>
         Logout
       </button>
     </nav>
