@@ -1,137 +1,104 @@
 // path: src/app/dashboard/recipes/[id]/page.tsx
+/**
+ * Edit Recipe Page
+ * ----------------
+ * Allows users to edit an existing recipe.
+ * Users can:
+ *  - Update name, description, cuisine
+ *  - Save changes back to backend
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import styles from "../page.module.css";
+import { getApiClient } from "@/lib/api";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-/**
- * RecipeDetailPage
- * - Loads and displays a single recipe by id
- * - Allows delete (with confirm) and link to edit
- */
-export default function RecipeDetailPage() {
+export default function EditRecipePage() {
+  const params = useParams();
   const router = useRouter();
-  const params = useParams<{ id: string }>();
-  const id = params?.id;
 
-  const [recipe, setRecipe] = useState<any | null>(null);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [cuisine, setCuisine] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const getToken = () =>
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-    const load = async () => {
+    const fetchRecipe = async () => {
       try {
-        const token = getToken();
-        const res = await fetch(`/api/recipes/${id}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error(`Failed to fetch recipe (${res.status})`);
-        const data = await res.json();
-        setRecipe(data);
-      } catch (err: any) {
-        console.error(err);
-        setError("Unable to load recipe.");
+        const token = localStorage.getItem("token");
+        const client = getApiClient(token || undefined);
+        const res = await client.get(`/recipes/${params.id}`);
+        setName(res.data.name || "");
+        setDescription(res.data.description || "");
+        setCuisine(res.data.cuisine || "");
+      } catch (err) {
+        console.error("Error fetching recipe:", err);
       } finally {
         setLoading(false);
       }
     };
-    load();
-  }, [id]);
+    fetchRecipe();
+  }, [params.id]);
 
-  const handleDelete = async () => {
-    if (!id) return;
-    const confirm = window.confirm(
-      "Delete this recipe? This cannot be undone."
-    );
-    if (!confirm) return;
-
+  const handleSubmit = async () => {
+    setSaving(true);
     try {
-      const token = getToken();
-      const res = await fetch(`/api/recipes/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+      const token = localStorage.getItem("token");
+      const client = getApiClient(token || undefined);
+      const res = await client.put(`/recipes/${params.id}`, {
+        name,
+        description,
+        cuisine,
       });
-      if (!res.ok) throw new Error(`Failed to delete recipe (${res.status})`);
-      router.push("/dashboard/recipes");
+      if (res.status === 200) router.push("/dashboard/recipes");
+      else console.error("Failed to update recipe");
     } catch (err) {
-      console.error(err);
-      alert("Failed to delete recipe.");
+      console.error("Error updating recipe:", err);
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading)
-    return (
-      <div className={styles.container}>
-        <p>Loading…</p>
-      </div>
-    );
-  if (error)
-    return (
-      <div className={styles.container}>
-        <p className={styles.error}>⚠️ {error}</p>
-      </div>
-    );
-  if (!recipe)
-    return (
-      <div className={styles.container}>
-        <p>Recipe not found.</p>
-      </div>
-    );
+  if (loading) return <p style={{ padding: "20px" }}>Loading recipe…</p>;
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <div>
-          <h1>{recipe.name}</h1>
-          {recipe.cuisine && <p className={styles.muted}>{recipe.cuisine}</p>}
-        </div>
-        <div className={styles.actions}>
-          <Link
-            href={`/dashboard/recipes/${recipe._id}/edit`}
-            className={styles.btn}
-          >
-            Edit
-          </Link>
-          <button onClick={handleDelete} className={styles.btnPrimary}>
-            Delete
-          </button>
-        </div>
-      </header>
+    <ProtectedRoute>
+      <div style={{ padding: "20px" }}>
+        <h1>Edit Recipe</h1>
 
-      {recipe.description && (
-        <p style={{ marginBottom: "1rem" }}>{recipe.description}</p>
-      )}
+        <label>
+          Name:
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
 
-      {Array.isArray(recipe.instructions) && recipe.instructions.length > 0 && (
-        <section className={styles.card}>
-          <h2>Instructions</h2>
-          <ol style={{ paddingLeft: "1.25rem", marginTop: ".5rem" }}>
-            {recipe.instructions.map((step: string, idx: number) => (
-              <li key={idx} style={{ marginBottom: ".35rem" }}>
-                {step}
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
+        <label>
+          Description:
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </label>
 
-      {recipe.nutritionInfo && (
-        <section className={styles.card}>
-          <h2>Nutrition</h2>
-          <pre style={{ whiteSpace: "pre-wrap" }}>
-            {JSON.stringify(recipe.nutritionInfo, null, 2)}
-          </pre>
-        </section>
-      )}
-    </div>
+        <label>
+          Cuisine:
+          <input
+            type="text"
+            value={cuisine}
+            onChange={(e) => setCuisine(e.target.value)}
+          />
+        </label>
+
+        <button onClick={handleSubmit} disabled={saving}>
+          {saving ? "Saving..." : "Save Changes"}
+        </button>
+      </div>
+    </ProtectedRoute>
   );
 }

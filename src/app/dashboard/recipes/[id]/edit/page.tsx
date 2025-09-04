@@ -1,153 +1,192 @@
 // path: src/app/dashboard/recipes/[id]/edit/page.tsx
+/**
+ * Edit Recipe Page
+ * ----------------
+ * Allows user to edit an existing recipe.
+ * Features:
+ *  - Update name, description, cuisine
+ *  - Add / remove / edit ingredients
+ *  - Submit changes to backend
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-/**
- * EditRecipePage
- * - Loads a recipe by id
- * - Allows editing and saving updates
- */
+interface IngredientEntry {
+  ingredientId: string;
+  quantity: number;
+  unit: string;
+}
+
 export default function EditRecipePage() {
+  const params = useParams();
   const router = useRouter();
-  const params = useParams<{ id: string }>();
-  const id = params?.id;
 
   const [name, setName] = useState("");
-  const [cuisine, setCuisine] = useState("");
   const [description, setDescription] = useState("");
-  const [instructionsText, setInstructionsText] = useState("");
+  const [cuisine, setCuisine] = useState("");
+  const [ingredients, setIngredients] = useState<IngredientEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const getToken = () =>
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  // Load current recipe
+  // Load existing recipe
   useEffect(() => {
-    if (!id) return;
-    const load = async () => {
+    const fetchRecipe = async () => {
       try {
-        const token = getToken();
-        const res = await fetch(`/api/recipes/${id}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/recipes/${params.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error(`Failed to fetch recipe (${res.status})`);
-        const data = await res.json();
-        setName(data.name || "");
-        setCuisine(data.cuisine || "");
-        setDescription(data.description || "");
-        setInstructionsText(
-          Array.isArray(data.instructions) ? data.instructions.join("\n") : ""
-        );
-      } catch (err: any) {
-        console.error(err);
-        setError("Unable to load recipe.");
+
+        if (res.ok) {
+          const data = await res.json();
+          setName(data.data.name);
+          setDescription(data.data.description || "");
+          setCuisine(data.data.cuisine || "");
+          setIngredients(data.data.ingredients || []);
+        } else console.error("Failed to load recipe");
+      } catch (err) {
+        console.error("Error fetching recipe:", err);
       } finally {
         setLoading(false);
       }
     };
-    load();
-  }, [id]);
+    fetchRecipe();
+  }, [params.id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  // Ingredient handlers
+  const handleAddIngredient = () =>
+    setIngredients([
+      ...ingredients,
+      { ingredientId: "", quantity: 1, unit: "" },
+    ]);
+  const handleIngredientChange = (
+    idx: number,
+    field: string,
+    value: string | number
+  ) => {
+    const updated = [...ingredients];
+    (updated[idx] as any)[field] = value;
+    setIngredients(updated);
+  };
+  const handleRemoveIngredient = (idx: number) => {
+    const updated = [...ingredients];
+    updated.splice(idx, 1);
+    setIngredients(updated);
+  };
 
+  // Submit changes
+  const handleSubmit = async () => {
+    setSaving(true);
     try {
-      const token = getToken();
-      const payload = {
-        name,
-        cuisine,
-        description,
-        instructions: instructionsText
-          .split("\n")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      };
-
-      const res = await fetch(`/api/recipes/${id}`, {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/recipes/${params.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ name, description, cuisine, ingredients }),
       });
 
-      if (!res.ok) throw new Error(`Failed to update recipe (${res.status})`);
-      router.push(`/dashboard/recipes/${id}`);
-    } catch (err: any) {
-      console.error(err);
-      setError("Unable to update recipe. Please try again.");
+      if (res.ok) router.push("/dashboard/recipes");
+      else console.error("Failed to update recipe");
+    } catch (err) {
+      console.error("Error updating recipe:", err);
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading)
-    return (
-      <div style={{ maxWidth: 720, margin: "1rem auto", padding: "1rem" }}>
-        <p>Loading…</p>
-      </div>
-    );
-  if (error)
-    return (
-      <div style={{ maxWidth: 720, margin: "1rem auto", padding: "1rem" }}>
-        <p style={{ color: "var(--danger)" }}>⚠️ {error}</p>
-      </div>
-    );
+  if (loading) return <p style={{ padding: "20px" }}>Loading recipe...</p>;
 
   return (
-    <div style={{ maxWidth: 720, margin: "1rem auto", padding: "1rem" }}>
-      <h1 style={{ marginBottom: ".75rem" }}>Edit Recipe</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Name
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </label>
+    <ProtectedRoute>
+      <div style={{ padding: "20px" }}>
+        <h1>Edit Recipe</h1>
 
-        <label>
-          Cuisine (optional)
-          <input value={cuisine} onChange={(e) => setCuisine(e.target.value)} />
-        </label>
+        <div>
+          <label>
+            Name:
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+        </div>
 
-        <label>
-          Description (optional)
-          <textarea
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </label>
+        <div>
+          <label>
+            Description:
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </label>
+        </div>
 
-        <label>
-          Instructions (one step per line)
-          <textarea
-            rows={6}
-            value={instructionsText}
-            onChange={(e) => setInstructionsText(e.target.value)}
-          />
-        </label>
+        <div>
+          <label>
+            Cuisine:
+            <input
+              type="text"
+              value={cuisine}
+              onChange={(e) => setCuisine(e.target.value)}
+            />
+          </label>
+        </div>
 
-        {error && (
-          <p style={{ color: "var(--danger)", marginTop: ".5rem" }}>
-            ⚠️ {error}
-          </p>
-        )}
+        <h2>Ingredients</h2>
+        {ingredients.map((ing, idx) => (
+          <div key={idx} style={{ marginBottom: "10px" }}>
+            <input
+              type="text"
+              placeholder="Ingredient ID"
+              value={ing.ingredientId}
+              onChange={(e) =>
+                handleIngredientChange(idx, "ingredientId", e.target.value)
+              }
+            />
+            <input
+              type="number"
+              min="1"
+              value={ing.quantity}
+              onChange={(e) =>
+                handleIngredientChange(
+                  idx,
+                  "quantity",
+                  parseInt(e.target.value)
+                )
+              }
+            />
+            <input
+              type="text"
+              placeholder="Unit"
+              value={ing.unit}
+              onChange={(e) =>
+                handleIngredientChange(idx, "unit", e.target.value)
+              }
+            />
+            <button
+              onClick={() => handleRemoveIngredient(idx)}
+              style={{ marginLeft: "10px" }}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <button onClick={handleAddIngredient}>+ Add Ingredient</button>
 
-        <div style={{ display: "flex", gap: ".5rem", marginTop: ".75rem" }}>
-          <button type="submit" className="btn">
-            Save
-          </button>
-          <button type="button" className="btn" onClick={() => router.back()}>
-            Cancel
+        <div style={{ marginTop: "20px" }}>
+          <button onClick={handleSubmit} disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
-      </form>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }
