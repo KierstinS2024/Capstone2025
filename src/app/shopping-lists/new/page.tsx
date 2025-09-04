@@ -1,72 +1,86 @@
-// path: src/app/shopping-lists/new/page.tsx
+"use client";
 /**
- * NewShoppingListPage.tsx
- * -----------------------
- * Allows users to create a new shopping list.
+ * NewShoppingListPage
+ * -------------------
+ * Allows user to manually add grocery items to a shopping list.
+ * Each item = { name, quantity, unit, purchased }.
+ * Sends to /api/shopping-lists.
  */
 
-"use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import NavBar from "@/components/NavBar";
-import { getApiClient } from "@/lib/api";
 
 export default function NewShoppingListPage() {
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [items, setItems] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
+  const [items, setItems] = useState([
+    { name: "", quantity: "", unit: "", purchased: false },
+  ]);
 
-  const handleAddItem = () => setItems([...items, ""]);
-  const handleItemChange = (index: number, value: string) => {
+  // Update shopping list item
+  const handleChange = (i: number, field: string, value: string | boolean) => {
     const updated = [...items];
-    updated[index] = value;
+    updated[i][field as keyof (typeof updated)[0]] = value as never;
     setItems(updated);
   };
 
-  const handleSubmit = async () => {
-    setSaving(true);
-    try {
-      const token = localStorage.getItem("token") || undefined;
-      const client = getApiClient(token);
-      await client.post("/shopping-lists", { name, items });
-      router.push("/shopping-lists");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
+  // Save list
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch("/api/shopping-lists", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    if (res.ok) {
+      alert("✅ Shopping list saved!");
+    } else {
+      alert("❌ Error saving shopping list");
     }
   };
 
   return (
-    <ProtectedRoute>
-      <NavBar />
-      <div style={{ padding: "20px" }}>
-        <h1>Create Shopping List</h1>
-        <label>
-          List Name:
+    <form onSubmit={handleSubmit}>
+      <h1>Create a Shopping List</h1>
+
+      {items.map((item, i) => (
+        <div key={i}>
           <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            placeholder="Item name (e.g., Apples)"
+            value={item.name}
+            onChange={(e) => handleChange(i, "name", e.target.value)}
           />
-        </label>
-        <h2>Items</h2>
-        {items.map((item, idx) => (
           <input
-            key={idx}
-            type="text"
-            value={item}
-            onChange={(e) => handleItemChange(idx, e.target.value)}
+            placeholder="Quantity (e.g., 2)"
+            value={item.quantity}
+            onChange={(e) => handleChange(i, "quantity", e.target.value)}
           />
-        ))}
-        <button onClick={handleAddItem}>+ Add Item</button>
-        <button onClick={handleSubmit} disabled={saving}>
-          {saving ? "Saving..." : "Save List"}
-        </button>
-      </div>
-    </ProtectedRoute>
+          <input
+            placeholder="Unit (e.g., lbs, bags)"
+            value={item.unit}
+            onChange={(e) => handleChange(i, "unit", e.target.value)}
+          />
+          <label>
+            <input
+              type="checkbox"
+              checked={item.purchased}
+              onChange={(e) => handleChange(i, "purchased", e.target.checked)}
+            />
+            Purchased
+          </label>
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={() =>
+          setItems([
+            ...items,
+            { name: "", quantity: "", unit: "", purchased: false },
+          ])
+        }
+      >
+        + Add Another Item
+      </button>
+
+      <button type="submit">Save Shopping List</button>
+    </form>
   );
 }

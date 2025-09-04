@@ -1,63 +1,57 @@
 // src/app/auth/login/page.tsx
-/**
- * LoginPage.tsx
- * -----------------
- * Login form.
- * Redirects to Dashboard on successful login.
- */
-
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import styles from "./LoginPage.module.css";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
     try {
       await login(email, password);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setError(err.message || "Login failed");
     }
   };
 
   return (
-    <div className={styles.container}>
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <h2>Login</h2>
-        {error && <p className={styles.error}>{error}</p>}
-        <label>Email</label>
+    <div style={{ padding: "20px", maxWidth: "400px", margin: "0 auto" }}>
+      <h1>Login</h1>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      <form onSubmit={handleSubmit}>
         <input
           type="email"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          style={{ display: "block", marginBottom: "10px", width: "100%" }}
         />
-        <label>Password</label>
         <input
           type="password"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          style={{ display: "block", marginBottom: "10px", width: "100%" }}
         />
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
+        <button type="submit">Log In</button>
       </form>
+
+      <p style={{ marginTop: "15px" }}>
+        Don’t have an account?{" "}
+        <a href="/auth/signup" style={{ color: "blue" }}>
+          Sign up here
+        </a>
+      </p>
     </div>
   );
 }

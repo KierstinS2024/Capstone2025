@@ -1,134 +1,118 @@
-// path: src/app/meal-plans/new/page.tsx
+"use client";
 /**
- * NewMealPlanPage.tsx
- * -------------------
- * Create a new meal plan.
+ * NewMealPlanPage
+ * ---------------
+ * Lets user create a weekly meal plan.
+ * Each entry = { day, mealType, recipeId }.
+ * Recipes are loaded from /api/recipes.
  */
 
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import NavBar from "@/components/NavBar";
-import { getApiClient } from "@/lib/api";
+import { useState, useEffect } from "react";
 
 export default function NewMealPlanPage() {
-  const router = useRouter();
-  const [weekStartDate, setWeekStartDate] = useState("");
-  const [notes, setNotes] = useState("");
-  const [entries, setEntries] = useState<any[]>([]);
-  const [saving, setSaving] = useState(false);
+  // List of recipes fetched from DB
+  const [recipes, setRecipes] = useState<any[]>([]);
 
-  const handleAddEntry = () => {
-    setEntries([
-      ...entries,
-      { recipeId: "", dayOfWeek: "Monday", mealType: "Breakfast", servings: 1 },
-    ]);
-  };
+  // Entries: one for each planned meal
+  const [entries, setEntries] = useState([
+    { day: "Monday", mealType: "Breakfast", recipeId: "" },
+  ]);
 
-  const handleEntryChange = (
-    index: number,
-    field: string,
-    value: string | number
-  ) => {
+  // Fetch saved recipes to populate dropdown
+  useEffect(() => {
+    fetch("/api/recipes")
+      .then((r) => r.json())
+      .then((data) => setRecipes(data));
+  }, []);
+
+  // Update a meal plan entry
+  const handleChange = (i: number, field: string, value: string) => {
     const updated = [...entries];
-    (updated[index] as any)[field] = value;
+    updated[i][field as keyof (typeof updated)[0]] = value;
     setEntries(updated);
   };
 
-  const handleSubmit = async () => {
-    setSaving(true);
-    try {
-      const token = localStorage.getItem("token") || undefined;
-      const client = getApiClient(token);
-      await client.post("/meal-plans", { weekStartDate, notes, entries });
-      router.push("/meal-plans");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
+  // Save plan
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch("/api/meal-plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entries }),
+    });
+    if (res.ok) {
+      alert("✅ Meal plan saved!");
+    } else {
+      alert("❌ Error saving meal plan");
     }
   };
 
   return (
-    <ProtectedRoute>
-      <NavBar />
-      <div style={{ padding: "20px" }}>
-        <h1>Create Meal Plan</h1>
-        <label>
-          Week Start Date:{" "}
-          <input
-            type="date"
-            value={weekStartDate}
-            onChange={(e) => setWeekStartDate(e.target.value)}
-          />
-        </label>
-        <label>
-          Notes:{" "}
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </label>
-        <h2>Entries</h2>
-        {entries.map((entry, idx) => (
-          <div
-            key={idx}
-            style={{
-              border: "1px solid #ccc",
-              padding: "10px",
-              marginBottom: "10px",
-            }}
+    <form onSubmit={handleSubmit}>
+      <h1>Create a Meal Plan</h1>
+
+      {entries.map((entry, i) => (
+        <div key={i}>
+          {/* Day of the week */}
+          <select
+            value={entry.day}
+            onChange={(e) => handleChange(i, "day", e.target.value)}
           >
-            <input
-              type="text"
-              placeholder="Recipe ID"
-              value={entry.recipeId}
-              onChange={(e) =>
-                handleEntryChange(idx, "recipeId", e.target.value)
-              }
-            />
-            <select
-              value={entry.dayOfWeek}
-              onChange={(e) =>
-                handleEntryChange(idx, "dayOfWeek", e.target.value)
-              }
-            >
-              {[
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday",
-              ].map((day) => (
-                <option key={day}>{day}</option>
-              ))}
-            </select>
-            <select
-              value={entry.mealType}
-              onChange={(e) =>
-                handleEntryChange(idx, "mealType", e.target.value)
-              }
-            >
-              {["Breakfast", "Lunch", "Dinner"].map((meal) => (
-                <option key={meal}>{meal}</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              min={1}
-              value={entry.servings}
-              onChange={(e) =>
-                handleEntryChange(idx, "servings", parseInt(e.target.value))
-              }
-            />
-          </div>
-        ))}
-        <button onClick={handleAddEntry}>+ Add Entry</button>
-        <button onClick={handleSubmit} disabled={saving}>
-          {saving ? "Saving..." : "Save Meal Plan"}
-        </button>
-      </div>
-    </ProtectedRoute>
+            {[
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday",
+            ].map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+
+          {/* Meal type */}
+          <select
+            value={entry.mealType}
+            onChange={(e) => handleChange(i, "mealType", e.target.value)}
+          >
+            {["Breakfast", "Lunch", "Dinner", "Snack"].map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+
+          {/* Recipe */}
+          <select
+            value={entry.recipeId}
+            onChange={(e) => handleChange(i, "recipeId", e.target.value)}
+          >
+            <option value="">--Pick Recipe--</option>
+            {recipes.map((r) => (
+              <option key={r._id} value={r._id}>
+                {r.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={() =>
+          setEntries([
+            ...entries,
+            { day: "Monday", mealType: "Breakfast", recipeId: "" },
+          ])
+        }
+      >
+        + Add Another Meal
+      </button>
+
+      <button type="submit">Save Meal Plan</button>
+    </form>
   );
 }

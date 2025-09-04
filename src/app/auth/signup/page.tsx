@@ -1,63 +1,57 @@
 // src/app/auth/signup/page.tsx
-/**
- * SignupPage.tsx
- * -----------------
- * Signup form.
- * Redirects to Dashboard on successful signup.
- */
-
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import styles from "./SignupPage.module.css";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SignupPage() {
   const { signup } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
     try {
       await signup(email, password);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setError(err.message || "Signup failed");
     }
   };
 
   return (
-    <div className={styles.container}>
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <h2>Sign Up</h2>
-        {error && <p className={styles.error}>{error}</p>}
-        <label>Email</label>
+    <div style={{ padding: "20px", maxWidth: "400px", margin: "0 auto" }}>
+      <h1>Sign Up</h1>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      <form onSubmit={handleSubmit}>
         <input
           type="email"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          style={{ display: "block", marginBottom: "10px", width: "100%" }}
         />
-        <label>Password</label>
         <input
           type="password"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          style={{ display: "block", marginBottom: "10px", width: "100%" }}
         />
-        <button type="submit" disabled={loading}>
-          {loading ? "Signing up..." : "Sign Up"}
-        </button>
+        <button type="submit">Create Account</button>
       </form>
+
+      <p style={{ marginTop: "15px" }}>
+        Already have an account?{" "}
+        <a href="/auth/login" style={{ color: "blue" }}>
+          Log in here
+        </a>
+      </p>
     </div>
   );
 }
