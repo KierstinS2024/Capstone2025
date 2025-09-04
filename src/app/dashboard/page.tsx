@@ -2,13 +2,8 @@
 /**
  * DashboardPage.tsx
  * -----------------
- * Main landing page after login.
- * Displays personalized greeting and links to all modules:
- * - Recipes
- * - Meal Plans
- * - Shopping Lists
- * - Food Intake
- * All protected by JWT and NavBar.
+ * Main dashboard for the user after login.
+ * Displays personalized greeting and links to all modules.
  */
 
 "use client";
@@ -31,8 +26,7 @@ export default function DashboardPage() {
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>Welcome, {userName}!</h1>
-        <p>Select a module to get started:</p>
-        <ul style={{ listStyle: "none", padding: 0 }}>
+        <ul>
           <li>
             <Link href="/dashboard/recipes">Recipes</Link>
           </li>

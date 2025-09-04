@@ -1,8 +1,8 @@
 // path: src/app/meal-plans/new/page.tsx
 /**
- * Create Meal Plan Page
- * ----------------------
- * Users can add a new weekly meal plan with entries.
+ * NewMealPlanPage.tsx
+ * -------------------
+ * Create a new meal plan.
  */
 
 "use client";
@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NavBar from "@/components/NavBar";
+import { getApiClient } from "@/lib/api";
 
 export default function NewMealPlanPage() {
   const router = useRouter();
@@ -39,16 +40,10 @@ export default function NewMealPlanPage() {
   const handleSubmit = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/meal-plans", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ weekStartDate, notes, entries }),
-      });
-      if (res.ok) router.push("/meal-plans");
-      else console.error("Failed to create meal plan");
+      const token = localStorage.getItem("token") || undefined;
+      const client = getApiClient(token);
+      await client.post("/meal-plans", { weekStartDate, notes, entries });
+      router.push("/meal-plans");
     } catch (err) {
       console.error(err);
     } finally {
@@ -69,18 +64,10 @@ export default function NewMealPlanPage() {
             onChange={(e) => setWeekStartDate(e.target.value)}
           />
         </label>
-        <div>
-          <label>
-            Notes:{" "}
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              cols={40}
-            />
-          </label>
-        </div>
-
+        <label>
+          Notes:{" "}
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </label>
         <h2>Entries</h2>
         {entries.map((entry, idx) => (
           <div
@@ -92,6 +79,7 @@ export default function NewMealPlanPage() {
             }}
           >
             <input
+              type="text"
               placeholder="Recipe ID"
               value={entry.recipeId}
               onChange={(e) =>
@@ -112,8 +100,8 @@ export default function NewMealPlanPage() {
                 "Friday",
                 "Saturday",
                 "Sunday",
-              ].map((d) => (
-                <option key={d}>{d}</option>
+              ].map((day) => (
+                <option key={day}>{day}</option>
               ))}
             </select>
             <select
@@ -122,8 +110,8 @@ export default function NewMealPlanPage() {
                 handleEntryChange(idx, "mealType", e.target.value)
               }
             >
-              {["Breakfast", "Lunch", "Dinner"].map((m) => (
-                <option key={m}>{m}</option>
+              {["Breakfast", "Lunch", "Dinner"].map((meal) => (
+                <option key={meal}>{meal}</option>
               ))}
             </select>
             <input
@@ -137,11 +125,9 @@ export default function NewMealPlanPage() {
           </div>
         ))}
         <button onClick={handleAddEntry}>+ Add Entry</button>
-        <div style={{ marginTop: "20px" }}>
-          <button onClick={handleSubmit} disabled={saving}>
-            {saving ? "Saving..." : "Save Meal Plan"}
-          </button>
-        </div>
+        <button onClick={handleSubmit} disabled={saving}>
+          {saving ? "Saving..." : "Save Meal Plan"}
+        </button>
       </div>
     </ProtectedRoute>
   );

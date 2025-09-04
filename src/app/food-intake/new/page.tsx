@@ -1,8 +1,8 @@
 // path: src/app/food-intake/new/page.tsx
 /**
- * Create Food Intake Entry Page
- * -----------------------------
- * Users can add a new food intake entry with recipe, meal type, servings, and date.
+ * NewFoodIntakePage.tsx
+ * ---------------------
+ * Allows users to add a new food intake entry.
  */
 
 "use client";
@@ -11,28 +11,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NavBar from "@/components/NavBar";
+import { getApiClient } from "@/lib/api";
 
 export default function NewFoodIntakePage() {
   const router = useRouter();
   const [date, setDate] = useState("");
   const [mealType, setMealType] = useState("Breakfast");
-  const [recipeId, setRecipeId] = useState("");
-  const [servings, setServings] = useState(1);
+  const [foodName, setFoodName] = useState("");
+  const [calories, setCalories] = useState<number | "">("");
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/food-intake", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ date, mealType, recipeId, servings }),
-      });
-      if (res.ok) router.push("/food-intake");
-      else console.error("Failed to create food intake entry");
+      const token = localStorage.getItem("token") || undefined;
+      const client = getApiClient(token);
+      await client.post("/food-intake", { date, mealType, foodName, calories });
+      router.push("/food-intake");
     } catch (err) {
       console.error(err);
     } finally {
@@ -45,7 +40,6 @@ export default function NewFoodIntakePage() {
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>New Food Intake Entry</h1>
-
         <label>
           Date:
           <input
@@ -54,43 +48,36 @@ export default function NewFoodIntakePage() {
             onChange={(e) => setDate(e.target.value)}
           />
         </label>
-
         <label>
           Meal Type:
           <select
             value={mealType}
             onChange={(e) => setMealType(e.target.value)}
           >
-            {["Breakfast", "Lunch", "Dinner"].map((meal) => (
+            {["Breakfast", "Lunch", "Dinner", "Snack"].map((meal) => (
               <option key={meal}>{meal}</option>
             ))}
           </select>
         </label>
-
         <label>
-          Recipe ID:
+          Food Name:
           <input
             type="text"
-            value={recipeId}
-            onChange={(e) => setRecipeId(e.target.value)}
+            value={foodName}
+            onChange={(e) => setFoodName(e.target.value)}
           />
         </label>
-
         <label>
-          Servings:
+          Calories:
           <input
             type="number"
-            min={1}
-            value={servings}
-            onChange={(e) => setServings(parseInt(e.target.value))}
+            value={calories}
+            onChange={(e) => setCalories(parseInt(e.target.value))}
           />
         </label>
-
-        <div style={{ marginTop: "20px" }}>
-          <button onClick={handleSubmit} disabled={saving}>
-            {saving ? "Saving..." : "Save Entry"}
-          </button>
-        </div>
+        <button onClick={handleSubmit} disabled={saving}>
+          {saving ? "Saving..." : "Save Entry"}
+        </button>
       </div>
     </ProtectedRoute>
   );

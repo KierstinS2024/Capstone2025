@@ -1,9 +1,9 @@
 // path: src/app/food-intake/page.tsx
 /**
- * Food Intake List Page
- * ---------------------
- * Lists all food intake entries for the logged-in user.
- * Users can create a new entry or edit existing ones.
+ * FoodIntakeListPage.tsx
+ * ----------------------
+ * Displays all food intake entries for the logged-in user.
+ * Users can view, edit, or add new entries.
  */
 
 "use client";
@@ -12,23 +12,30 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NavBar from "@/components/NavBar";
+import { getApiClient } from "@/lib/api";
 
-export default function FoodIntakePage() {
-  const [entries, setEntries] = useState<any[]>([]);
+interface FoodEntry {
+  _id: string;
+  date: string;
+  mealType: string;
+  foodName: string;
+  calories?: number;
+}
+
+export default function FoodIntakeListPage() {
+  const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEntries = async () => {
       try {
-        const res = await fetch("/api/food-intake", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setEntries(data.data || []);
-        } else console.error("Failed to fetch food intake entries");
-      } catch (err) {
-        console.error(err);
+        const token = localStorage.getItem("token") || undefined;
+        const client = getApiClient(token);
+        const res = await client.get("/food-intake");
+        setEntries(res.data.data || []);
+      } catch (err: any) {
+        setError(err.message || "Error loading food intake entries");
       } finally {
         setLoading(false);
       }
@@ -36,39 +43,40 @@ export default function FoodIntakePage() {
     fetchEntries();
   }, []);
 
-  if (loading)
-    return <p style={{ padding: "20px" }}>Loading food intake entries...</p>;
-
   return (
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
-        <h1>Food Intake</h1>
-        <Link href="/food-intake/new">
-          <button>+ New Entry</button>
-        </Link>
-
-        {entries.length === 0 ? (
-          <p>No food intake entries yet. Add one!</p>
-        ) : (
+        <header>
+          <h1>Food Intake</h1>
+          <Link href="/food-intake/new">
+            <button>+ New Entry</button>
+          </Link>
+        </header>
+        {loading && <p>Loading entries...</p>}
+        {error && <p>{error}</p>}
+        {!loading && !error && (
           <ul style={{ listStyle: "none", padding: 0 }}>
-            {entries.map((entry) => (
+            {entries.map((e) => (
               <li
-                key={entry._id}
+                key={e._id}
                 style={{
                   border: "1px solid #ccc",
                   padding: "10px",
                   marginBottom: "10px",
                 }}
               >
-                <Link href={`/food-intake/${entry._id}`}>
-                  <strong>{entry.date}</strong>
-                </Link>
-                <p>Meal: {entry.mealType}</p>
-                <p>Recipe: {entry.recipeName || "N/A"}</p>
-                <p>Servings: {entry.servings}</p>
+                <strong>{e.foodName}</strong> ({e.mealType}) on{" "}
+                {e.date.split("T")[0]}
+                {e.calories && <p>Calories: {e.calories}</p>}
+                <div>
+                  <Link href={`/food-intake/${e._id}`}>View</Link>
+                  {" | "}
+                  <Link href={`/food-intake/${e._id}/edit`}>Edit</Link>
+                </div>
               </li>
             ))}
+            {entries.length === 0 && <li>No entries yet. Add one!</li>}
           </ul>
         )}
       </div>

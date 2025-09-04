@@ -1,40 +1,38 @@
 // path: src/app/food-intake/[id]/page.tsx
 /**
- * Edit Food Intake Entry Page
- * ---------------------------
- * Users can edit an existing food intake entry.
+ * EditFoodIntakePage.tsx
+ * ----------------------
+ * Allows editing an existing food intake entry.
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NavBar from "@/components/NavBar";
+import { getApiClient } from "@/lib/api";
 
 export default function EditFoodIntakePage() {
   const params = useParams();
   const router = useRouter();
   const [date, setDate] = useState("");
   const [mealType, setMealType] = useState("Breakfast");
-  const [recipeId, setRecipeId] = useState("");
-  const [servings, setServings] = useState(1);
+  const [foodName, setFoodName] = useState("");
+  const [calories, setCalories] = useState<number | "">("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchEntry = async () => {
       try {
-        const res = await fetch(`/api/food-intake/${params.id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setDate(data.data.date || "");
-          setMealType(data.data.mealType || "Breakfast");
-          setRecipeId(data.data.recipeId || "");
-          setServings(data.data.servings || 1);
-        }
+        const token = localStorage.getItem("token") || undefined;
+        const client = getApiClient(token);
+        const res = await client.get(`/food-intake/${params.id}`);
+        setDate(res.data.date.split("T")[0]);
+        setMealType(res.data.mealType);
+        setFoodName(res.data.foodName);
+        setCalories(res.data.calories || "");
       } catch (err) {
         console.error(err);
       } finally {
@@ -47,16 +45,15 @@ export default function EditFoodIntakePage() {
   const handleSubmit = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/food-intake/${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ date, mealType, recipeId, servings }),
+      const token = localStorage.getItem("token") || undefined;
+      const client = getApiClient(token);
+      await client.put(`/food-intake/${params.id}`, {
+        date,
+        mealType,
+        foodName,
+        calories,
       });
-      if (res.ok) router.push("/food-intake");
-      else console.error("Failed to update food intake entry");
+      router.push("/food-intake");
     } catch (err) {
       console.error(err);
     } finally {
@@ -64,15 +61,13 @@ export default function EditFoodIntakePage() {
     }
   };
 
-  if (loading)
-    return <p style={{ padding: "20px" }}>Loading food intake entry...</p>;
+  if (loading) return <p style={{ padding: "20px" }}>Loading entry…</p>;
 
   return (
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>Edit Food Intake Entry</h1>
-
         <label>
           Date:
           <input
@@ -81,43 +76,36 @@ export default function EditFoodIntakePage() {
             onChange={(e) => setDate(e.target.value)}
           />
         </label>
-
         <label>
           Meal Type:
           <select
             value={mealType}
             onChange={(e) => setMealType(e.target.value)}
           >
-            {["Breakfast", "Lunch", "Dinner"].map((meal) => (
+            {["Breakfast", "Lunch", "Dinner", "Snack"].map((meal) => (
               <option key={meal}>{meal}</option>
             ))}
           </select>
         </label>
-
         <label>
-          Recipe ID:
+          Food Name:
           <input
             type="text"
-            value={recipeId}
-            onChange={(e) => setRecipeId(e.target.value)}
+            value={foodName}
+            onChange={(e) => setFoodName(e.target.value)}
           />
         </label>
-
         <label>
-          Servings:
+          Calories:
           <input
             type="number"
-            min={1}
-            value={servings}
-            onChange={(e) => setServings(parseInt(e.target.value))}
+            value={calories}
+            onChange={(e) => setCalories(parseInt(e.target.value))}
           />
         </label>
-
-        <div style={{ marginTop: "20px" }}>
-          <button onClick={handleSubmit} disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        </div>
+        <button onClick={handleSubmit} disabled={saving}>
+          {saving ? "Saving..." : "Save Changes"}
+        </button>
       </div>
     </ProtectedRoute>
   );
