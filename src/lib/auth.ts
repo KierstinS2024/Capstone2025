@@ -1,4 +1,4 @@
-/**
+/** src/lib/auth.ts
  * JWT Authentication Utilities
  * - generateToken: creates JWT
  * - verifyToken: verifies JWT from Authorization header

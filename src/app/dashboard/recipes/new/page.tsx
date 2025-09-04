@@ -1,132 +1,189 @@
-// src/app/dashboard/recipes/new/page.tsx
+// File: src/app/dashboard/recipes/new/page.tsx
 "use client";
+
 /**
  * NewRecipePage
  * -------------
- * Allows user to create and save their own recipe.
- * Fields: Title, Ingredients (dynamic), Instructions (dynamic), Cuisine dropdown.
- * Sends data to /api/recipes.
+ * Allows a logged-in user to create and save a new recipe.
+ * Includes:
+ * - Title
+ * - Description
+ * - Dynamic ingredients (name -> ingredientId placeholder)
+ * - Instructions
+ * - Cuisine dropdown
  */
 
 import { useState } from "react";
+import NavBar from "@/components/NavBar";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/context/AuthContext";
 
 export default function NewRecipePage() {
-  // Recipe title
-  const [title, setTitle] = useState("");
+  const { token } = useAuth();
 
-  // List of ingredients (each with name, quantity, unit)
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState(""); // Required by model
   const [ingredients, setIngredients] = useState([
     { name: "", quantity: "", unit: "" },
   ]);
-
-  // Cooking instructions (step-by-step text)
   const [instructions, setInstructions] = useState([""]);
-
-  // Cuisine type
   const [cuisine, setCuisine] = useState("");
 
-  // Update a single ingredient field
   const handleIngredientChange = (i: number, field: string, value: string) => {
     const updated = [...ingredients];
     updated[i][field as keyof (typeof updated)[0]] = value;
     setIngredients(updated);
   };
 
-  // Update a single step of the instructions
   const handleInstructionChange = (i: number, value: string) => {
     const updated = [...instructions];
     updated[i] = value;
     setInstructions(updated);
   };
 
-  // Save recipe to API
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch("/api/recipes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, ingredients, instructions, cuisine }),
-    });
 
-    if (res.ok) {
-      alert("✅ Recipe saved!");
-    } else {
-      alert("❌ Error saving recipe");
+    if (!title.trim()) return alert("Title is required");
+    if (!description.trim()) return alert("Description is required");
+    if (!ingredients.every((ing) => ing.name && ing.quantity && ing.unit))
+      return alert("All ingredient fields are required");
+    if (!instructions.every((step) => step.trim()))
+      return alert("All steps are required");
+
+    if (!token) return alert("❌ You must be logged in to save a recipe");
+
+    // Map ingredients to match Recipe model
+    const mappedIngredients = ingredients.map((ing) => ({
+      ingredientId: null, // TODO: Replace null with actual ObjectId from Ingredient collection
+      quantity: Number(ing.quantity),
+      unit: ing.unit,
+    }));
+
+    try {
+      const res = await fetch("/api/recipes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: title,
+          description,
+          instructions,
+          cuisine,
+          userSubmitted: true,
+          ingredients: mappedIngredients,
+        }),
+      });
+
+      if (res.ok) {
+        alert("✅ Recipe saved!");
+        setTitle("");
+        setDescription("");
+        setIngredients([{ name: "", quantity: "", unit: "" }]);
+        setInstructions([""]);
+        setCuisine("");
+      } else {
+        const data = await res.json();
+        alert(`❌ Error saving recipe: ${data.message || "Unknown error"}`);
+      }
+    } catch (err) {
+      alert(`❌ Network error: ${err}`);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h1>Add a New Recipe</h1>
-
-      {/* Recipe Title */}
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Recipe Title"
-      />
-
-      {/* Ingredients Section */}
-      <h3>Ingredients</h3>
-      {ingredients.map((ing, i) => (
-        <div key={i}>
+    <ProtectedRoute>
+      <NavBar />
+      <main style={{ padding: "1rem" }}>
+        <h1>Add a New Recipe</h1>
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "1rem",
+            maxWidth: "600px",
+          }}
+        >
           <input
-            placeholder="Ingredient name"
-            value={ing.name}
-            onChange={(e) => handleIngredientChange(i, "name", e.target.value)}
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
           />
-          <input
-            placeholder="Quantity (e.g., 2)"
-            value={ing.quantity}
-            onChange={(e) =>
-              handleIngredientChange(i, "quantity", e.target.value)
+          <textarea
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+
+          <h3>Ingredients</h3>
+          {ingredients.map((ing, i) => (
+            <div key={i} style={{ display: "flex", gap: "0.5rem" }}>
+              <input
+                placeholder="Name"
+                value={ing.name}
+                onChange={(e) =>
+                  handleIngredientChange(i, "name", e.target.value)
+                }
+              />
+              <input
+                placeholder="Quantity"
+                value={ing.quantity}
+                onChange={(e) =>
+                  handleIngredientChange(i, "quantity", e.target.value)
+                }
+              />
+              <input
+                placeholder="Unit"
+                value={ing.unit}
+                onChange={(e) =>
+                  handleIngredientChange(i, "unit", e.target.value)
+                }
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              setIngredients([
+                ...ingredients,
+                { name: "", quantity: "", unit: "" },
+              ])
             }
-          />
-          <input
-            placeholder="Unit (e.g., cups, tbsp)"
-            value={ing.unit}
-            onChange={(e) => handleIngredientChange(i, "unit", e.target.value)}
-          />
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() =>
-          setIngredients([...ingredients, { name: "", quantity: "", unit: "" }])
-        }
-      >
-        + Add Ingredient
-      </button>
+          >
+            + Add Ingredient
+          </button>
 
-      {/* Instructions Section */}
-      <h3>Instructions</h3>
-      {instructions.map((step, i) => (
-        <input
-          key={i}
-          placeholder={`Step ${i + 1}`}
-          value={step}
-          onChange={(e) => handleInstructionChange(i, e.target.value)}
-        />
-      ))}
-      <button
-        type="button"
-        onClick={() => setInstructions([...instructions, ""])}
-      >
-        + Add Step
-      </button>
+          <h3>Instructions</h3>
+          {instructions.map((step, i) => (
+            <input
+              key={i}
+              placeholder={`Step ${i + 1}`}
+              value={step}
+              onChange={(e) => handleInstructionChange(i, e.target.value)}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() => setInstructions([...instructions, ""])}
+          >
+            + Add Step
+          </button>
 
-      {/* Cuisine Dropdown */}
-      <h3>Cuisine</h3>
-      <select value={cuisine} onChange={(e) => setCuisine(e.target.value)}>
-        <option value="">--Choose Cuisine--</option>
-        <option value="Italian">Italian</option>
-        <option value="Mexican">Mexican</option>
-        <option value="Indian">Indian</option>
-        <option value="American">American</option>
-      </select>
+          <h3>Cuisine</h3>
+          <select value={cuisine} onChange={(e) => setCuisine(e.target.value)}>
+            <option value="">--Choose Cuisine--</option>
+            <option value="Italian">Italian</option>
+            <option value="Mexican">Mexican</option>
+            <option value="Indian">Indian</option>
+            <option value="American">American</option>
+          </select>
 
-      {/* Submit */}
-      <button type="submit">Save Recipe</button>
-    </form>
+          <button type="submit">Save Recipe</button>
+        </form>
+      </main>
+    </ProtectedRoute>
   );
 }
