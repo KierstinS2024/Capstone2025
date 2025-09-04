@@ -1,11 +1,13 @@
 // path: src/app/recipes/[id]/page.tsx
 /**
  * Edit Recipe Page
- * ----------------
- * Loads an existing recipe by ID and lets the user:
- *  - Edit name, description, cuisine
- *  - Add/edit/remove ingredients
- *  - Add/edit/remove instructions
+ * -----------------
+ * Loads an existing recipe from the backend by ID.
+ * Lets the user:
+ *  - Update recipe name and description
+ *  - Add / edit / remove ingredients
+ *  - Add / edit / remove instructions
+ *  - Save changes back to the backend
  */
 
 "use client";
@@ -14,17 +16,18 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 export default function EditRecipePage() {
-  const params = useParams();
+  const params = useParams(); // read the dynamic :id param from URL
   const router = useRouter();
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
+  // Local state for recipe fields
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [cuisine, setCuisine] = useState("");
-  const [ingredients, setIngredients] = useState<any[]>([]);
+  const [ingredients, setIngredients] = useState<
+    { ingredientId: string; quantity: number; unit: string }[]
+  >([]);
   const [instructions, setInstructions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Load recipe from backend
   useEffect(() => {
@@ -35,17 +38,15 @@ export default function EditRecipePage() {
         });
         if (res.ok) {
           const data = await res.json();
-          const recipe = data.data;
-          setName(recipe.name);
-          setDescription(recipe.description || "");
-          setCuisine(recipe.cuisine || "");
-          setIngredients(recipe.ingredients || []);
-          setInstructions(recipe.instructions || []);
+          setName(data.data.name);
+          setDescription(data.data.description || "");
+          setIngredients(data.data.ingredients || []);
+          setInstructions(data.data.instructions || []);
         } else {
           console.error("Failed to load recipe");
         }
       } catch (err) {
-        console.error("Error loading recipe:", err);
+        console.error("Error fetching recipe:", err);
       } finally {
         setLoading(false);
       }
@@ -54,7 +55,7 @@ export default function EditRecipePage() {
     fetchRecipe();
   }, [params.id]);
 
-  // Ingredient and instruction handlers (same as create)
+  // Ingredient handlers
   const handleIngredientChange = (
     index: number,
     field: string,
@@ -64,30 +65,38 @@ export default function EditRecipePage() {
     (updated[index] as any)[field] = value;
     setIngredients(updated);
   };
-  const handleAddIngredient = () =>
+
+  const handleAddIngredient = () => {
     setIngredients([
       ...ingredients,
-      { ingredientId: "", quantity: 1, unit: "unit" },
+      { ingredientId: "", quantity: 1, unit: "" },
     ]);
+  };
+
   const handleRemoveIngredient = (index: number) => {
     const updated = [...ingredients];
     updated.splice(index, 1);
     setIngredients(updated);
   };
 
+  // Instruction handlers
   const handleInstructionChange = (index: number, value: string) => {
     const updated = [...instructions];
     updated[index] = value;
     setInstructions(updated);
   };
-  const handleAddInstruction = () => setInstructions([...instructions, ""]);
+
+  const handleAddInstruction = () => {
+    setInstructions([...instructions, ""]);
+  };
+
   const handleRemoveInstruction = (index: number) => {
     const updated = [...instructions];
     updated.splice(index, 1);
     setInstructions(updated);
   };
 
-  // Save updated recipe
+  // Save updated recipe to backend
   const handleSubmit = async () => {
     setSaving(true);
     try {
@@ -97,17 +106,14 @@ export default function EditRecipePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({
-          name,
-          description,
-          cuisine,
-          ingredients,
-          instructions,
-        }),
+        body: JSON.stringify({ name, description, ingredients, instructions }),
       });
 
-      if (res.ok) router.push("/recipes");
-      else console.error("Failed to update recipe");
+      if (res.ok) {
+        router.push("/recipes"); // navigate back to recipe list
+      } else {
+        console.error("Failed to update recipe");
+      }
     } catch (err) {
       console.error("Error updating recipe:", err);
     } finally {
@@ -121,6 +127,7 @@ export default function EditRecipePage() {
     <div style={{ padding: "20px" }}>
       <h1>Edit Recipe</h1>
 
+      {/* Recipe Name */}
       <label>
         Name:
         <input
@@ -130,6 +137,7 @@ export default function EditRecipePage() {
         />
       </label>
 
+      {/* Recipe Description */}
       <div>
         <label>
           Description:
@@ -138,17 +146,6 @@ export default function EditRecipePage() {
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             cols={40}
-          />
-        </label>
-      </div>
-
-      <div>
-        <label>
-          Cuisine:
-          <input
-            type="text"
-            value={cuisine}
-            onChange={(e) => setCuisine(e.target.value)}
           />
         </label>
       </div>
@@ -174,7 +171,8 @@ export default function EditRecipePage() {
           />
           <input
             type="number"
-            min="0"
+            min="1"
+            placeholder="Quantity"
             value={ing.quantity}
             onChange={(e) =>
               handleIngredientChange(
@@ -186,12 +184,17 @@ export default function EditRecipePage() {
           />
           <input
             type="text"
+            placeholder="Unit"
             value={ing.unit}
             onChange={(e) =>
               handleIngredientChange(idx, "unit", e.target.value)
             }
           />
-          <button type="button" onClick={() => handleRemoveIngredient(idx)}>
+          <button
+            type="button"
+            onClick={() => handleRemoveIngredient(idx)}
+            style={{ marginLeft: "10px" }}
+          >
             Remove
           </button>
         </div>
@@ -200,22 +203,27 @@ export default function EditRecipePage() {
 
       {/* Instructions */}
       <h2>Instructions</h2>
-      {instructions.map((step, idx) => (
+      {instructions.map((inst, idx) => (
         <div key={idx} style={{ marginBottom: "10px" }}>
           <textarea
-            rows={2}
-            cols={40}
-            value={step}
+            value={inst}
             onChange={(e) => handleInstructionChange(idx, e.target.value)}
+            rows={2}
+            cols={50}
+            placeholder={`Step ${idx + 1}`}
           />
-          <button type="button" onClick={() => handleRemoveInstruction(idx)}>
+          <button
+            type="button"
+            onClick={() => handleRemoveInstruction(idx)}
+            style={{ marginLeft: "10px" }}
+          >
             Remove
           </button>
         </div>
       ))}
       <button onClick={handleAddInstruction}>+ Add Instruction</button>
 
-      {/* Save button */}
+      {/* Save Recipe */}
       <div style={{ marginTop: "20px" }}>
         <button onClick={handleSubmit} disabled={saving}>
           {saving ? "Saving..." : "Save Changes"}

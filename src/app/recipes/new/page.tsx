@@ -1,13 +1,13 @@
 // path: src/app/recipes/new/page.tsx
 /**
  * Create Recipe Page
- * -----------------
- * Allows user to create a new recipe.
- * Features:
- *  - Name, description, cuisine
- *  - Ingredients list (ingredientId, quantity, unit)
- *  - Instructions (ordered list)
- *  - Nutrition info
+ * ------------------
+ * Allows the user to add a new recipe.
+ * User can:
+ *  - Enter recipe name and description
+ *  - Add ingredients with quantity and unit
+ *  - Add instructions
+ *  - Save recipe to the backend
  */
 
 "use client";
@@ -18,23 +18,24 @@ import { useRouter } from "next/navigation";
 export default function NewRecipePage() {
   const router = useRouter();
 
-  // Form state
+  // Local form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [cuisine, setCuisine] = useState("");
-  const [ingredients, setIngredients] = useState<any[]>([]);
+  const [ingredients, setIngredients] = useState<
+    { ingredientId: string; quantity: number; unit: string }[]
+  >([]);
   const [instructions, setInstructions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Add blank ingredient row
+  // Add new empty ingredient
   const handleAddIngredient = () => {
     setIngredients([
       ...ingredients,
-      { ingredientId: "", quantity: 1, unit: "unit" },
+      { ingredientId: "", quantity: 1, unit: "" },
     ]);
   };
 
-  // Update ingredient
+  // Update ingredient fields
   const handleIngredientChange = (
     index: number,
     field: string,
@@ -45,33 +46,19 @@ export default function NewRecipePage() {
     setIngredients(updated);
   };
 
-  // Remove ingredient
-  const handleRemoveIngredient = (index: number) => {
-    const updated = [...ingredients];
-    updated.splice(index, 1);
-    setIngredients(updated);
-  };
-
-  // Add instruction step
+  // Add new instruction step
   const handleAddInstruction = () => {
     setInstructions([...instructions, ""]);
   };
 
-  // Update instruction
+  // Update a specific instruction
   const handleInstructionChange = (index: number, value: string) => {
     const updated = [...instructions];
     updated[index] = value;
     setInstructions(updated);
   };
 
-  // Remove instruction
-  const handleRemoveInstruction = (index: number) => {
-    const updated = [...instructions];
-    updated.splice(index, 1);
-    setInstructions(updated);
-  };
-
-  // Submit recipe
+  // Save new recipe to backend
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -81,18 +68,11 @@ export default function NewRecipePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({
-          name,
-          description,
-          cuisine,
-          ingredients,
-          instructions,
-          userSubmitted: true,
-        }),
+        body: JSON.stringify({ name, description, ingredients, instructions }),
       });
 
       if (res.ok) {
-        router.push("/recipes");
+        router.push("/recipes"); // Go back to recipes list
       } else {
         console.error("Failed to create recipe");
       }
@@ -107,6 +87,7 @@ export default function NewRecipePage() {
     <div style={{ padding: "20px" }}>
       <h1>Create Recipe</h1>
 
+      {/* Recipe Name */}
       <label>
         Name:
         <input
@@ -116,6 +97,7 @@ export default function NewRecipePage() {
         />
       </label>
 
+      {/* Recipe Description */}
       <div>
         <label>
           Description:
@@ -128,18 +110,7 @@ export default function NewRecipePage() {
         </label>
       </div>
 
-      <div>
-        <label>
-          Cuisine:
-          <input
-            type="text"
-            value={cuisine}
-            onChange={(e) => setCuisine(e.target.value)}
-          />
-        </label>
-      </div>
-
-      {/* Ingredients */}
+      {/* Ingredients List */}
       <h2>Ingredients</h2>
       {ingredients.map((ing, idx) => (
         <div
@@ -160,7 +131,8 @@ export default function NewRecipePage() {
           />
           <input
             type="number"
-            min="0"
+            min="1"
+            placeholder="Quantity"
             value={ing.quantity}
             onChange={(e) =>
               handleIngredientChange(
@@ -172,36 +144,32 @@ export default function NewRecipePage() {
           />
           <input
             type="text"
+            placeholder="Unit"
             value={ing.unit}
             onChange={(e) =>
               handleIngredientChange(idx, "unit", e.target.value)
             }
           />
-          <button type="button" onClick={() => handleRemoveIngredient(idx)}>
-            Remove
-          </button>
         </div>
       ))}
       <button onClick={handleAddIngredient}>+ Add Ingredient</button>
 
-      {/* Instructions */}
+      {/* Instructions List */}
       <h2>Instructions</h2>
-      {instructions.map((step, idx) => (
-        <div key={idx} style={{ marginBottom: "10px" }}>
+      {instructions.map((inst, idx) => (
+        <div key={idx}>
           <textarea
-            rows={2}
-            cols={40}
-            value={step}
+            value={inst}
             onChange={(e) => handleInstructionChange(idx, e.target.value)}
+            rows={2}
+            cols={50}
+            placeholder={`Step ${idx + 1}`}
           />
-          <button type="button" onClick={() => handleRemoveInstruction(idx)}>
-            Remove
-          </button>
         </div>
       ))}
       <button onClick={handleAddInstruction}>+ Add Instruction</button>
 
-      {/* Save button */}
+      {/* Save Recipe */}
       <div style={{ marginTop: "20px" }}>
         <button onClick={handleSubmit} disabled={loading}>
           {loading ? "Saving..." : "Save Recipe"}

@@ -4,9 +4,9 @@
  * -----------------
  * Displays all recipes for the logged-in user.
  * From here, the user can:
- *  - View their recipes
- *  - Create a new recipe
- *  - Click on a recipe to edit
+ *  - View existing recipes
+ *  - Navigate to create a new recipe
+ *  - Click on a recipe to edit it
  */
 
 "use client";
@@ -15,16 +15,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function RecipesPage() {
-  const [recipes, setRecipes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recipes, setRecipes] = useState<any[]>([]); // Store fetched recipes
+  const [loading, setLoading] = useState(true); // Loading state
 
-  // Fetch all recipes for the logged-in user
+  // Fetch all recipes on component mount
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
         const res = await fetch("/api/recipes", {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
+
         if (res.ok) {
           const data = await res.json();
           setRecipes(data.data || []);
@@ -41,7 +42,9 @@ export default function RecipesPage() {
     fetchRecipes();
   }, []);
 
-  if (loading) return <p style={{ padding: "20px" }}>Loading recipes...</p>;
+  if (loading) {
+    return <p style={{ padding: "20px" }}>Loading recipes...</p>;
+  }
 
   return (
     <div style={{ padding: "20px" }}>
@@ -54,9 +57,9 @@ export default function RecipesPage() {
         </Link>
       </div>
 
-      {/* No recipes message */}
+      {/* Show message if no recipes exist */}
       {recipes.length === 0 ? (
-        <p>No recipes found. Create one to get started!</p>
+        <p>You have no recipes yet. Add one to get started!</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0 }}>
           {recipes.map((recipe) => (
@@ -69,13 +72,16 @@ export default function RecipesPage() {
                 borderRadius: "4px",
               }}
             >
+              {/* Link to edit/view the recipe */}
               <Link href={`/recipes/${recipe._id}`}>
                 <strong>{recipe.name}</strong>
               </Link>
               <p>{recipe.description}</p>
               <p>
-                Ingredients: {recipe.ingredients?.length || "None"} |
-                Instructions: {recipe.instructions?.length || "None"}
+                Ingredients:{" "}
+                {recipe.ingredients?.length
+                  ? recipe.ingredients.length
+                  : "No ingredients added"}
               </p>
             </li>
           ))}
