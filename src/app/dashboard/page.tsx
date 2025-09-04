@@ -1,76 +1,55 @@
 // path: src/app/dashboard/page.tsx
 /**
- * Dashboard Home Page
- * -------------------
- * Shows a personalized welcome message.
- * Provides quick links to main app sections:
- *  - Recipes
- *  - Meal Plans
- *  - Shopping Lists
- *  - Food Intake / Nutrition Tracking
- * 
- * This page ensures a smooth user flow from login to main functionality.
+ * Dashboard Page
+ * --------------
+ * Home page for logged-in users.
+ * Shows personalized greeting and quick links to app modules.
  */
 
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import NavBar from "@/components/NavBar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function DashboardPage() {
-  // Store user's name for personalized greeting
   const [userName, setUserName] = useState("User");
+  const router = useRouter();
 
-  // Example: fetch user info on mount if needed
+  // Optionally fetch user info if backend provides
   useEffect(() => {
-    const fetchUserName = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
 
-        const res = await fetch("/api/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setUserName(data.name || "User");
-        }
-      } catch (err) {
-        console.error("Error fetching user info:", err);
-      }
-    };
-
-    fetchUserName();
-  }, []);
+    // If you want to fetch actual user name:
+    // fetch("/api/me", { headers: { Authorization: `Bearer ${token}` }})
+    //   .then(res => res.json())
+    //   .then(data => setUserName(data.name || "User"))
+    //   .catch(err => console.error(err));
+  }, [router]);
 
   return (
     <ProtectedRoute>
+      <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>Welcome, {userName}!</h1>
-        <p>Quick links to manage your nutrition and meal planning:</p>
-
-        <ul style={{ listStyle: "none", padding: 0, marginTop: "20px" }}>
-          <li style={{ marginBottom: "10px" }}>
-            <Link href="/dashboard/recipes">
-              <button>Recipes</button>
-            </Link>
+        <p>Quick links to your app modules:</p>
+        <ul>
+          <li>
+            <a href="/dashboard/recipes">Recipes</a>
           </li>
-          <li style={{ marginBottom: "10px" }}>
-            <Link href="/meal-plans">
-              <button>Meal Plans</button>
-            </Link>
+          <li>
+            <a href="/meal-plans">Meal Plans</a>
           </li>
-          <li style={{ marginBottom: "10px" }}>
-            <Link href="/shopping-lists">
-              <button>Shopping Lists</button>
-            </Link>
+          <li>
+            <a href="/shopping-lists">Shopping Lists</a>
           </li>
-          <li style={{ marginBottom: "10px" }}>
-            <Link href="/food-intake">
-              <button>Nutrition / Food Intake</button>
-            </Link>
+          <li>
+            <a href="/food-intake">Food Intake</a>
           </li>
         </ul>
       </div>

@@ -1,13 +1,15 @@
-// src/app/layout.tsx
-"use client"; // Client component required for AuthProvider
-
+// path: src/app/layout.tsx
 /**
- * RootLayout.tsx
- * -------------------
- * Wraps the entire app with AuthProvider for global authentication state.
+ * RootLayout
+ * ----------
+ * Wraps the entire app, providing global context providers.
+ *
+ * Notes:
+ *  - Metadata is exported (server component)
+ *  - AuthProvider wraps all children
+ *  - No "use client" at the top; this allows exporting metadata
  */
 
-import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import type { Metadata } from "next";
 
@@ -21,5 +23,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <html lang="en">
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
+    </html>
+  );
 }
