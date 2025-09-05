@@ -1,14 +1,13 @@
-// path: src/app/dashboard/recipes/[id]/edit/page.tsx
+// src/app/dashboard/recipes/[id]/edit/page.tsx
 "use client";
 
 /**
  * EditRecipePage
  * ----------------
- * Allows a user to edit one of their own recipes.
- * - Fetches the recipe by ID
+ * - Fetches a recipe by ID
  * - Prefills RecipeForm with initialData
- * - Prevents editing if recipe is not user-submitted
- * - Redirects unauthenticated users to login
+ * - Ensures ingredients conform to IngredientInput type
+ * - Redirects to recipes dashboard after save
  */
 
 import { useEffect, useState } from "react";
@@ -18,46 +17,47 @@ import NavBar from "@/components/NavBar";
 import RecipeForm from "@/components/RecipeForm";
 import { useAuth } from "@/context/AuthContext";
 
-// Ingredient shape used in recipes
+// Original API ingredient type
 interface Ingredient {
   name: string;
-  quantity: string;
+  quantity: string | number;
   unit: string;
+  ingredientId?: string;
 }
 
-// Full recipe shape returned by API
+// API recipe type
 interface UserRecipe {
   _id: string;
   name: string;
   description: string;
+  cuisine: string;
   ingredients: Ingredient[];
   instructions: string[];
-  cuisine: string;
-  userSubmitted: boolean; // only user-submitted recipes are editable
+  userSubmitted: boolean; // only user-submitted recipes can be edited
 }
 
 export default function EditRecipePage() {
-  const params = useParams();
-  const { id } = params; // recipe ID from URL
-  const { token } = useAuth(); // JWT from AuthContext
+  const { id } = useParams();
   const router = useRouter();
+  const { token } = useAuth();
 
-  // --- Local state ---
   const [recipeData, setRecipeData] = useState<UserRecipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect immediately if user is not logged in
+  // Redirect if not logged in
   useEffect(() => {
     if (!token) router.push("/auth/login");
   }, [token, router]);
 
-  // Fetch recipe by ID and ensure it is user-submitted
+  // Fetch recipe by ID
   useEffect(() => {
     if (!id || !token) return;
 
     const fetchRecipe = async () => {
       setLoading(true);
+      setError(null);
+
       try {
         const res = await fetch(`/api/recipes/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -89,7 +89,7 @@ export default function EditRecipePage() {
     fetchRecipe();
   }, [id, token]);
 
-  // --- Loading & error states ---
+  // Loading & error states
   if (loading) return <p>Loading recipe...</p>;
   if (error)
     return (
@@ -100,23 +100,30 @@ export default function EditRecipePage() {
         </button>
       </div>
     );
-  if (!recipeData) return null; // safety fallback
+  if (!recipeData) return null;
 
-  // --- Render RecipeForm with prefilled data ---
+  // Map API ingredients to RecipeForm IngredientInput type
+  const initialData = {
+    _id: recipeData._id,
+    name: recipeData.name,
+    description: recipeData.description,
+    cuisine: recipeData.cuisine,
+    ingredients: recipeData.ingredients.map((ing) => ({
+      ingredientId: ing.ingredientId || "",
+      name: ing.name,
+      quantity: Number(ing.quantity) || 1,
+      unit: ing.unit,
+    })),
+    instructions: recipeData.instructions,
+  };
+
   return (
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "1rem" }}>
         <h1>Edit Recipe</h1>
         <RecipeForm
-          initialData={{
-            _id: recipeData._id,
-            name: recipeData.name,
-            description: recipeData.description,
-            ingredients: recipeData.ingredients,
-            instructions: recipeData.instructions,
-            cuisine: recipeData.cuisine,
-          }}
+          initialData={initialData}
           onSave={() => router.push("/dashboard/recipes")} // redirect after save
         />
       </div>

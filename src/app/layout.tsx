@@ -1,15 +1,14 @@
-// path: src/app/layout.tsx
-/**
+/** src/app/layout.tsx
  * RootLayout
  * ----------
- * Wraps the app with global providers.
- * - ThemeProvider: light/dark mode
+ * Wraps the app with global providers and global UI.
+ * - ThemeProvider: dark/light toggle
  * - AuthProvider: authentication
- * - Imports CSS variables and global styles
+ * - ProtectedRoute: restricts access to protected pages
+ * - NavBar: always visible on protected pages
  */
 
 import "../styles/globals.css";
-import "../styles/variables.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 

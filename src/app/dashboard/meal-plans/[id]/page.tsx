@@ -5,14 +5,14 @@
  * MealPlanDetailPage
  *
  * Responsibilities:
- * - Fetch & display a single meal plan (date + notes)
- * - CRUD entries (add/edit/delete) via MealPlanEntryForm + EditMealPlanEntryModal
- * - Show recipe info for each entry (title fallback to ID if not found)
- * - Generate a shopping list preview by aggregating recipe ingredients
+ * - Fetch & display a single meal plan (week start date + notes)
+ * - CRUD entries via MealPlanEntryForm + EditMealPlanEntryModal
+ * - Show recipe info for each entry (title fallback to ID)
+ * - Generate a shopping list preview aggregating recipe ingredients
  *
  * Optimizations:
- * - Pre-fetch all recipe data (titles + ingredients) once
- * - Use cached data for shopping list preview
+ * - Pre-fetch all recipe data used in entries
+ * - Cache recipe data for shopping list preview
  */
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -26,6 +26,7 @@ import MealPlanEntryForm from "@/components/MealPlanEntryForm";
 import EditMealPlanEntryModal from "@/components/EditMealPlanEntryModal";
 import styles from "./MealPlanDetailPage.module.css";
 
+/** Simplified Recipe type for caching */
 type Recipe = {
   _id: string;
   title: string;
@@ -39,6 +40,7 @@ export default function MealPlanDetailPage() {
 
   const planId = typeof params.id === "string" ? params.id : "";
 
+  // Local state
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [weekStartDate, setWeekStartDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -64,7 +66,7 @@ export default function MealPlanDetailPage() {
     if (!token) router.push("/auth/login");
   }, [token, router]);
 
-  // Fetch meal plan & all recipes used in entries
+  // Fetch meal plan and associated recipes
   useEffect(() => {
     if (!planId || !token) return;
 
@@ -86,12 +88,11 @@ export default function MealPlanDetailPage() {
             ? data.mealPlan.entries
             : [],
         };
-
         setMealPlan(mp);
         setWeekStartDate(new Date(mp.weekStartDate).toISOString().slice(0, 10));
         setNotes(mp.notes || "");
 
-        // Fetch all recipes used in entries
+        // Pre-fetch all recipes used in entries
         const recipeCache: Record<string, Recipe> = {};
         await Promise.all(
           mp.entries.map(async (entry) => {
@@ -106,7 +107,6 @@ export default function MealPlanDetailPage() {
             } catch {}
           })
         );
-
         setRecipeDataCache(recipeCache);
       } catch (err: any) {
         setError(err.message || "Error loading meal plan");
@@ -118,7 +118,7 @@ export default function MealPlanDetailPage() {
     fetchMealPlanAndRecipes();
   }, [planId, token]);
 
-  // Save plan
+  // Save updated meal plan
   const handleUpdatePlan = async () => {
     if (!mealPlan || !token) return;
     try {
@@ -141,7 +141,6 @@ export default function MealPlanDetailPage() {
           ? data.mealPlan.entries
           : [],
       };
-
       setMealPlan(updated);
       setMealPlans(mealPlans.map((p) => (p._id === updated._id ? updated : p)));
       alert("Meal plan updated successfully!");
@@ -186,7 +185,7 @@ export default function MealPlanDetailPage() {
     setEditingEntry(null);
   };
 
-  // Build shopping list using cached recipe data
+  // Build shopping list preview from cached recipe data
   const buildShoppingPreview = () => {
     if (!mealPlan) return;
     setBuildingPreview(true);
@@ -245,7 +244,7 @@ export default function MealPlanDetailPage() {
     <div className={styles.container}>
       <h1 className={styles.title}>Meal Plan Details</h1>
 
-      {/* Base info */}
+      {/* Week start date + notes */}
       <div className={styles.formRow}>
         <label className={styles.label}>
           Week Start Date
@@ -343,7 +342,7 @@ export default function MealPlanDetailPage() {
         )}
       </div>
 
-      {/* Edit Modal */}
+      {/* Edit modal */}
       {editingEntry && (
         <EditMealPlanEntryModal
           isOpen={!!editingEntry}
@@ -358,17 +357,8 @@ export default function MealPlanDetailPage() {
   );
 }
 
-function EntryRow({
-  entry,
-  title,
-  onEdit,
-  onDelete,
-}: {
-  entry: MealPlanEntry;
-  title: string;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
+// Single row for an entry
+function EntryRow({ entry, title, onEdit, onDelete }: { entry: MealPlanEntry; title: string; onEdit: () => void; onDelete: () => void }) {
   return (
     <li className={styles.entryItem}>
       <div className={styles.entryMain}>
@@ -382,7 +372,6 @@ function EntryRow({
         </div>
         <div className={styles.entryMeta}>Servings: {entry.servings}</div>
       </div>
-
       <div className={styles.entryActions}>
         <button className={styles.editButton} onClick={onEdit}>
           Edit

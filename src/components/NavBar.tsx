@@ -1,48 +1,39 @@
-// path: src/components/NavBar.tsx
+// src/components/NavBar.tsx
 "use client";
 
-/**
- * NavBar
- * ------
- * - Displays navigation links
- * - Adds a **single toggle button** that switches the **entire app** light/dark
- * - Includes logout button
- */
-
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@/context/ThemeContext";
 import styles from "./NavBar.module.css";
 
 export default function NavBar() {
-  const { logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
+  const { logout } = useAuth(); // log out function from context
+
+  const handleLogout = () => {
+    logout();
+    router.push("/auth/login"); // redirect after logout
+  };
 
   return (
-    <nav className={styles.nav}>
-      {/* Links */}
-      <div className={styles.links}>
+    <nav className={styles.navbar}>
+      <div className={styles.logo}>
         <Link href="/dashboard">Dashboard</Link>
-        <Link href="/dashboard/recipes">Recipes</Link>
-        <Link href="/meal-plans">Meal Plans</Link>
-        <Link href="/shopping-lists">Shopping Lists</Link>
-        <Link href="/food-intake">Food Intake</Link>
       </div>
-
-      {/* Actions */}
-      <div className={styles.actions}>
-        <button
-          className={styles.toggleButton}
-          onClick={toggleTheme}
-          title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-        >
-          {theme === "light" ? "Dark Mode" : "Light Mode"}
-        </button>
-
-        <button className={styles.logoutButton} onClick={logout}>
-          Logout
-        </button>
-      </div>
+      <ul className={styles.links}>
+        <li>
+          <Link href="/dashboard/recipes">Recipes</Link>
+        </li>
+        <li>
+          <Link href="/dashboard/ingredients">Ingredients</Link>
+        </li>
+        <li>
+          <Link href="/dashboard/meals">Meal Plans</Link>
+        </li>
+        <li>
+          <button onClick={handleLogout}>Log Out</button>
+        </li>
+      </ul>
     </nav>
   );
 }

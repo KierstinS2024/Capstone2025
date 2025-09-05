@@ -1,95 +1,152 @@
-/** src/app/page.module.css
- * Landing Page Styles
- * -------------------
- * Earthy color palette, soft edges, minimal shadows.
- * Layout:
- *  - Hero: split text + illustration
- *  - Features: 3 cards
- *  - CTA footer: centered
- */
-
-/* Container background matches public pages */
+/* Container: full viewport height with spacing */
 .container {
-  background: var(--bg-landing);
-  color: var(--text-landing);
-  font-family: var(--font, system-ui, sans-serif);
+  display: flex;
+  flex-direction: column;
+  gap: 6rem;
+  padding: 2rem 1rem;
 }
 
-/* ------------------- Hero ------------------- */
+/* ------------------- Hero Section ------------------- */
 .hero {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 4rem 2rem;
-}
-.text {
-  max-width: 500px;
-}
-.text h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-.text p {
-  font-size: 1.2rem;
-  margin-bottom: 2rem;
-}
-.actions {
-  display: flex;
-  gap: 1rem;
+  background: var(--bg-alt);
+  padding: 5rem 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  flex-wrap: wrap;
+  gap: 3rem;
 }
 
-/* Placeholder block for hero image/illustration */
-.illustration {
-  width: 400px;
-  height: 300px;
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
+.text {
+  max-width: 600px;
+  text-align: center;
+}
+
+.text h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.text p {
+  font-size: 1.3rem;
+  margin-bottom: 2rem;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btnPrimary {
+  background: var(--primary);
+  color: #fff;
+  padding: 0.85rem 1.75rem;
+  font-weight: 700;
+  border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
+}
+.btnPrimary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.btnSecondary {
+  background: var(--secondary);
+  color: #fff;
+  padding: 0.85rem 1.75rem;
+  font-weight: 700;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
+}
+.btnSecondary:hover {
+  background: var(--secondary-hover);
+  transform: translateY(-2px);
 }
 
 /* ------------------- Features ------------------- */
 .features {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 2rem;
-  padding: 4rem 2rem;
-}
-.card {
-  background: var(--card-bg);
-  padding: 2rem;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
-  max-width: 250px;
-  text-align: center;
 }
 
-/* ------------------- CTA ------------------- */
+.card {
+  max-width: 300px;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Card Text */
+.card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.card p {
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+/* ------------------- CTA Section ------------------- */
 .cta {
   text-align: center;
-  padding: 3rem 2rem;
-  background: var(--secondary-earth);
+  padding: 4rem 2rem;
+  background: var(--primary);
   color: #fff;
-  border-radius: var(--radius-lg);
-  margin: 4rem 2rem;
-}
-
-/* ------------------- Buttons ------------------- */
-.btnPrimary {
-  background: var(--primary-earth);
-  color: #fff;
-  padding: 0.75rem 1.25rem;
-  border-radius: var(--radius-lg);
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
+  border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
 }
-.btnSecondary {
-  background: transparent;
-  color: var(--primary-earth);
-  padding: 0.75rem 1.25rem;
-  border-radius: var(--radius-lg);
-  border: 2px solid var(--primary-earth);
-  cursor: pointer;
-  font-weight: 600;
+
+.cta h2 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+}
+
+.cta .btnPrimary {
+  background: #fff;
+  color: var(--primary);
+  font-weight: 700;
+  padding: 1rem 2rem;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  transition: all 0.3s ease;
+}
+
+.cta .btnPrimary:hover {
+  background: var(--primary-hover);
+  color: #fff;
+}
+
+/* ------------------- Responsive ------------------- */
+@media (max-width: 900px) {
+  .hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  .features {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+@media (max-width: 500px) {
+  .text h1 {
+    font-size: 2rem;
+  }
+  .text p {
+    font-size: 1.1rem;
+  }
+  .cta h2 {
+    font-size: 1.5rem;
+  }
 }

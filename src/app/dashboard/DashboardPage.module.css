@@ -1,40 +1,39 @@
-@import "@/styles/variables.css";
+/* src/app/dashboard/DashboardPage.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+}
 
 .cards {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
 }
 
 .card {
-  background: #f3f3f3;
   padding: 1.5rem;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: bold;
+  background-color: var(--card-bg);
+  border-radius: 0.5rem;
   text-decoration: none;
-  color: #333;
-  transition: background 0.2s ease;
+  color: inherit;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
-  background: #e0e0e0;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
 }
-/* path: src/app/dashboard/page.module.css */
-/* Add/extend these if you don't already have them */
-.container { max-width: 1024px; margin: 0 auto; padding: 1rem; }
-.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
-.muted { color: var(--muted); }
-.nav ul { display:flex; gap:1rem; list-style:none; margin: 0 0 1rem 0; padding:0; }
-.main { display:grid; gap:1rem; }
-.card { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding:1rem; box-shadow: var(--shadow); }
-.actions { display:flex; gap:.75rem; margin-top:.75rem; }
-.btn, .btnPrimary, .logoutBtn {
-  display:inline-block; padding:.6rem 1rem; border-radius:8px; border:1px solid var(--border); text-decoration:none; font-weight:600;
-}
-.btn { background: var(--bg-2); color: var(--text); }
-.btnPrimary { background: var(--primary); color: #fff; border-color: transparent; }
-.btnPrimary:hover { background: var(--primary-600); }
-.logoutBtn { background: var(--accent); color: #fff; border-color: transparent; }
-.logoutBtn:hover { background: var(--accent-600); }
 
+.card h2 {
+  margin-bottom: 0.5rem;
+}

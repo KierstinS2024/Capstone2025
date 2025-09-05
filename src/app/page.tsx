@@ -1,22 +1,14 @@
-/** src/app/page.tsx
- * Landing Page
- * ------------
- * Public-facing entry point for the app.
- * - Earthy tones, soft rounded edges
- * - Hero section with heading, subtext, CTA buttons
- * - Features section highlighting key functionality
- * - CTA footer prompting signup
- *
- * This page is independent of theme toggling.
- * Login/signup use the same earthy palette until authenticated.
- */
-
+// src/app/page.tsx
 import styles from "./LandingPage.module.css";
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function LandingPage() {
   return (
     <main className={styles.container}>
+      {/* Floating Theme Toggle */}
+      <ThemeToggle />
+
       {/* ------------------- Hero Section ------------------- */}
       <section className={styles.hero}>
         <div className={styles.text}>
@@ -25,17 +17,14 @@ export default function LandingPage() {
             Plan meals, track nutrition, and build healthy habits with ease.
           </p>
           <div className={styles.actions}>
-            {/* Primary action */}
             <Link href="/auth/signup" className={styles.btnPrimary}>
               Get Started
             </Link>
-            {/* Secondary action */}
             <Link href="/auth/login" className={styles.btnSecondary}>
               Log In
             </Link>
           </div>
         </div>
-        {/* Placeholder for illustration/hero image */}
         <div className={styles.illustration} />
       </section>
 

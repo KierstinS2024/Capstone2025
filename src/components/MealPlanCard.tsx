@@ -1,17 +1,36 @@
 // path: src/components/MealPlanCard.tsx
 "use client";
 
+/**
+ * MealPlanCard
+ *
+ * Displays a single meal plan in list/grid view.
+ * Props:
+ * - weekStartDate, notes, entriesCount
+ * - onClick: navigate to detail page
+ * - onDelete: optional delete handler
+ */
+
 import React from "react";
-import { MealPlan } from "@/context/MealPlanContext";
 import styles from "./MealPlanCard.module.css";
 
 interface Props {
-  mealPlan: MealPlan;
+  id: string;
+  weekStartDate: string;
+  notes?: string;
+  entriesCount?: number;
   onClick: () => void;
   onDelete?: () => void;
 }
 
-export default function MealPlanCard({ mealPlan, onClick, onDelete }: Props) {
+export default function MealPlanCard({
+  id,
+  weekStartDate,
+  notes,
+  entriesCount = 0,
+  onClick,
+  onDelete,
+}: Props) {
   return (
     <div
       className={styles.card}
@@ -22,14 +41,14 @@ export default function MealPlanCard({ mealPlan, onClick, onDelete }: Props) {
         if (e.key === "Enter" || e.key === " ") onClick();
       }}
       aria-label={`Meal plan starting ${new Date(
-        mealPlan.weekStartDate
+        weekStartDate
       ).toLocaleDateString()}`}
     >
       <h3 className={styles.date}>
-        Week of {new Date(mealPlan.weekStartDate).toLocaleDateString()}
+        Week of {new Date(weekStartDate).toLocaleDateString()}
       </h3>
-      {mealPlan.notes && <p className={styles.notes}>{mealPlan.notes}</p>}
-      <p className={styles.entries}>Recipes: {mealPlan.entries.length}</p>
+      {notes && <p className={styles.notes}>{notes}</p>}
+      <p className={styles.entries}>Recipes: {entriesCount}</p>
 
       {onDelete && (
         <button

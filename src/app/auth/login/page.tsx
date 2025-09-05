@@ -4,6 +4,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import ThemeToggle from "@/components/ThemeToggle";
+import styles from "./LoginPage.module.css";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -23,35 +25,44 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "400px", margin: "0 auto" }}>
-      <h1>Login</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
+    <div className={styles.container}>
+      {/* Floating Theme Toggle */}
+      <ThemeToggle />
+
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <h2>Login</h2>
+
+        {error && <p className={styles.errorMsg}>{error}</p>}
+
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          style={{ display: "block", marginBottom: "10px", width: "100%" }}
+          className={styles.inputField}
         />
+
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          style={{ display: "block", marginBottom: "10px", width: "100%" }}
+          className={styles.inputField}
         />
-        <button type="submit">Log In</button>
-      </form>
 
-      <p style={{ marginTop: "15px" }}>
-        Don’t have an account?{" "}
-        <a href="/auth/signup" style={{ color: "blue" }}>
-          Sign up here
-        </a>
-      </p>
+        <button type="submit" className={styles.btnPrimary}>
+          Log In
+        </button>
+
+        <p style={{ textAlign: "center", marginTop: "1rem" }}>
+          Don’t have an account?{" "}
+          <a href="/auth/signup" style={{ color: "var(--primary)" }}>
+            Sign up here
+          </a>
+        </p>
+      </form>
     </div>
   );
 }

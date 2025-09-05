@@ -1,4 +1,4 @@
-// src/app/dashboard/DashboardPageContent.tsx
+// Path: src/app/dashboard/DashboardPageContent.tsx
 "use client";
 
 /**
@@ -11,10 +11,10 @@
  * - List of meal plans using MealPlanCard
  */
 
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { AuthContext } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import MealPlanCard from "@/components/MealPlanCard";
 import styles from "./DashboardPage.module.css";
 
@@ -32,7 +32,7 @@ interface MealPlan {
 
 export default function DashboardPageContent() {
   const router = useRouter();
-  const { logout } = useContext(AuthContext);
+  const { logout } = useAuth(); // ✅ Using the hook
 
   const [user, setUser] = useState<User | null>(null);
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
@@ -133,7 +133,7 @@ export default function DashboardPageContent() {
             {mealPlans.map((plan) => (
               <MealPlanCard
                 key={plan._id}
-                id={plan._id} // <-- fix applied
+                id={plan._id}
                 weekStartDate={plan.weekStartDate}
                 notes={plan.notes}
                 entriesCount={plan.entries?.length}

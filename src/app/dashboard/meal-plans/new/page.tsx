@@ -1,12 +1,13 @@
-// src/app/dashboard/meal-plans/create/page.tsx
-
+// path: src/app/dashboard/meal-plans/new/page.tsx
 "use client";
 
 /**
  * CreateMealPlanPage
  *
- * Provides a form to create a new meal plan.
- * After creation, adds the new plan to MealPlanContext and navigates to its detail page.
+ * Page for creating a new meal plan.
+ * - Saves to backend via API
+ * - Updates global MealPlanContext
+ * - Navigates to the newly created plan's detail page
  */
 
 import { useState, useContext } from "react";
@@ -24,17 +25,13 @@ export default function CreateMealPlanPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Grab JWT token from localStorage
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  /**
-   * Handle form submission to create a new meal plan
-   */
+  // Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return router.push("/auth/login");
-
     if (!weekStartDate) {
       setError("Please select a start date for the week.");
       return;
@@ -44,7 +41,6 @@ export default function CreateMealPlanPage() {
       setLoading(true);
       setError(null);
 
-      // Call API to create new meal plan
       const res = await fetch("/api/meal-plans", {
         method: "POST",
         headers: {
@@ -58,10 +54,10 @@ export default function CreateMealPlanPage() {
       if (!res.ok)
         throw new Error(data.message || "Failed to create meal plan");
 
-      // Add the new plan to global context
+      // Add new plan to global context
       setMealPlans([data.mealPlan, ...mealPlans]);
 
-      // Navigate to the new meal plan detail page
+      // Navigate to detail page
       router.push(`/dashboard/meal-plans/${data.mealPlan._id}`);
     } catch (err: any) {
       setError(err.message || "Error creating meal plan");
@@ -74,11 +70,9 @@ export default function CreateMealPlanPage() {
     <div className={styles.container}>
       <h1 className={styles.title}>Create New Meal Plan</h1>
 
-      {/* Display error if present */}
       {error && <p className={styles.error}>{error}</p>}
 
       <form className={styles.form} onSubmit={handleSubmit}>
-        {/* Week start date */}
         <label className={styles.label}>
           Week Start Date
           <input
@@ -90,7 +84,6 @@ export default function CreateMealPlanPage() {
           />
         </label>
 
-        {/* Notes */}
         <label className={styles.label}>
           Notes (optional)
           <textarea
@@ -101,7 +94,6 @@ export default function CreateMealPlanPage() {
           />
         </label>
 
-        {/* Submit button */}
         <button
           type="submit"
           className={styles.submitButton}

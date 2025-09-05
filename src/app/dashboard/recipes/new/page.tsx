@@ -1,26 +1,20 @@
-// path: src/app/dashboard/recipes/new/page.tsx
+// src/app/dashboard/recipes/new/page.tsx
 "use client";
 
-/**
- * NewRecipePage
- * -----------------
- * Page for creating a new user-submitted recipe.
- * - Uses the reusable RecipeForm component
- * - No initial data is provided
- * - Handles redirection after save
- */
-
-import ProtectedRoute from "@/components/ProtectedRoute";
-import NavBar from "@/components/NavBar";
-import RecipeForm from "@/components/RecipeForm";
+// --- React & Next imports ---
 import { useRouter } from "next/navigation";
+
+// --- Component imports ---
+import ProtectedRoute from "@/components/ProtectedRoute"; // ensures only authenticated users can access
+import NavBar from "@/components/NavBar"; // dashboard navigation
+import RecipeForm from "@/components/RecipeForm"; // reusable recipe form
 
 export default function NewRecipePage() {
   const router = useRouter();
 
-  /** Handler after successfully saving a recipe */
+  // --- Callback after saving a new recipe ---
   const handleRecipeSave = () => {
-    router.push("/dashboard/recipes"); // Redirect back to Recipes Dashboard
+    router.push("/dashboard/recipes"); // redirect to recipes dashboard
   };
 
   return (
@@ -29,7 +23,7 @@ export default function NewRecipePage() {
       <main style={{ padding: "20px" }}>
         <h1>Add a New Recipe</h1>
 
-        {/* RecipeForm component with no initial data */}
+        {/* RecipeForm with no initial data for creating a new recipe */}
         <RecipeForm onSave={handleRecipeSave} />
       </main>
     </ProtectedRoute>

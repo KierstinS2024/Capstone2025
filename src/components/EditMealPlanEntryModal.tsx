@@ -1,74 +1,50 @@
 // path: src/components/EditMealPlanEntryModal.tsx
 "use client";
 
-/**
- * EditMealPlanEntryModal
- *
- * Accessible modal wrapper to edit a meal-plan entry in-place.
- * - Reuses MealPlanEntryForm with initialData
- * - Handles ESC key to close
- * - Calls onUpdate on successful save
- */
-
-import React, { useEffect } from "react";
+import React from "react";
 import MealPlanEntryForm, { MealPlanEntryFormProps } from "./MealPlanEntryForm";
 import styles from "./EditMealPlanEntryModal.module.css";
+import { MealPlanEntry } from "@/context/MealPlanContext";
 
-type EditModalProps = {
+interface Props {
   isOpen: boolean;
   onClose: () => void;
+  entry: MealPlanEntry; // The entry being edited
   mealPlanId: string;
   token: string;
-  entry: Required<NonNullable<MealPlanEntryFormProps["initialData"]>>;
-  onUpdate: (updatedEntry: any) => void;
-};
+  onUpdate: (entry: MealPlanEntry) => void; // Callback after successful update
+}
 
 export default function EditMealPlanEntryModal({
   isOpen,
   onClose,
+  entry,
   mealPlanId,
   token,
-  entry,
   onUpdate,
-}: EditModalProps) {
-  // Close modal on ESC key
-  useEffect(() => {
-    function handleEsc(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    if (isOpen) window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [isOpen, onClose]);
-
+}: Props) {
   if (!isOpen) return null;
 
   return (
-    <div
-      className={styles.overlay}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Edit meal plan entry"
-    >
+    <div className={styles.overlay}>
       <div className={styles.modal}>
-        {/* Modal header */}
-        <div className={styles.header}>
-          <h2 className={styles.title}>Edit Entry</h2>
-          <button className={styles.close} onClick={onClose} aria-label="Close">
+        <header className={styles.header}>
+          <h2>Edit Meal Plan Entry</h2>
+          <button className={styles.closeButton} onClick={onClose}>
             ×
           </button>
-        </div>
+        </header>
 
-        {/* Modal body */}
         <div className={styles.body}>
           <MealPlanEntryForm
             mealPlanId={mealPlanId}
             token={token}
-            initialData={entry}
-            onSuccess={(updated) => {
-              onUpdate(updated);
+            initialData={entry} // pass the entry to pre-fill the form
+            onSuccess={(updatedEntry) => {
+              onUpdate(updatedEntry);
               onClose();
             }}
-            onCancel={onClose} // optional cancel button
+            onCancel={onClose}
           />
         </div>
       </div>

@@ -1,4 +1,3 @@
-/* src/components/MealPlanList.tsx */
 import React, { useState } from "react";
 import MealPlanCard from "./MealPlanCard";
 import { useMealPlanContext } from "@/context/MealPlanContext";
@@ -32,6 +31,7 @@ export default function MealPlanList() {
               weekStartDate={plan.weekStartDate}
               notes={plan.notes}
               entriesCount={plan.entries?.length}
+              onClick={() => console.log("Navigate to detail page:", plan._id)}
             />
           ))}
         </div>

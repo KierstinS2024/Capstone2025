@@ -1,33 +1,58 @@
-/* src/components/MealPlanCard.module.css */
-@import "@/styles/variables.css";
+/* path: src/components/MealPlanCard.module.css */
 
+/* Card container */
 .card {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  background-color: #fff;
+  border-radius: 0.5rem;
   padding: 1rem;
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .card:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
 }
 
+/* Week start date */
 .date {
-  font-size: 1.125rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #111827;
 }
 
+/* Notes */
 .notes {
   font-size: 0.875rem;
-  color: #4b5563;
-  margin-bottom: 0.5rem;
+  color: #6b7280;
 }
 
+/* Entries count */
 .entries {
   font-size: 0.875rem;
-  font-weight: 500;
-  color: #2563eb;
+  color: #4b5563;
+}
+
+/* Delete button inside card */
+.deleteButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.deleteButton:hover {
+  background-color: #b91c1c;
 }

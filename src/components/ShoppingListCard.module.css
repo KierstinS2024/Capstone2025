@@ -1,6 +1,5 @@
 /* path: src/components/ShoppingListCard.module.css */
 /* Styling for a shopping list card */
-@import "@/styles/variables.css";
 
 .card {
   background-color: #fefefe;

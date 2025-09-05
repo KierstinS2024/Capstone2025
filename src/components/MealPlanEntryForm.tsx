@@ -4,33 +4,33 @@
 /**
  * MealPlanEntryForm
  *
- * Used for both:
- * - Creating a new entry (POST /api/meal-plans/:id/entries)
- * - Editing an existing entry (PATCH /api/meal-plans/:id/entries/:entryId)
- *
+ * Handles both creating a new meal plan entry and editing an existing one.
  * Features:
- * - Live search for recipes (user + Spoonacular)
- * - Cards with images for intuitive selection
- * - Manual recipe ID input fallback
+ * - Search recipes (user and Spoonacular)
+ * - Select recipe by clicking a card
+ * - Specify day, meal type, and servings
+ * - Submit to API (POST for new, PATCH for edit)
  */
 
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import styles from "./MealPlanEntryForm.module.css";
 
+// Props for the form
 export interface MealPlanEntryFormProps {
-  mealPlanId: string;
-  token: string;
+  mealPlanId: string; // ID of the meal plan
+  token: string; // JWT token
   initialData?: {
-    _id?: string;
+    _id?: string; // Optional ID if editing
     recipeId: string;
     mealType: string;
     dayOfWeek: string;
     servings: number;
   };
-  onSuccess: (entry: any) => void;
-  onCancel?: () => void;
+  onSuccess: (entry: any) => void; // Callback when entry saved
+  onCancel?: () => void; // Optional cancel callback
 }
 
+// Constants for dropdown options
 const DAYS = [
   "Monday",
   "Tuesday",
@@ -42,6 +42,7 @@ const DAYS = [
 ];
 const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
+// Minimal recipe type for dropdown display
 type RecipeLite = {
   _id: string;
   title: string;
@@ -56,6 +57,7 @@ export default function MealPlanEntryForm({
   onSuccess,
   onCancel,
 }: MealPlanEntryFormProps) {
+  // ----------------- Form state -----------------
   const [recipeId, setRecipeId] = useState(initialData?.recipeId || "");
   const [mealType, setMealType] = useState(
     initialData?.mealType || "Breakfast"
@@ -67,6 +69,7 @@ export default function MealPlanEntryForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ----------------- Recipe search state -----------------
   const [searchQuery, setSearchQuery] = useState("");
   const [userRecipes, setUserRecipes] = useState<RecipeLite[]>([]);
   const [spoonacularRecipes, setSpoonacularRecipes] = useState<RecipeLite[]>(
@@ -78,7 +81,7 @@ export default function MealPlanEntryForm({
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // Close dropdown when clicking outside
+  // ----------------- Close dropdown when clicking outside -----------------
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (!dropdownRef.current?.contains(e.target as Node)) {
@@ -89,7 +92,7 @@ export default function MealPlanEntryForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Live search
+  // ----------------- Live search for recipes -----------------
   useEffect(() => {
     if (!searchQuery.trim()) {
       setUserRecipes([]);
@@ -111,7 +114,8 @@ export default function MealPlanEntryForm({
         const data = await res.json();
         if (!active) return;
 
-        const mapUser: RecipeLite[] = (data.userRecipes || []).map(
+        // Map user recipes
+        const mappedUser: RecipeLite[] = (data.userRecipes || []).map(
           (r: any) => ({
             _id: r._id,
             title: r.name,
@@ -119,7 +123,9 @@ export default function MealPlanEntryForm({
             source: "user",
           })
         );
-        const mapSpoon: RecipeLite[] = (data.spoonacularRecipes || []).map(
+
+        // Map Spoonacular recipes
+        const mappedSpoon: RecipeLite[] = (data.spoonacularRecipes || []).map(
           (r: any) => ({
             _id: r._id,
             title: r.title,
@@ -128,11 +134,11 @@ export default function MealPlanEntryForm({
           })
         );
 
-        setUserRecipes(mapUser);
-        setSpoonacularRecipes(mapSpoon);
+        setUserRecipes(mappedUser);
+        setSpoonacularRecipes(mappedSpoon);
         setShowDropdown(true);
       } catch {
-        // ignore
+        // ignore errors silently
       }
     };
 
@@ -140,12 +146,14 @@ export default function MealPlanEntryForm({
     return () => clearTimeout(debounce);
   }, [searchQuery, token]);
 
+  // ----------------- Select recipe -----------------
   const handleSelectRecipe = (id: string) => {
     setRecipeId(id);
     setShowDropdown(false);
     setSearchQuery("");
   };
 
+  // ----------------- Submit form -----------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipeId) {
@@ -157,6 +165,7 @@ export default function MealPlanEntryForm({
       setLoading(true);
       setError(null);
 
+      // Determine API endpoint and method
       const endpoint = isEditing
         ? `/api/meal-plans/${mealPlanId}/entries/${initialData!._id}`
         : `/api/meal-plans/${mealPlanId}/entries`;
@@ -177,6 +186,7 @@ export default function MealPlanEntryForm({
       onSuccess(data.entry);
 
       if (!isEditing) {
+        // Reset form for next entry
         setRecipeId("");
         setMealType("Breakfast");
         setDayOfWeek("Monday");
@@ -193,7 +203,7 @@ export default function MealPlanEntryForm({
     <form className={styles.form} onSubmit={handleSubmit}>
       {error && <p className={styles.error}>{error}</p>}
 
-      {/* Recipe search + card dropdown */}
+      {/* Recipe search input */}
       <label className={styles.label}>
         Recipe
         <input
@@ -204,9 +214,11 @@ export default function MealPlanEntryForm({
           onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={() => setShowDropdown(!!searchQuery)}
         />
+        {/* Dropdown with recipe cards */}
         {showDropdown &&
           (userRecipes.length > 0 || spoonacularRecipes.length > 0) && (
             <div className={styles.dropdown} ref={dropdownRef}>
+              {/* User recipes */}
               {userRecipes.length > 0 && (
                 <>
                   <div style={{ padding: "0.5rem", fontWeight: 600 }}>
@@ -230,6 +242,7 @@ export default function MealPlanEntryForm({
                 </>
               )}
 
+              {/* Spoonacular recipes */}
               {spoonacularRecipes.length > 0 && (
                 <>
                   <div style={{ padding: "0.5rem", fontWeight: 600 }}>
@@ -256,6 +269,7 @@ export default function MealPlanEntryForm({
           )}
       </label>
 
+      {/* Day of week selector */}
       <label className={styles.label}>
         Day of Week
         <select
@@ -271,6 +285,7 @@ export default function MealPlanEntryForm({
         </select>
       </label>
 
+      {/* Meal type selector */}
       <label className={styles.label}>
         Meal Type
         <select
@@ -286,6 +301,7 @@ export default function MealPlanEntryForm({
         </select>
       </label>
 
+      {/* Servings input */}
       <label className={styles.label}>
         Servings
         <input
@@ -297,6 +313,7 @@ export default function MealPlanEntryForm({
         />
       </label>
 
+      {/* Action buttons */}
       <div className={styles.actions}>
         <button
           type="submit"

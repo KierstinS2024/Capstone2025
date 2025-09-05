@@ -1,6 +1,14 @@
 // path: src/app/dashboard/meal-plans/page.tsx
 "use client";
 
+/**
+ * MealPlansListPage
+ *
+ * Responsibilities:
+ * - Fetch and display all meal plans for the user
+ * - Provide create and delete functionality
+ */
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMealPlanContext } from "@/context/MealPlanContext";
@@ -16,10 +24,12 @@ export default function MealPlansListPage() {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!token) router.push("/auth/login");
   }, [router, token]);
 
+  // Fetch meal plans from API
   useEffect(() => {
     if (!token) return;
 
@@ -46,6 +56,7 @@ export default function MealPlansListPage() {
     fetchMealPlans();
   }, [token, setMealPlans]);
 
+  // Delete meal plan
   const handleDelete = async (id: string) => {
     if (!token || !confirm("Are you sure you want to delete this meal plan?"))
       return;
@@ -68,6 +79,8 @@ export default function MealPlansListPage() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Your Meal Plans</h1>
+
+      {/* Button to create new meal plan */}
       <button
         className={styles.createButton}
         onClick={() => router.push("/dashboard/meal-plans/create")}
@@ -84,7 +97,10 @@ export default function MealPlansListPage() {
           {mealPlans.map((plan) => (
             <MealPlanCard
               key={plan._id}
-              mealPlan={plan}
+              id={plan._id}
+              weekStartDate={plan.weekStartDate}
+              notes={plan.notes}
+              entriesCount={plan.entries?.length}
               onClick={() => router.push(`/dashboard/meal-plans/${plan._id}`)}
               onDelete={() => handleDelete(plan._id)}
             />

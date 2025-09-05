@@ -1,76 +1,20 @@
 /* src/components/NavBar.module.css */
-
-/**
- * NavBar Styles
- * -------------
- * Uses theme variables from variables.css
- * Earthy/light by default, clean dark fallback
- */
-
-.nav {
+.navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
-  background: var(--bg-2);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--shadow-soft);
+  padding: 1rem;
+  background-color: var(--nav-bg, #fff);
+  border-bottom: 1px solid #ddd;
 }
-
 .links {
   display: flex;
-  gap: 1.5rem;
-}
-
-.links a {
-  color: var(--text);
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.links a:hover {
-  color: var(--primary);
-}
-
-/* Actions (theme toggle + logout) */
-.actions {
-  display: flex;
   gap: 1rem;
-  align-items: center;
+  list-style: none;
 }
-
-/* Theme toggle button */
-.toggleButton {
-  background: var(--card);
-  color: var(--text);
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.toggleButton:hover {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-
-/* Logout button */
-.logoutButton {
-  background: var(--accent);
-  color: #fff;
-  padding: 0.5rem 1rem;
+.links li button {
+  background: none;
   border: none;
-  border-radius: var(--radius);
+  color: var(--primary, #0070f3);
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: background 0.2s ease;
-}
-
-.logoutButton:hover {
-  background: var(--accent-600);
 }

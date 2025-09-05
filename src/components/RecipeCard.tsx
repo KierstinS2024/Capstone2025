@@ -1,28 +1,32 @@
-// Path: src/components/RecipeCard.tsx
+// src/components/RecipeCard.tsx
 "use client";
 
-/**
- * RecipeCard
- * --------------------
- * Displays a single recipe in card format.
- * - Shows image, title, cuisine, source badge.
- * - User recipes can optionally show Edit/Delete buttons.
- * - Hover effects for interactivity.
- */
+// --- React import ---
+import React from "react";
 
-import styles from "./RecipeCard.module.css";
+// --- Recipe type ---
+interface Ingredient {
+  name: string;
+  quantity: string;
+  unit: string;
+  ingredientId?: string;
+}
 
+export interface Recipe {
+  _id?: string;
+  name: string;
+  description: string;
+  cuisine: string;
+  ingredients: Ingredient[];
+  instructions: string[];
+  source: "user" | "spoonacular"; // internal or external
+  externalId?: string; // only for external recipes
+}
+
+// --- Props for the component ---
 interface RecipeCardProps {
-  recipe: {
-    _id?: string;
-    externalId?: string;
-    name: string;
-    description: string;
-    cuisine: string;
-    source: "user" | "spoonacular";
-    image?: string;
-  };
-  showActions?: boolean; // Show Edit/Delete buttons (for user recipes)
+  recipe: Recipe;
+  showActions?: boolean; // whether edit/delete buttons are shown
   onEdit?: () => void;
   onDelete?: () => void;
 }
@@ -34,44 +38,49 @@ export default function RecipeCard({
   onDelete,
 }: RecipeCardProps) {
   return (
-    <div className={styles.card}>
-      {recipe.image && (
-        <img
-          src={recipe.image}
-          alt={recipe.name}
-          className={styles.cardImage}
-        />
+    <div
+      style={{
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+        padding: "16px",
+        marginBottom: "10px",
+      }}
+    >
+      {/* Recipe title */}
+      <h2>{recipe.name}</h2>
+
+      {/* Cuisine type */}
+      {recipe.cuisine && (
+        <p>
+          <strong>Cuisine:</strong> {recipe.cuisine}
+        </p>
       )}
 
-      <div className={styles.cardContent}>
-        {/* Header: Title + Badge */}
-        <div className={styles.cardHeader}>
-          <h3 className={styles.cardTitle}>{recipe.name}</h3>
-          <span
-            className={`${styles.sourceBadge} ${
-              recipe.source === "user" ? styles.user : styles.spoonacular
-            }`}
-          >
-            {recipe.source === "user" ? "User" : "Spoonacular"}
-          </span>
-        </div>
+      {/* Description */}
+      {recipe.description && <p>{recipe.description}</p>}
 
-        {/* Subtitle / Cuisine */}
-        {recipe.cuisine && (
-          <p className={styles.cardSubtitle}>Cuisine: {recipe.cuisine}</p>
-        )}
-      </div>
+      {/* Ingredients preview (first 3 for brevity) */}
+      {recipe.ingredients?.length > 0 && (
+        <p>
+          <strong>Ingredients:</strong>{" "}
+          {recipe.ingredients
+            .slice(0, 3)
+            .map((ing) => `${ing.quantity} ${ing.unit} ${ing.name}`)
+            .join(", ")}
+          {recipe.ingredients.length > 3 && "…"}
+        </p>
+      )}
 
-      {/* Actions for user recipes */}
+      {/* Actions (edit/delete) */}
       {showActions && (
-        <div className={styles.actions}>
+        <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
           {onEdit && (
-            <button className={styles.editButton} onClick={onEdit}>
+            <button style={{ padding: "6px 12px" }} onClick={onEdit}>
               Edit
             </button>
           )}
           {onDelete && (
-            <button className={styles.deleteButton} onClick={onDelete}>
+            <button style={{ padding: "6px 12px" }} onClick={onDelete}>
               Delete
             </button>
           )}

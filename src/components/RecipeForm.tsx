@@ -1,274 +1,263 @@
-// path: src/components/RecipeForm.tsx
+// src/components/RecipeForm.tsx
 "use client";
 
-/**
- * RecipeForm Component
- * --------------------
- * Reusable form for creating or editing a user-submitted recipe.
- * Handles:
- * - Recipe title & description
- * - Dynamic list of ingredients (name, quantity, unit)
- * - Step-by-step instructions
- * - Cuisine selection
- * 
- * Accepts optional `initialData` for editing.
- * Uses AuthContext to include JWT in API requests.
- */
-
+// --- React imports ---
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
-interface Ingredient {
-  name: string;
-  quantity: string;
-  unit: string;
-  ingredientId?: string; // optional, for external ingredients
+// --- Ingredient input type ---
+export interface IngredientInput {
+  ingredientId: string; // links to an ingredient in your DB
+  name?: string; // optional, for display purposes
+  quantity: number; // amount of ingredient
+  unit: string; // measurement unit
 }
 
-interface RecipeFormProps {
+// --- Props for RecipeForm ---
+export interface RecipeFormProps {
   initialData?: {
     _id?: string;
-    name: string;
-    description: string;
-    ingredients: Ingredient[];
-    instructions: string[];
-    cuisine: string;
+    name?: string;
+    description?: string;
+    ingredients?: IngredientInput[];
+    instructions?: string[];
+    cuisine?: string;
   };
-  onSave?: () => void; // optional callback after save
+  onSave?: () => void; // callback after successfully saving
 }
 
+// --- RecipeForm component ---
 export default function RecipeForm({ initialData, onSave }: RecipeFormProps) {
-  const { token } = useAuth();
-  const router = useRouter();
+  const { token } = useAuth(); // JWT token from context
 
-  // --- Form state ---
-  const [recipeTitle, setRecipeTitle] = useState(initialData?.name || "");
-  const [recipeDescription, setRecipeDescription] = useState(
+  // --- Local state ---
+  const [name, setName] = useState(initialData?.name || "");
+  const [description, setDescription] = useState(
     initialData?.description || ""
   );
-  const [recipeIngredients, setRecipeIngredients] = useState<Ingredient[]>(
-    initialData?.ingredients || [{ name: "", quantity: "", unit: "" }]
+  const [cuisine, setCuisine] = useState(initialData?.cuisine || "");
+  const [ingredients, setIngredients] = useState<IngredientInput[]>(
+    initialData?.ingredients || []
   );
-  const [recipeInstructions, setRecipeInstructions] = useState<string[]>(
-    initialData?.instructions || [""]
+  const [instructions, setInstructions] = useState<string[]>(
+    initialData?.instructions || []
   );
-  const [recipeCuisine, setRecipeCuisine] = useState(
-    initialData?.cuisine || ""
-  );
-  const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // --- Ingredient handlers ---
-  const handleIngredientChange = (
-    index: number,
-    field: keyof Ingredient,
-    value: string
-  ) => {
-    const updated = [...recipeIngredients];
-    updated[index][field] = value;
-    setRecipeIngredients(updated);
-  };
-
-  const addIngredient = () => {
-    setRecipeIngredients([
-      ...recipeIngredients,
-      { name: "", quantity: "", unit: "" },
+  const handleAddIngredient = () => {
+    setIngredients([
+      ...ingredients,
+      { ingredientId: "", quantity: 1, unit: "" },
     ]);
   };
 
-  const removeIngredient = (index: number) => {
-    const updated = [...recipeIngredients];
+  const handleIngredientChange = (index: number, field: string, value: any) => {
+    const updated = [...ingredients];
+    (updated[index] as any)[field] = value;
+    setIngredients(updated);
+  };
+
+  const handleRemoveIngredient = (index: number) => {
+    const updated = [...ingredients];
     updated.splice(index, 1);
-    setRecipeIngredients(updated);
+    setIngredients(updated);
   };
 
   // --- Instruction handlers ---
+  const handleAddInstruction = () => setInstructions([...instructions, ""]);
+
   const handleInstructionChange = (index: number, value: string) => {
-    const updated = [...recipeInstructions];
+    const updated = [...instructions];
     updated[index] = value;
-    setRecipeInstructions(updated);
+    setInstructions(updated);
   };
 
-  const addInstruction = () => {
-    setRecipeInstructions([...recipeInstructions, ""]);
-  };
-
-  const removeInstruction = (index: number) => {
-    const updated = [...recipeInstructions];
+  const handleRemoveInstruction = (index: number) => {
+    const updated = [...instructions];
     updated.splice(index, 1);
-    setRecipeInstructions(updated);
+    setInstructions(updated);
   };
 
-  // --- Form submission ---
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    // --- Basic validation ---
-    if (!recipeTitle.trim()) return alert("Title is required");
-    if (!recipeDescription.trim()) return alert("Description is required");
-    if (!recipeIngredients.every((ing) => ing.name && ing.quantity && ing.unit))
-      return alert("All ingredient fields are required");
-    if (!recipeInstructions.every((step) => step.trim()))
-      return alert("All instruction steps are required");
-    if (!token) return alert("❌ You must be logged in to save a recipe");
-
-    setIsSaving(true);
-
-    // --- Map ingredients for backend with guaranteed ingredientId ---
-    const mappedIngredients = recipeIngredients.map((ing, index) => ({
-      ingredientId: ing.ingredientId || `user-${index}`, // always defined
-      name: ing.name,
-      quantity: ing.quantity, // string is fine
-      unit: ing.unit,
-    }));
+  // --- Submit handler (create or update) ---
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError(null);
 
     try {
-      const apiEndpoint = initialData?._id
+      // Determine URL and HTTP method
+      const url = initialData?._id
         ? `/api/recipes/${initialData._id}`
         : "/api/recipes";
       const method = initialData?._id ? "PUT" : "POST";
 
-      const response = await fetch(apiEndpoint, {
+      // Send request
+      const res = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          name: recipeTitle,
-          description: recipeDescription,
-          instructions: recipeInstructions,
-          cuisine: recipeCuisine,
-          userSubmitted: true,
-          ingredients: mappedIngredients,
+          name,
+          description,
+          cuisine,
+          ingredients,
+          instructions,
         }),
       });
 
-      if (response.ok) {
-        alert("✅ Recipe saved successfully!");
-        onSave?.();
-        router.push("/dashboard/recipes");
-      } else {
-        const data = await response.json();
-        alert(`❌ Error saving recipe: ${data.message || "Unknown error"}`);
-      }
-    } catch (error) {
-      alert(`❌ Network error: ${error}`);
+      if (!res.ok) throw new Error("Failed to save recipe");
+
+      // Callback after successful save
+      if (onSave) onSave();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Error saving recipe");
     } finally {
-      setIsSaving(false);
+      setLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-        maxWidth: "600px",
-      }}
-    >
-      {/* Title & Description */}
-      <input
-        placeholder="Recipe Title"
-        value={recipeTitle}
-        onChange={(e) => setRecipeTitle(e.target.value)}
-      />
-      <textarea
-        placeholder="Recipe Description"
-        value={recipeDescription}
-        onChange={(e) => setRecipeDescription(e.target.value)}
-      />
+    <div>
+      {/* Error message */}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {/* Recipe Name */}
+      <div style={{ marginBottom: "10px" }}>
+        <label>
+          Name:
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </label>
+      </div>
+
+      {/* Description */}
+      <div style={{ marginBottom: "10px" }}>
+        <label>
+          Description:
+          <textarea
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </label>
+      </div>
+
+      {/* Cuisine */}
+      <div style={{ marginBottom: "10px" }}>
+        <label>
+          Cuisine:
+          <input
+            type="text"
+            value={cuisine}
+            onChange={(e) => setCuisine(e.target.value)}
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </label>
+      </div>
 
       {/* Ingredients */}
-      <h3>Ingredients</h3>
-      {recipeIngredients.map((ing, idx) => (
-        <div key={idx} style={{ display: "flex", gap: "0.5rem" }}>
+      <h2>Ingredients</h2>
+      {ingredients.map((ing, idx) => (
+        <div
+          key={idx}
+          style={{
+            display: "flex",
+            gap: "10px",
+            marginBottom: "5px",
+            alignItems: "center",
+          }}
+        >
           <input
-            placeholder="Name"
-            value={ing.name}
+            type="text"
+            placeholder="Ingredient ID"
+            value={ing.ingredientId}
             onChange={(e) =>
-              handleIngredientChange(idx, "name", e.target.value)
+              handleIngredientChange(idx, "ingredientId", e.target.value)
             }
+            style={{ flex: 1 }}
           />
           <input
-            placeholder="Quantity"
+            type="number"
+            min="1"
+            placeholder="Qty"
             value={ing.quantity}
             onChange={(e) =>
-              handleIngredientChange(idx, "quantity", e.target.value)
+              handleIngredientChange(
+                idx,
+                "quantity",
+                parseFloat(e.target.value)
+              )
             }
+            style={{ width: "80px" }}
           />
           <input
+            type="text"
             placeholder="Unit"
             value={ing.unit}
             onChange={(e) =>
               handleIngredientChange(idx, "unit", e.target.value)
             }
+            style={{ width: "80px" }}
           />
-          {recipeIngredients.length > 1 && (
-            <button type="button" onClick={() => removeIngredient(idx)}>
-              ❌
-            </button>
-          )}
+          <button type="button" onClick={() => handleRemoveIngredient(idx)}>
+            Remove
+          </button>
         </div>
       ))}
-      <button type="button" onClick={addIngredient}>
+      <button
+        type="button"
+        onClick={handleAddIngredient}
+        style={{ marginTop: "5px" }}
+      >
         + Add Ingredient
       </button>
 
       {/* Instructions */}
-      <h3>Instructions</h3>
-      {recipeInstructions.map((step, idx) => (
-        <div key={idx} style={{ display: "flex", gap: "0.5rem" }}>
-          <input
+      <h2>Instructions</h2>
+      {instructions.map((inst, idx) => (
+        <div
+          key={idx}
+          style={{ marginBottom: "5px", display: "flex", gap: "10px" }}
+        >
+          <textarea
+            rows={2}
             placeholder={`Step ${idx + 1}`}
-            value={step}
+            value={inst}
             onChange={(e) => handleInstructionChange(idx, e.target.value)}
+            style={{ flex: 1 }}
           />
-          {recipeInstructions.length > 1 && (
-            <button type="button" onClick={() => removeInstruction(idx)}>
-              ❌
-            </button>
-          )}
+          <button type="button" onClick={() => handleRemoveInstruction(idx)}>
+            Remove
+          </button>
         </div>
       ))}
-      <button type="button" onClick={addInstruction}>
-        + Add Step
+      <button type="button" onClick={handleAddInstruction}>
+        + Add Instruction
       </button>
 
-      {/* Cuisine */}
-      <h3>Cuisine</h3>
-      <select
-        value={recipeCuisine}
-        onChange={(e) => setRecipeCuisine(e.target.value)}
-      >
-        <option value="">--Choose Cuisine--</option>
-        <option value="Italian">Italian</option>
-        <option value="Mexican">Mexican</option>
-        <option value="Indian">Indian</option>
-        <option value="American">American</option>
-        <option value="Chinese">Chinese</option>
-        <option value="Japanese">Japanese</option>
-        <option value="Thai">Thai</option>
-        <option value="French">French</option>
-        <option value="Mediterranean">Mediterranean</option>
-        <option value="Spanish">Spanish</option>
-        <option value="Korean">Korean</option>
-        <option value="Vietnamese">Vietnamese</option>
-        <option value="Middle Eastern">Middle Eastern</option>
-        <option value="Caribbean">Caribbean</option>
-        <option value="African">African</option>
-        <option value="German">German</option>
-        <option value="British">British</option>
-        <option value="Russian">Russian</option>
-        <option value="Other">Other</option>
-      </select>
-
-      {/* Submit */}
-      <button type="submit" disabled={isSaving}>
-        {isSaving ? "Saving..." : "Save Recipe"}
-      </button>
-    </form>
+      {/* Submit button */}
+      <div style={{ marginTop: "20px" }}>
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          style={{ padding: "10px 20px" }}
+        >
+          {loading
+            ? "Saving..."
+            : initialData?._id
+            ? "Save Changes"
+            : "Create Recipe"}
+        </button>
+      </div>
+    </div>
   );
 }

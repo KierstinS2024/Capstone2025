@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import styles from "./SignupPage.module.css"; // <-- import CSS module
 
 export default function SignupPage() {
   const { signup } = useAuth();
@@ -23,35 +24,40 @@ export default function SignupPage() {
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "400px", margin: "0 auto" }}>
-      <h1>Sign Up</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
+    <div className={styles.container}>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <h1>Sign Up</h1>
+
+        {error && <p className={styles.errorMsg}>{error}</p>}
+
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          style={{ display: "block", marginBottom: "10px", width: "100%" }}
+          className={styles.inputField}
         />
+
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          style={{ display: "block", marginBottom: "10px", width: "100%" }}
+          className={styles.inputField}
         />
-        <button type="submit">Create Account</button>
-      </form>
 
-      <p style={{ marginTop: "15px" }}>
-        Already have an account?{" "}
-        <a href="/auth/login" style={{ color: "blue" }}>
-          Log in here
-        </a>
-      </p>
+        <button type="submit" className={styles.btnPrimary}>
+          Create Account
+        </button>
+
+        <div className={styles.authLink}>
+          <p>
+            Already have an account? <a href="/auth/login">Log in here</a>
+          </p>
+        </div>
+      </form>
     </div>
   );
 }
