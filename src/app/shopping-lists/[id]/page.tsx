@@ -1,4 +1,4 @@
-// path: src/app/shopping-lists/[shoppingListId]/page.tsx
+// path: src/app/shopping-lists/[id]/page.tsx
 /**
  * EditShoppingListPage.tsx
  * ------------------------
@@ -7,6 +7,7 @@
  *  - Edit name and list of items
  *  - Validation: name required, item names required, quantities >= 1
  *  - Save changes to backend
+ *  - Loading and error handling
  */
 
 "use client";
@@ -23,7 +24,7 @@ interface ShoppingItem {
 }
 
 export default function EditShoppingListPage() {
-  const { shoppingListId } = useParams();
+  const { id } = useParams(); // revert to "id"
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -38,7 +39,7 @@ export default function EditShoppingListPage() {
       try {
         const token = localStorage.getItem("token") || undefined;
         const client = getApiClient(token);
-        const res = await client.get(`/shopping-lists/${shoppingListId}`);
+        const res = await client.get(`/shopping-lists/${id}`);
         const data = res.data;
         setName(data.name || "");
         setItems(data.items || []);
@@ -50,7 +51,7 @@ export default function EditShoppingListPage() {
       }
     };
     fetchList();
-  }, [shoppingListId]);
+  }, [id]);
 
   // Validation
   const validate = (): string | null => {
@@ -93,7 +94,7 @@ export default function EditShoppingListPage() {
     try {
       const token = localStorage.getItem("token") || undefined;
       const client = getApiClient(token);
-      await client.put(`/shopping-lists/${shoppingListId}`, { name, items });
+      await client.put(`/shopping-lists/${id}`, { name, items });
       router.push("/shopping-lists");
     } catch (err: any) {
       console.error(err);

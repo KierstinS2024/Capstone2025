@@ -1,36 +1,33 @@
-// path: src/app/meal-plans/[mealPlanId]/page.tsx
+// path: src/app/meal-plans/[id]/page.tsx
 /**
- * EditMealPlanPage.tsx
- * --------------------
- * Allows editing an existing meal plan, including:
- *  - Week start date
- *  - Notes
- *  - Meal entries (recipe, day, meal type, servings)
+ * EditMealPlanPage
+ * -----------------
+ * Allows the user to edit an existing meal plan.
  * Features:
- *  - Fetches recipes from /api/recipes for dropdown
- *  - Validation:
+ *  - Edit week start date and notes
+ *  - Add, edit, remove entries
+ *  - Validations:
  *      - No empty recipeId
- *      - No duplicate day+mealType
+ *      - No duplicate dayOfWeek + mealType
  *      - Servings >= 1
  */
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NavBar from "@/components/NavBar";
-import { getApiClient } from "@/lib/api";
 
 interface MealEntry {
-  recipeId: string;
   dayOfWeek: string;
   mealType: string;
+  recipeId: string;
   servings: number;
 }
 
 export default function EditMealPlanPage() {
-  const { mealPlanId } = useParams();
+  const params = useParams();
   const router = useRouter();
 
   const [weekStartDate, setWeekStartDate] = useState("");
@@ -41,42 +38,40 @@ export default function EditMealPlanPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch recipes and meal plan data
+  // Load recipes and existing meal plan
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token") || "";
-        const client = getApiClient(token);
-
         const [recipesRes, planRes] = await Promise.all([
-          client.get("/recipes"),
-          client.get(`/meal-plans/${mealPlanId}`),
+          fetch("/api/recipes", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`/api/meal-plans/${params.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
 
-        setRecipes(recipesRes.data || []);
+        if (!recipesRes.ok) throw new Error("Failed to load recipes");
+        if (!planRes.ok) throw new Error("Failed to load meal plan");
 
-        const planData = planRes.data;
-        setWeekStartDate(planData.weekStartDate.split("T")[0]);
-        setNotes(planData.notes || "");
-        setEntries(
-          planData.entries?.map((e: any) => ({
-            recipeId: e.recipeId,
-            dayOfWeek: e.dayOfWeek,
-            mealType: e.mealType,
-            servings: e.servings ?? 1,
-          })) || []
-        );
+        const recipesData = await recipesRes.json();
+        setRecipes(recipesData.data || []);
+
+        const planData = await planRes.json();
+        setWeekStartDate(planData.data.weekStartDate.split("T")[0]);
+        setNotes(planData.data.notes || "");
+        setEntries(planData.data.entries || []);
       } catch (err: any) {
         console.error(err);
-        setError("Failed to load meal plan or recipes.");
+        setError(err.message || "Error loading data");
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [mealPlanId]);
+  }, [params.id]);
 
-  // Update entry field
   const handleEntryChange = (
     index: number,
     field: keyof MealEntry,
@@ -90,7 +85,7 @@ export default function EditMealPlanPage() {
   const handleAddEntry = () => {
     setEntries([
       ...entries,
-      { recipeId: "", dayOfWeek: "Monday", mealType: "Breakfast", servings: 1 },
+      { dayOfWeek: "Monday", mealType: "Breakfast", recipeId: "", servings: 1 },
     ]);
   };
 
@@ -100,11 +95,11 @@ export default function EditMealPlanPage() {
     setEntries(updated);
   };
 
-  // Validate entries before saving
+  // Validate entries before submitting
   const validateEntries = (): string | null => {
     const seen = new Set<string>();
     for (const entry of entries) {
-      if (!entry.recipeId) return "All entries must have a recipe selected.";
+      if (!entry.recipeId) return "All meals must have a recipe selected.";
       if (entry.servings < 1) return "Servings must be at least 1.";
       const key = `${entry.dayOfWeek}-${entry.mealType}`;
       if (seen.has(key))
@@ -125,30 +120,32 @@ export default function EditMealPlanPage() {
     setError("");
 
     try {
-      const token = localStorage.getItem("token") || "";
-      const client = getApiClient(token);
-      await client.put(`/meal-plans/${mealPlanId}`, {
-        weekStartDate,
-        notes,
-        entries,
+      const res = await fetch(`/api/meal-plans/${params.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ weekStartDate, notes, entries }),
       });
+
+      if (!res.ok) throw new Error("Failed to save meal plan");
       router.push("/meal-plans");
     } catch (err: any) {
       console.error(err);
-      setError("Failed to save meal plan.");
+      setError(err.message || "Error saving meal plan");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p style={{ padding: "20px" }}>Loading meal plan…</p>;
+  if (loading) return <p style={{ padding: "20px" }}>Loading meal plan...</p>;
 
   return (
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
         <h1>Edit Meal Plan</h1>
-
         {error && <p style={{ color: "red" }}>{error}</p>}
 
         <label>
@@ -167,6 +164,7 @@ export default function EditMealPlanPage() {
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             cols={50}
+            placeholder="Optional notes for the week"
           />
         </label>
 
@@ -180,22 +178,7 @@ export default function EditMealPlanPage() {
               marginBottom: "10px",
             }}
           >
-            {/* Recipe Dropdown */}
-            <select
-              value={entry.recipeId}
-              onChange={(e) =>
-                handleEntryChange(idx, "recipeId", e.target.value)
-              }
-            >
-              <option value="">--Select Recipe--</option>
-              {recipes.map((r) => (
-                <option key={r._id} value={r._id}>
-                  {r.title}
-                </option>
-              ))}
-            </select>
-
-            {/* Day of Week */}
+            {/* Day */}
             <select
               value={entry.dayOfWeek}
               onChange={(e) =>
@@ -211,7 +194,9 @@ export default function EditMealPlanPage() {
                 "Saturday",
                 "Sunday",
               ].map((d) => (
-                <option key={d}>{d}</option>
+                <option key={d} value={d}>
+                  {d}
+                </option>
               ))}
             </select>
 
@@ -223,7 +208,24 @@ export default function EditMealPlanPage() {
               }
             >
               {["Breakfast", "Lunch", "Dinner", "Snack"].map((m) => (
-                <option key={m}>{m}</option>
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+
+            {/* Recipe */}
+            <select
+              value={entry.recipeId}
+              onChange={(e) =>
+                handleEntryChange(idx, "recipeId", e.target.value)
+              }
+            >
+              <option value="">--Pick Recipe--</option>
+              {recipes.map((r) => (
+                <option key={r._id} value={r._id}>
+                  {r.title}
+                </option>
               ))}
             </select>
 

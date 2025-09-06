@@ -1,4 +1,4 @@
-// path: src/app/recipes/[recipeId]/page.tsx
+// path: src/app/recipes/[id]/page.tsx
 /**
  * EditRecipePage.tsx
  * ------------------
@@ -11,6 +11,7 @@
  *      - Ingredients must have ID, quantity > 0, and unit
  *      - Instructions must not be empty
  *  - Saves changes to backend
+ *  - Loading and error handling
  */
 
 "use client";
@@ -25,7 +26,7 @@ interface Ingredient {
 }
 
 export default function EditRecipePage() {
-  const { recipeId } = useParams();
+  const { id } = useParams(); // revert to "id"
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -40,7 +41,7 @@ export default function EditRecipePage() {
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
-        const res = await fetch(`/api/recipes/${recipeId}`, {
+        const res = await fetch(`/api/recipes/${id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         if (!res.ok) throw new Error("Failed to load recipe");
@@ -57,7 +58,7 @@ export default function EditRecipePage() {
       }
     };
     fetchRecipe();
-  }, [recipeId]);
+  }, [id]);
 
   // Ingredient handlers
   const handleAddIngredient = () =>
@@ -107,6 +108,7 @@ export default function EditRecipePage() {
     return null;
   };
 
+  // Submit handler
   const handleSubmit = async () => {
     const validationError = validate();
     if (validationError) {
@@ -118,7 +120,7 @@ export default function EditRecipePage() {
     setError("");
 
     try {
-      const res = await fetch(`/api/recipes/${recipeId}`, {
+      const res = await fetch(`/api/recipes/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
