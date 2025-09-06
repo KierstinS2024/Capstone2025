@@ -1,4 +1,3 @@
-// path: src/context/MealPlanContext.tsx
 "use client";
 
 /**
@@ -20,7 +19,7 @@ export interface MealPlan {
   _id: string;
   weekStartDate: string;
   notes: string;
-  entries: MealPlanEntry[]; // always defined
+  entries: MealPlanEntry[];
 }
 
 // Context type
@@ -45,13 +44,12 @@ export const MealPlanProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Custom hook for context consumption
+// Custom hook
 export const useMealPlanContext = (): MealPlanContextProps => {
   const context = useContext(MealPlanContext);
-  if (!context) {
+  if (!context)
     throw new Error(
       "useMealPlanContext must be used within a MealPlanProvider"
     );
-  }
   return context;
 };

@@ -1,4 +1,4 @@
-// src/app/auth/login/page.tsx
+// Path: src/app/auth/login/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -7,38 +7,68 @@ import { useAuth } from "@/context/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import styles from "./LoginPage.module.css";
 
+/**
+ * LoginPage component
+ * ------------------
+ * Handles user login with email and password.
+ * - Emails are normalized to lowercase to match signup.
+ * - Validates required fields and email format on client-side.
+ */
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const validateForm = () => {
+    if (!emailInput || !passwordInput) {
+      setErrorMessage("Email and password are required.");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailInput)) {
+      setErrorMessage("Invalid email format.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setErrorMessage("");
+
+    if (!validateForm()) return;
+
+    setLoading(true);
     try {
-      await login(email, password);
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+      await login(emailInput.toLowerCase(), passwordInput);
+      router.push("/recipes"); // Navigate to recipes after login
+    } catch (error: any) {
+      setErrorMessage(error.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className={styles.container}>
-      {/* Floating Theme Toggle */}
       <ThemeToggle />
 
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <form className={styles.form} onSubmit={handleLogin}>
         <h2>Login</h2>
 
-        {error && <p className={styles.errorMsg}>{error}</p>}
+        {errorMessage && <p className={styles.errorMsg}>{errorMessage}</p>}
 
         <input
           type="email"
           placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={emailInput}
+          onChange={(e) => setEmailInput(e.target.value)}
           required
           className={styles.inputField}
         />
@@ -46,21 +76,18 @@ export default function LoginPage() {
         <input
           type="password"
           placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={passwordInput}
+          onChange={(e) => setPasswordInput(e.target.value)}
           required
           className={styles.inputField}
         />
 
-        <button type="submit" className={styles.btnPrimary}>
-          Log In
+        <button type="submit" className={styles.btnPrimary} disabled={loading}>
+          {loading ? "Logging in..." : "Log In"}
         </button>
 
-        <p style={{ textAlign: "center", marginTop: "1rem" }}>
-          Don’t have an account?{" "}
-          <a href="/auth/signup" style={{ color: "var(--primary)" }}>
-            Sign up here
-          </a>
+        <p className={styles.authLink}>
+          Don’t have an account? <a href="/auth/signup">Sign up here</a>
         </p>
       </form>
     </div>

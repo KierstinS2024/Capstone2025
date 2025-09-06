@@ -1,3 +1,4 @@
+//src/app/shopping-lists/new/page.tsx
 "use client";
 /**
  * NewShoppingListPage

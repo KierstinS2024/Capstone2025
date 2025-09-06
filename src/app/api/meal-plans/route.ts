@@ -1,4 +1,4 @@
-// path: src/app/api/meal-plans/route.ts
+// src/app/api/meal-plans/route.ts
 /**
  * Meal Plan API
  * Handles creating and listing meal plans
@@ -10,6 +10,7 @@ import connectToDatabase from "@/lib/db";
 import MealPlan from "@/models/MealPlan";
 import { verifyToken } from "@/lib/auth";
 
+// --- Extract JWT from Authorization header ---
 function getToken(req: NextRequest) {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return null;
@@ -17,37 +18,63 @@ function getToken(req: NextRequest) {
   return type === "Bearer" ? token : null;
 }
 
-// GET all meal plans for the user
+// --- GET all meal plans for the logged-in user ---
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
 
     const token = getToken(req);
-    if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!token)
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const userId = verifyToken(token);
-    const mealPlans = await MealPlan.find({ userId }).sort({ weekStartDate: -1 });
+    if (!userId)
+      return NextResponse.json({ message: "Invalid token" }, { status: 403 });
 
-    return NextResponse.json({ mealPlans });
+    const mealPlans = await MealPlan.find({ userId }).sort({
+      weekStartDate: -1,
+    });
+
+    return NextResponse.json({ mealPlans }, { status: 200 });
   } catch (err) {
     console.error("GET /meal-plans error:", err);
-    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }
 
-// POST - create a new meal plan
+// --- POST create a new meal plan ---
 export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
 
     const token = getToken(req);
-    if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!token)
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const userId = verifyToken(token);
-    const { weekStartDate, notes, entries } = await req.json();
+    if (!userId)
+      return NextResponse.json({ message: "Invalid token" }, { status: 403 });
+
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { message: "Invalid JSON body" },
+        { status: 400 }
+      );
+    }
+
+    const { weekStartDate, notes, entries } = body;
 
     if (!weekStartDate) {
-      return NextResponse.json({ message: "weekStartDate is required" }, { status: 400 });
+      return NextResponse.json(
+        { message: "weekStartDate is required" },
+        { status: 400 }
+      );
     }
 
     const mealPlan = await MealPlan.create({
@@ -57,9 +84,12 @@ export async function POST(req: NextRequest) {
       entries: entries || [],
     });
 
-    return NextResponse.json({ message: "Meal plan created", mealPlan });
+    return NextResponse.json({ mealPlan }, { status: 201 });
   } catch (err) {
     console.error("POST /meal-plans error:", err);
-    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

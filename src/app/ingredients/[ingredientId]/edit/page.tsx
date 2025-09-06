@@ -1,4 +1,4 @@
-// path: src/app/ingredients/[id]/edit/page.tsx
+// src/app/ingredients/[ingredientsId]/edit/page.tsx
 "use client";
 
 /**

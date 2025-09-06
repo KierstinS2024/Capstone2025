@@ -1,13 +1,12 @@
-// path: src/app/recipes/new/page.tsx
+//src/app/recipes/new/page.tsx
 /**
- * Create Recipe Page
- * ------------------
- * Allows the user to add a new recipe.
- * User can:
- *  - Enter recipe name and description
- *  - Add ingredients with quantity and unit
- *  - Add instructions
- *  - Save recipe to the backend
+ * NewRecipePage
+ * -------------
+ * Allows user to create a new recipe.
+ * Validates inputs:
+ *  - Name is required
+ *  - Each ingredient must have an ID, quantity > 0, and unit
+ *  - Each instruction must not be empty
  */
 
 "use client";
@@ -15,51 +14,69 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface Ingredient {
+  ingredientId: string;
+  quantity: number;
+  unit: string;
+}
+
 export default function NewRecipePage() {
   const router = useRouter();
 
-  // Local form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [ingredients, setIngredients] = useState<
-    { ingredientId: string; quantity: number; unit: string }[]
-  >([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [instructions, setInstructions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Add new empty ingredient
-  const handleAddIngredient = () => {
+  // Ingredient handlers
+  const handleAddIngredient = () =>
     setIngredients([
       ...ingredients,
       { ingredientId: "", quantity: 1, unit: "" },
     ]);
-  };
-
-  // Update ingredient fields
-  const handleIngredientChange = (
-    index: number,
-    field: string,
-    value: string | number
-  ) => {
+  const handleIngredientChange = (index: number, field: string, value: any) => {
     const updated = [...ingredients];
     (updated[index] as any)[field] = value;
     setIngredients(updated);
   };
 
-  // Add new instruction step
-  const handleAddInstruction = () => {
-    setInstructions([...instructions, ""]);
-  };
-
-  // Update a specific instruction
+  // Instruction handlers
+  const handleAddInstruction = () => setInstructions([...instructions, ""]);
   const handleInstructionChange = (index: number, value: string) => {
     const updated = [...instructions];
     updated[index] = value;
     setInstructions(updated);
   };
 
-  // Save new recipe to backend
+  // Validation
+  const validate = (): boolean => {
+    if (!name.trim()) {
+      setErrorMessage("Recipe name is required");
+      return false;
+    }
+    for (const ing of ingredients) {
+      if (!ing.ingredientId.trim() || ing.quantity <= 0 || !ing.unit.trim()) {
+        setErrorMessage(
+          "All ingredients must have an ID, quantity > 0, and unit"
+        );
+        return false;
+      }
+    }
+    for (const step of instructions) {
+      if (!step.trim()) {
+        setErrorMessage("All instruction steps must be filled in");
+        return false;
+      }
+    }
+    setErrorMessage("");
+    return true;
+  };
+
   const handleSubmit = async () => {
+    if (!validate()) return;
+
     setLoading(true);
     try {
       const res = await fetch("/api/recipes", {
@@ -70,14 +87,13 @@ export default function NewRecipePage() {
         },
         body: JSON.stringify({ name, description, ingredients, instructions }),
       });
-
-      if (res.ok) {
-        router.push("/recipes"); // Go back to recipes list
-      } else {
-        console.error("Failed to create recipe");
+      if (res.ok) router.push("/recipes");
+      else {
+        const data = await res.json();
+        setErrorMessage(data.message || "Failed to create recipe");
       }
-    } catch (err) {
-      console.error("Error creating recipe:", err);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to create recipe");
     } finally {
       setLoading(false);
     }
@@ -86,8 +102,9 @@ export default function NewRecipePage() {
   return (
     <div style={{ padding: "20px" }}>
       <h1>Create Recipe</h1>
+      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
 
-      {/* Recipe Name */}
+      {/* Name */}
       <label>
         Name:
         <input
@@ -97,7 +114,7 @@ export default function NewRecipePage() {
         />
       </label>
 
-      {/* Recipe Description */}
+      {/* Description */}
       <div>
         <label>
           Description:
@@ -110,7 +127,7 @@ export default function NewRecipePage() {
         </label>
       </div>
 
-      {/* Ingredients List */}
+      {/* Ingredients */}
       <h2>Ingredients</h2>
       {ingredients.map((ing, idx) => (
         <div
@@ -131,7 +148,7 @@ export default function NewRecipePage() {
           />
           <input
             type="number"
-            min="1"
+            min={1}
             placeholder="Quantity"
             value={ing.quantity}
             onChange={(e) =>
@@ -152,9 +169,11 @@ export default function NewRecipePage() {
           />
         </div>
       ))}
-      <button onClick={handleAddIngredient}>+ Add Ingredient</button>
+      <button type="button" onClick={handleAddIngredient}>
+        + Add Ingredient
+      </button>
 
-      {/* Instructions List */}
+      {/* Instructions */}
       <h2>Instructions</h2>
       {instructions.map((inst, idx) => (
         <div key={idx}>
@@ -167,9 +186,11 @@ export default function NewRecipePage() {
           />
         </div>
       ))}
-      <button onClick={handleAddInstruction}>+ Add Instruction</button>
+      <button type="button" onClick={handleAddInstruction}>
+        + Add Instruction
+      </button>
 
-      {/* Save Recipe */}
+      {/* Save */}
       <div style={{ marginTop: "20px" }}>
         <button onClick={handleSubmit} disabled={loading}>
           {loading ? "Saving..." : "Save Recipe"}

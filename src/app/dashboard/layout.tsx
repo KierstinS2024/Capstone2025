@@ -1,4 +1,4 @@
-// src/app/dashboard/layout.tsx
+// path: src/app/dashboard/layout.tsx
 "use client";
 
 // --- React imports ---
@@ -8,6 +8,8 @@ import { ReactNode } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute"; // ensures user is authenticated
 import NavBar from "@/components/NavBar"; // main dashboard navigation
 import { ThemeProvider } from "@/context/ThemeContext"; // dark/light mode support
+import { MealPlanProvider } from "@/context/MealPlanContext"; // global meal plan state
+import { IngredientProvider } from "@/context/IngredientContext"; // global ingredient state
 
 // --- Styles ---
 import styles from "./DashboardLayout.module.css";
@@ -19,18 +21,17 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    // Wrap the entire dashboard with theme support
     <ThemeProvider>
-      {/* Protect all dashboard pages */}
       <ProtectedRoute>
-        {/* Dashboard container */}
-        <div className={styles.dashboardContainer}>
-          {/* Always show NavBar on dashboard */}
-          <NavBar />
-
-          {/* Main page content */}
-          <main className={styles.mainContent}>{children}</main>
-        </div>
+        {/* Wrap all dashboard children with contexts */}
+        <MealPlanProvider>
+          <IngredientProvider>
+            <div className={styles.dashboardContainer}>
+              <NavBar />
+              <main className={styles.mainContent}>{children}</main>
+            </div>
+          </IngredientProvider>
+        </MealPlanProvider>
       </ProtectedRoute>
     </ThemeProvider>
   );

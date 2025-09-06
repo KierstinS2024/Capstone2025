@@ -1,9 +1,12 @@
 // path: src/app/meal-plans/page.tsx
 /**
- * MealPlansListPage.tsx
- * ---------------------
+ * MealPlansListPage
+ * -----------------
  * Displays all meal plans for the logged-in user.
- * User can view, edit, or create new plans.
+ * Users can:
+ *  - View all existing meal plans
+ *  - Navigate to edit a meal plan
+ *  - Create a new meal plan
  */
 
 "use client";
@@ -12,13 +15,19 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NavBar from "@/components/NavBar";
-import { getApiClient } from "@/lib/api";
+
+interface MealEntry {
+  dayOfWeek: string;
+  mealType: string;
+  recipeId: string;
+  servings: number;
+}
 
 interface MealPlan {
   _id: string;
   weekStartDate: string;
   notes?: string;
-  entries?: any[];
+  entries?: MealEntry[];
 }
 
 export default function MealPlansListPage() {
@@ -29,16 +38,21 @@ export default function MealPlansListPage() {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const token = localStorage.getItem("token") || undefined;
-        const client = getApiClient(token);
-        const res = await client.get("/meal-plans");
-        setMealPlans(res.data.data || []);
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/meal-plans", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load meal plans");
+
+        const data = await res.json();
+        setMealPlans(data.data || []);
       } catch (err: any) {
         setError(err.message || "Error loading meal plans");
       } finally {
         setLoading(false);
       }
     };
+
     fetchPlans();
   }, []);
 
@@ -46,16 +60,26 @@ export default function MealPlansListPage() {
     <ProtectedRoute>
       <NavBar />
       <div style={{ padding: "20px" }}>
-        <header>
+        <header
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <h1>Meal Plans</h1>
           <Link href="/meal-plans/new">
             <button>+ New Meal Plan</button>
           </Link>
         </header>
+
         {loading && <p>Loading meal plans...</p>}
-        {error && <p>{error}</p>}
+        {error && <p style={{ color: "red" }}>{error}</p>}
+
         {!loading && !error && (
           <ul style={{ listStyle: "none", padding: 0 }}>
+            {mealPlans.length === 0 && <li>No meal plans yet. Create one!</li>}
+
             {mealPlans.map((plan) => (
               <li
                 key={plan._id}
@@ -70,9 +94,11 @@ export default function MealPlansListPage() {
                 </Link>
                 <p>{plan.notes || "No notes"}</p>
                 <p>Entries: {plan.entries?.length || "No recipes added"}</p>
+                <Link href={`/meal-plans/${plan._id}`}>
+                  <button>Edit</button>
+                </Link>
               </li>
             ))}
-            {mealPlans.length === 0 && <li>No meal plans yet. Create one!</li>}
           </ul>
         )}
       </div>

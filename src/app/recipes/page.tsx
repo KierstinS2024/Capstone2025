@@ -1,4 +1,4 @@
-// path: src/app/recipes/page.tsx
+//src/app/recipes/page.tsx
 /**
  * Recipes List Page
  * -----------------

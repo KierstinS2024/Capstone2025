@@ -1,6 +1,5 @@
-/* path: src/app/dashboard/meal-plans/page.module.css (MealPlansListPage.module.css) */
+/* path: src/app/dashboard/meal-plans/MealPlansListPage.module.css */
 
-/* Main container */
 .container {
   padding: 2rem;
   display: flex;
@@ -8,47 +7,40 @@
   gap: 1.5rem;
 }
 
-/* Page title */
-.title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* Create new meal plan button */
-.createButton {
-  padding: 0.5rem 1rem;
-  background-color: #4f46e5;
-  color: #fff;
-  border: none;
-  border-radius: 0.375rem;
+.title {
+  font-size: 2rem;
   font-weight: 600;
+  color: #111827; /* dark text */
+}
+
+.createButton {
+  background-color: #4f46e5; /* indigo */
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
-  align-self: flex-start;
+  transition: background-color 0.2s ease;
 }
 
 .createButton:hover {
-  background-color: #4338ca;
-}
-
-/* Grid of meal plan cards */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-/* Loading / error / empty messages */
-.message {
-  color: #6b7280;
+  background-color: #4338ca; /* darker indigo */
 }
 
 .error {
-  color: #d93025;
+  color: #dc2626; /* red for errors */
+  font-weight: 500;
+  margin-top: 0.5rem;
 }
 
-.emptyMessage {
+.loading {
   font-size: 1rem;
-  color: #6b7280;
+  color: #6b7280; /* gray text */
 }

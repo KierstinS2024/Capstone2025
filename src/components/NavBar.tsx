@@ -28,7 +28,7 @@ export default function NavBar() {
           <Link href="/dashboard/ingredients">Ingredients</Link>
         </li>
         <li>
-          <Link href="/dashboard/meals">Meal Plans</Link>
+          <Link href="/dashboard/meal-plans">Meal Plans</Link>
         </li>
         <li>
           <button onClick={handleLogout}>Log Out</button>

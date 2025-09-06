@@ -1,112 +1,33 @@
 // path: src/app/dashboard/meal-plans/page.tsx
 "use client";
 
-/**
- * MealPlansListPage
- *
- * Responsibilities:
- * - Fetch and display all meal plans for the user
- * - Provide create and delete functionality
- */
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import { useMealPlanContext } from "@/context/MealPlanContext";
-import MealPlanCard from "@/components/MealPlanCard";
+import MealPlanList from "@/components/MealPlanList";
+import CreateMealPlanModal from "@/components/CreateMealPlanModal";
 import styles from "./MealPlansListPage.module.css";
 
 export default function MealPlansListPage() {
-  const router = useRouter();
-  const { mealPlans, setMealPlans } = useMealPlanContext();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!token) router.push("/auth/login");
-  }, [router, token]);
-
-  // Fetch meal plans from API
-  useEffect(() => {
-    if (!token) return;
-
-    async function fetchMealPlans() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const res = await fetch("/api/meal-plans", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-
-        if (!res.ok)
-          throw new Error(data.message || "Failed to fetch meal plans");
-        setMealPlans(data.mealPlans || []);
-      } catch (err: any) {
-        setError(err.message || "Error loading meal plans");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchMealPlans();
-  }, [token, setMealPlans]);
-
-  // Delete meal plan
-  const handleDelete = async (id: string) => {
-    if (!token || !confirm("Are you sure you want to delete this meal plan?"))
-      return;
-
-    try {
-      const res = await fetch(`/api/meal-plans/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to delete meal plan");
-      setMealPlans(mealPlans.filter((plan) => plan._id !== id));
-    } catch (err: any) {
-      alert(err.message || "Error deleting meal plan");
-    }
-  };
-
-  if (loading) return <p className={styles.message}>Loading meal plans...</p>;
-  if (error) return <p className={styles.error}>Error: {error}</p>;
+  const { mealPlans } = useMealPlanContext();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Your Meal Plans</h1>
+      <h1 className={styles.title}>Meal Plans</h1>
 
-      {/* Button to create new meal plan */}
       <button
         className={styles.createButton}
-        onClick={() => router.push("/dashboard/meal-plans/create")}
+        onClick={() => setIsModalOpen(true)}
       >
-        + Create New Meal Plan
+        Create New Meal Plan
       </button>
 
-      {mealPlans.length === 0 ? (
-        <p className={styles.emptyMessage}>
-          You haven't created any meal plans yet.
-        </p>
-      ) : (
-        <div className={styles.grid}>
-          {mealPlans.map((plan) => (
-            <MealPlanCard
-              key={plan._id}
-              id={plan._id}
-              weekStartDate={plan.weekStartDate}
-              notes={plan.notes}
-              entriesCount={plan.entries?.length}
-              onClick={() => router.push(`/dashboard/meal-plans/${plan._id}`)}
-              onDelete={() => handleDelete(plan._id)}
-            />
-          ))}
-        </div>
-      )}
+      <MealPlanList mealPlans={mealPlans} />
+
+      <CreateMealPlanModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }

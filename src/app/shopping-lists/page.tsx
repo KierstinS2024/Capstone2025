@@ -1,4 +1,4 @@
-// path: src/app/shopping-lists/page.tsx
+// src/app/shopping-lists/page.tsx
 /**
  * ShoppingListsListPage.tsx
  * -------------------------
