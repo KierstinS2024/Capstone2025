@@ -1,23 +1,10 @@
-// path: src/components/MealPlanEntryForm.tsx
+// src/components/MealPlanEntryForm.tsx
 "use client";
-
-/**
- * MealPlanEntryForm
- * -----------------
- * Handles creating or editing a meal plan entry.
- * Features:
- *  - Search for recipes (user + Spoonacular)
- *  - Select recipe from dropdown
- *  - Specify day, meal type, and servings
- *  - Submit via API (POST for new, PATCH for edit)
- *  - Fully typed with TypeScript
- */
 
 import { useEffect, useState, useRef } from "react";
 import styles from "./MealPlanEntryForm.module.css";
 import { MealPlanEntry } from "@/context/MealPlanContext";
 
-// Minimal recipe type for search dropdown
 export interface RecipeLite {
   _id: string;
   title: string;
@@ -25,17 +12,24 @@ export interface RecipeLite {
   source: "user" | "spoonacular";
 }
 
-// Props for the MealPlanEntryForm component
 export interface MealPlanEntryFormProps {
-  mealPlanId: string; // ID of the parent meal plan
-  token: string; // JWT auth token
-  initialData?: MealPlanEntry; // Optional for editing
-  onSuccess: (entry: MealPlanEntry) => void; // Callback after successful save
-  onCancel?: () => void; // Optional cancel callback
+  mealPlanId?: string; // optional for parent-managed mode
+  token?: string; // optional for parent-managed mode
+  initialData?: MealPlanEntry;
+  onSuccess?: (entry: MealPlanEntry) => void; // optional for parent-managed
+  onCancel?: () => void;
+  onChange?: (entry: MealPlanEntry) => void; // new prop for parent-managed
 }
 
-// Dropdown options
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
 const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
 export default function MealPlanEntryForm({
@@ -44,8 +38,8 @@ export default function MealPlanEntryForm({
   initialData,
   onSuccess,
   onCancel,
+  onChange,
 }: MealPlanEntryFormProps) {
-  // ----------------- Form state -----------------
   const [recipeId, setRecipeId] = useState(initialData?.recipeId || "");
   const [mealType, setMealType] = useState(
     initialData?.mealType || "Breakfast"
@@ -57,16 +51,14 @@ export default function MealPlanEntryForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ----------------- Recipe search state -----------------
   const [searchQuery, setSearchQuery] = useState("");
   const [userRecipes, setUserRecipes] = useState<RecipeLite[]>([]);
   const [externalRecipes, setExternalRecipes] = useState<RecipeLite[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const isEditing = Boolean(initialData?._id);
+  const isEditing = Boolean(initialData?._id && !onChange); // only API mode if no onChange
 
-  // ----------------- Close dropdown on outside click -----------------
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (!dropdownRef.current?.contains(event.target as Node)) {
@@ -77,9 +69,9 @@ export default function MealPlanEntryForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ----------------- Fetch recipes live -----------------
+  // Fetch recipes live
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() || !token) {
       setUserRecipes([]);
       setExternalRecipes([]);
       return;
@@ -90,15 +82,12 @@ export default function MealPlanEntryForm({
       try {
         const res = await fetch(
           `/api/recipes/search?q=${encodeURIComponent(searchQuery)}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!res.ok) return;
         const data = await res.json();
         if (!active) return;
 
-        // Map user recipes
         const mappedUser: RecipeLite[] = (data.userRecipes || []).map(
           (r: any) => ({
             _id: r._id,
@@ -108,7 +97,6 @@ export default function MealPlanEntryForm({
           })
         );
 
-        // Map external recipes (Spoonacular)
         const mappedExternal: RecipeLite[] = (
           data.spoonacularRecipes || []
         ).map((r: any) => ({
@@ -122,7 +110,7 @@ export default function MealPlanEntryForm({
         setExternalRecipes(mappedExternal);
         setShowDropdown(true);
       } catch (err) {
-        console.error("Error fetching recipes:", err);
+        console.error(err);
       }
     };
 
@@ -130,14 +118,14 @@ export default function MealPlanEntryForm({
     return () => clearTimeout(debounce);
   }, [searchQuery, token]);
 
-  // ----------------- Handle recipe selection -----------------
   const handleSelectRecipe = (id: string) => {
     setRecipeId(id);
     setShowDropdown(false);
     setSearchQuery("");
+    // notify parent if in parent-managed mode
+    if (onChange) onChange({ dayOfWeek, mealType, recipeId: id, servings });
   };
 
-  // ----------------- Submit form -----------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipeId) {
@@ -145,6 +133,14 @@ export default function MealPlanEntryForm({
       return;
     }
 
+    if (onChange) {
+      // parent-managed mode: just notify parent
+      onChange({ dayOfWeek, mealType, recipeId, servings });
+      return;
+    }
+
+    // standalone mode: POST/PATCH API
+    if (!mealPlanId || !token) return;
     setLoading(true);
     setError(null);
 
@@ -166,15 +162,7 @@ export default function MealPlanEntryForm({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to save entry");
 
-      onSuccess(data.entry as MealPlanEntry);
-
-      // Reset form if creating new
-      if (!isEditing) {
-        setRecipeId("");
-        setMealType("Breakfast");
-        setDayOfWeek("Monday");
-        setServings(1);
-      }
+      onSuccess?.(data.entry as MealPlanEntry);
     } catch (err: any) {
       setError(err.message || "Failed to save entry");
     } finally {
@@ -182,12 +170,10 @@ export default function MealPlanEntryForm({
     }
   };
 
-  // ----------------- Render -----------------
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       {error && <p className={styles.error}>{error}</p>}
 
-      {/* Recipe search input */}
       <label className={styles.label}>
         Recipe
         <input
@@ -245,12 +231,19 @@ export default function MealPlanEntryForm({
           )}
       </label>
 
-      {/* Day of week */}
       <label className={styles.label}>
         Day of Week
         <select
           value={dayOfWeek}
-          onChange={(e) => setDayOfWeek(e.target.value)}
+          onChange={(e) => {
+            setDayOfWeek(e.target.value);
+            onChange?.({
+              dayOfWeek: e.target.value,
+              mealType,
+              recipeId,
+              servings,
+            });
+          }}
           className={styles.select}
         >
           {DAYS.map((d) => (
@@ -261,12 +254,19 @@ export default function MealPlanEntryForm({
         </select>
       </label>
 
-      {/* Meal type */}
       <label className={styles.label}>
         Meal Type
         <select
           value={mealType}
-          onChange={(e) => setMealType(e.target.value)}
+          onChange={(e) => {
+            setMealType(e.target.value);
+            onChange?.({
+              dayOfWeek,
+              mealType: e.target.value,
+              recipeId,
+              servings,
+            });
+          }}
           className={styles.select}
         >
           {MEAL_TYPES.map((t) => (
@@ -277,43 +277,40 @@ export default function MealPlanEntryForm({
         </select>
       </label>
 
-      {/* Servings */}
       <label className={styles.label}>
         Servings
         <input
           type="number"
           min={1}
           value={servings}
-          onChange={(e) => setServings(Number(e.target.value))}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            setServings(val);
+            onChange?.({ dayOfWeek, mealType, recipeId, servings: val });
+          }}
           className={styles.input}
         />
       </label>
 
-      {/* Action buttons */}
-      <div className={styles.actions}>
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          className={styles.cancelButton}
+        >
+          Remove
+        </button>
+      )}
+
+      {isEditing && (
         <button
           type="submit"
           disabled={loading}
           className={styles.submitButton}
         >
-          {loading
-            ? isEditing
-              ? "Updating..."
-              : "Creating..."
-            : isEditing
-            ? "Update Entry"
-            : "Add Entry"}
+          {loading ? "Updating..." : "Update Entry"}
         </button>
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className={styles.cancelButton}
-          >
-            Cancel
-          </button>
-        )}
-      </div>
+      )}
     </form>
   );
 }

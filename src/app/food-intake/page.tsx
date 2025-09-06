@@ -3,7 +3,7 @@
  * FoodIntakeListPage.tsx
  * ----------------------
  * Displays all food intake entries for the logged-in user.
- * Users can view, edit, or add new entries.
+ * Users can view, edit, or delete entries.
  */
 
 "use client";
@@ -27,19 +27,39 @@ export default function FoodIntakeListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchEntries = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token") || undefined;
+      const client = getApiClient(token);
+      const res = await client.get("/food-intake");
+      setEntries(res.data.data || []);
+    } catch (err: any) {
+      setError(err.message || "Error loading food intake entries");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const confirmDelete = confirm(
+      "Are you sure you want to delete this entry?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem("token") || undefined;
+      const client = getApiClient(token);
+      await client.delete(`/food-intake/${id}`);
+      // Refresh the list
+      fetchEntries();
+    } catch (err) {
+      console.error("Error deleting entry:", err);
+      alert("Failed to delete entry");
+    }
+  };
+
   useEffect(() => {
-    const fetchEntries = async () => {
-      try {
-        const token = localStorage.getItem("token") || undefined;
-        const client = getApiClient(token);
-        const res = await client.get("/food-intake");
-        setEntries(res.data.data || []);
-      } catch (err: any) {
-        setError(err.message || "Error loading food intake entries");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchEntries();
   }, []);
 
@@ -53,8 +73,10 @@ export default function FoodIntakeListPage() {
             <button>+ New Entry</button>
           </Link>
         </header>
+
         {loading && <p>Loading entries...</p>}
         {error && <p>{error}</p>}
+
         {!loading && !error && (
           <ul style={{ listStyle: "none", padding: 0 }}>
             {entries.map((e) => (
@@ -73,6 +95,18 @@ export default function FoodIntakeListPage() {
                   <Link href={`/food-intake/${e._id}`}>View</Link>
                   {" | "}
                   <Link href={`/food-intake/${e._id}/edit`}>Edit</Link>
+                  {" | "}
+                  <button
+                    style={{
+                      color: "red",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => handleDelete(e._id)}
+                  >
+                    Delete
+                  </button>
                 </div>
               </li>
             ))}

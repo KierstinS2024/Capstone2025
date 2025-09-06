@@ -1,20 +1,14 @@
 // path: src/app/meal-plans/new/page.tsx
-/**
- * NewMealPlanPage
- * -----------------
- * Allows the user to create a new weekly meal plan.
- * Each entry = { dayOfWeek, mealType, recipeId, servings }.
- * Validations:
- *  - No empty recipe selection
- *  - No duplicate day + mealType combinations
- */
-
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import MealPlanEntryForm, {
+  MealPlanEntryFormProps,
+} from "@/components/MealPlanEntryForm";
 
-interface MealEntry {
+// --- Type for new entries (no _id yet) ---
+interface NewMealEntry {
   dayOfWeek: string;
   mealType: string;
   recipeId: string;
@@ -23,57 +17,35 @@ interface MealEntry {
 
 export default function NewMealPlanPage() {
   const router = useRouter();
-  const [recipes, setRecipes] = useState<any[]>([]);
-  const [entries, setEntries] = useState<MealEntry[]>([
+  const [entries, setEntries] = useState<NewMealEntry[]>([
     { dayOfWeek: "Monday", mealType: "Breakfast", recipeId: "", servings: 1 },
   ]);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Load recipes for dropdown
-  useEffect(() => {
-    const fetchRecipes = async () => {
-      try {
-        const res = await fetch("/api/recipes", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        if (!res.ok) throw new Error("Failed to load recipes");
-
-        const data = await res.json();
-        setRecipes(data.data || []);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || "Error fetching recipes");
-      }
-    };
-    fetchRecipes();
-  }, []);
-
   const handleEntryChange = (
     index: number,
-    field: keyof MealEntry,
-    value: string | number
+    updatedEntry: Partial<NewMealEntry>
   ) => {
-    const updated = [...entries];
-    (updated[index] as any)[field] = value;
-    setEntries(updated);
+    setEntries((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], ...updatedEntry };
+      return copy;
+    });
   };
 
   const handleAddEntry = () => {
-    setEntries([
-      ...entries,
+    setEntries((prev) => [
+      ...prev,
       { dayOfWeek: "Monday", mealType: "Breakfast", recipeId: "", servings: 1 },
     ]);
   };
 
   const handleRemoveEntry = (index: number) => {
-    const updated = [...entries];
-    updated.splice(index, 1);
-    setEntries(updated);
+    setEntries((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Validate entries before submission
   const validateEntries = (): string | null => {
     const seen = new Set<string>();
     for (const entry of entries) {
@@ -87,8 +59,7 @@ export default function NewMealPlanPage() {
     return null;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     const validationError = validateEntries();
     if (validationError) {
       setError(validationError);
@@ -117,7 +88,7 @@ export default function NewMealPlanPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ padding: "20px" }}>
+    <div style={{ padding: "20px" }}>
       <h1>Create Meal Plan</h1>
       {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -142,81 +113,37 @@ export default function NewMealPlanPage() {
             marginBottom: "10px",
           }}
         >
-          {/* Day */}
-          <select
-            value={entry.dayOfWeek}
-            onChange={(e) =>
-              handleEntryChange(idx, "dayOfWeek", e.target.value)
-            }
-          >
-            {[
-              "Monday",
-              "Tuesday",
-              "Wednesday",
-              "Thursday",
-              "Friday",
-              "Saturday",
-              "Sunday",
-            ].map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-
-          {/* Meal Type */}
-          <select
-            value={entry.mealType}
-            onChange={(e) => handleEntryChange(idx, "mealType", e.target.value)}
-          >
-            {["Breakfast", "Lunch", "Dinner", "Snack"].map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-
-          {/* Recipe */}
-          <select
-            value={entry.recipeId}
-            onChange={(e) => handleEntryChange(idx, "recipeId", e.target.value)}
-          >
-            <option value="">--Pick Recipe--</option>
-            {recipes.map((r) => (
-              <option key={r._id} value={r._id}>
-                {r.title}
-              </option>
-            ))}
-          </select>
-
-          {/* Servings */}
-          <input
-            type="number"
-            min={1}
-            value={entry.servings}
-            onChange={(e) =>
-              handleEntryChange(idx, "servings", parseInt(e.target.value))
-            }
+          <MealPlanEntryForm
+            mealPlanId="" // not needed for new meal plan
+            token={localStorage.getItem("token") || ""}
+            initialData={undefined} // new entry, no _id
+            onSuccess={(savedEntry) => handleEntryChange(idx, savedEntry)}
+            onCancel={() => handleRemoveEntry(idx)}
           />
 
           <button
             type="button"
             onClick={() => handleRemoveEntry(idx)}
-            style={{ marginLeft: "10px" }}
+            style={{ marginTop: "10px" }}
           >
             Remove
           </button>
         </div>
       ))}
 
-      <button type="button" onClick={handleAddEntry}>
+      <button
+        type="button"
+        onClick={handleAddEntry}
+        style={{ marginTop: "10px" }}
+      >
         + Add Another Meal
       </button>
+
       <div style={{ marginTop: "20px" }}>
-        <button type="submit" disabled={saving}>
+        <button type="button" onClick={handleSubmit} disabled={saving}>
           {saving ? "Saving..." : "Save Meal Plan"}
         </button>
       </div>
-    </form>
+    </div>
   );
 }
