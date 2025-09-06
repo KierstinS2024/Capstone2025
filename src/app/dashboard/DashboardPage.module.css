@@ -1,39 +1,106 @@
-/* src/app/dashboard/DashboardPage.module.css */
+/* path: src/app/dashboard/DashboardPage.module.css */
 
+/* ------------------------------
+   Main Container
+------------------------------ */
 .container {
   display: flex;
   flex-direction: column;
   gap: 2rem;
   padding: 2rem;
+  min-height: 85vh;
+  background: linear-gradient(135deg, #fdf7f0, #f3ece0); /* soft earthy gradient */
+  font-family: var(--font, "Inter", sans-serif);
+  color: var(--text, #3c3c3c);
 }
 
+/* ------------------------------
+   Page Title
+------------------------------ */
 .title {
   font-size: 2rem;
-  font-weight: bold;
+  font-weight: 700;
   text-align: center;
+  color: #5a4b3c; /* warm brown */
+  margin-bottom: 1rem;
 }
 
+/* ------------------------------
+   Cards Grid
+------------------------------ */
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
 }
 
+/* ------------------------------
+   Card Styles
+------------------------------ */
 .card {
   padding: 1.5rem;
-  background-color: var(--card-bg);
-  border-radius: 0.5rem;
+  border-radius: var(--radius, 12px);
+  background-color: #fff8f0; /* light earthy background */
+  border: 1px solid #e6d8c3; /* subtle border */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   text-decoration: none;
   color: inherit;
-  box-shadow: var(--shadow);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, background-color 0.3s;
 }
-
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  background-color: #f6ede2;
+}
+.card h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #6b8f71; /* muted green accent */
+}
+.card p {
+  font-size: 0.95rem;
+  color: #5a4b3c;
 }
 
-.card h2 {
-  margin-bottom: 0.5rem;
+/* ------------------------------
+   Responsive Adjustments
+------------------------------ */
+@media (max-width: 500px) {
+  .container {
+    padding: 1.5rem;
+  }
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------
+   DARK MODE SUPPORT
+------------------------------ */
+.dark .container {
+  background: linear-gradient(135deg, #1c1c1c, #2a2a2a);
+  color: #eaeaea;
+}
+
+.dark .title {
+  color: #f5f5f5;
+}
+
+.dark .card {
+  background-color: #2c2c2c;
+  border-color: #3a3a3a;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+}
+.dark .card:hover {
+  background-color: #333333;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.8);
+}
+.dark .card h2 {
+  color: #a3c4a1; /* soft green for dark mode */
+}
+.dark .card p {
+  color: #dcdcdc;
 }

@@ -1,247 +1,131 @@
-// path: src/app/recipes/[id]/page.tsx
+// src/app/recipes/[id]/page.tsx
 /**
- * EditRecipePage.tsx
- * ------------------
- * Allows editing an existing recipe.
- * Features:
- *  - Edit name and description
- *  - Add/edit/remove ingredients and instructions
- *  - Validations:
- *      - Name required
- *      - Ingredients must have ID, quantity > 0, and unit
- *      - Instructions must not be empty
- *  - Saves changes to backend
- *  - Loading and error handling
+ * RecipeDetailPage
+ * ----------------
+ * Shows all details of a single recipe (user or external).
+ * Allows editing/deleting if it's a user recipe.
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
+import styles from "./RecipeDetailPage.module.css"; // your CSS module
 
+// --- Type for recipe
 interface Ingredient {
   ingredientId: string;
+  name?: string;
   quantity: number;
   unit: string;
 }
 
-export default function EditRecipePage() {
-  const { id } = useParams(); // revert to "id"
+interface Recipe {
+  _id: string;
+  name: string;
+  description: string;
+  cuisine?: string;
+  ingredients: Ingredient[];
+  instructions: string[];
+  source: "user" | "external";
+}
+
+export default function RecipeDetailPage() {
+  const { token } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const recipeId = params?.id;
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [instructions, setInstructions] = useState<string[]>([]);
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  // Load recipe
   useEffect(() => {
+    if (!recipeId) return;
+
     const fetchRecipe = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`/api/recipes/${id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        const res = await fetch(`/api/recipes/${recipeId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        if (!res.ok) throw new Error("Failed to load recipe");
-        const data = await res.json();
-        setName(data.data.name);
-        setDescription(data.data.description || "");
-        setIngredients(data.data.ingredients || []);
-        setInstructions(data.data.instructions || []);
+        if (!res.ok) throw new Error("Failed to fetch recipe");
+
+        const data: Recipe = await res.json();
+        setRecipe(data);
       } catch (err: any) {
-        console.error(err);
         setError(err.message || "Error fetching recipe");
       } finally {
         setLoading(false);
       }
     };
+
     fetchRecipe();
-  }, [id]);
+  }, [recipeId, token]);
 
-  // Ingredient handlers
-  const handleAddIngredient = () =>
-    setIngredients([
-      ...ingredients,
-      { ingredientId: "", quantity: 1, unit: "" },
-    ]);
-  const handleIngredientChange = (
-    idx: number,
-    field: keyof Ingredient,
-    value: string | number
-  ) => {
-    const updated = [...ingredients];
-    (updated[idx] as any)[field] = value;
-    setIngredients(updated);
-  };
-  const handleRemoveIngredient = (idx: number) => {
-    const updated = [...ingredients];
-    updated.splice(idx, 1);
-    setIngredients(updated);
-  };
+  const handleDelete = async () => {
+    if (!token || !recipe || recipe.source !== "user") return;
+    if (!confirm("Are you sure you want to delete this recipe?")) return;
 
-  // Instruction handlers
-  const handleAddInstruction = () => setInstructions([...instructions, ""]);
-  const handleInstructionChange = (idx: number, value: string) => {
-    const updated = [...instructions];
-    updated[idx] = value;
-    setInstructions(updated);
-  };
-  const handleRemoveInstruction = (idx: number) => {
-    const updated = [...instructions];
-    updated.splice(idx, 1);
-    setInstructions(updated);
-  };
-
-  // Validation
-  const validate = (): string | null => {
-    if (!name.trim()) return "Recipe name is required";
-    for (const ing of ingredients) {
-      if (!ing.ingredientId.trim() || ing.quantity <= 0 || !ing.unit.trim()) {
-        return "All ingredients must have an ID, quantity > 0, and unit";
-      }
-    }
-    for (const step of instructions) {
-      if (!step.trim()) return "All instruction steps must be filled in";
-    }
-    return null;
-  };
-
-  // Submit handler
-  const handleSubmit = async () => {
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setSaving(true);
-    setError("");
-
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/recipes/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ name, description, ingredients, instructions }),
+      const res = await fetch(`/api/recipes/${recipe._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to update recipe");
-      }
+      if (!res.ok) throw new Error("Failed to delete recipe");
+
       router.push("/recipes");
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to update recipe");
+      alert(err.message || "Error deleting recipe");
     } finally {
-      setSaving(false);
+      setDeleting(false);
     }
   };
 
-  if (loading) return <p style={{ padding: "20px" }}>Loading recipe…</p>;
+  if (loading) return <p className={styles.loading}>Loading recipe...</p>;
+  if (error) return <p className={styles.error}>{error}</p>;
+  if (!recipe) return <p className={styles.error}>Recipe not found.</p>;
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Edit Recipe</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <div className={styles.container}>
+      <h1>{recipe.name}</h1>
+      {recipe.cuisine && (
+        <p>
+          <strong>Cuisine:</strong> {recipe.cuisine}
+        </p>
+      )}
+      {recipe.description && <p>{recipe.description}</p>}
 
-      {/* Name */}
-      <label>
-        Name:
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </label>
-
-      {/* Description */}
-      <label>
-        Description:
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-          cols={50}
-        />
-      </label>
-
-      {/* Ingredients */}
       <h2>Ingredients</h2>
-      {ingredients.map((ing, idx) => (
-        <div
-          key={idx}
-          style={{
-            border: "1px solid #ccc",
-            padding: "10px",
-            marginBottom: "10px",
-          }}
-        >
-          <input
-            placeholder="Ingredient ID"
-            value={ing.ingredientId}
-            onChange={(e) =>
-              handleIngredientChange(idx, "ingredientId", e.target.value)
-            }
-          />
-          <input
-            type="number"
-            min={1}
-            placeholder="Quantity"
-            value={ing.quantity}
-            onChange={(e) =>
-              handleIngredientChange(
-                idx,
-                "quantity",
-                parseFloat(e.target.value)
-              )
-            }
-          />
-          <input
-            placeholder="Unit"
-            value={ing.unit}
-            onChange={(e) =>
-              handleIngredientChange(idx, "unit", e.target.value)
-            }
-          />
-          <button type="button" onClick={() => handleRemoveIngredient(idx)}>
-            Remove
-          </button>
-        </div>
-      ))}
-      <button type="button" onClick={handleAddIngredient}>
-        + Add Ingredient
-      </button>
+      <ul>
+        {recipe.ingredients.map((ing, idx) => (
+          <li key={idx}>
+            {ing.quantity} {ing.unit} {ing.name || ing.ingredientId}
+          </li>
+        ))}
+      </ul>
 
-      {/* Instructions */}
       <h2>Instructions</h2>
-      {instructions.map((inst, idx) => (
-        <div key={idx}>
-          <textarea
-            value={inst}
-            onChange={(e) => handleInstructionChange(idx, e.target.value)}
-            rows={2}
-            cols={50}
-            placeholder={`Step ${idx + 1}`}
-          />
-          <button type="button" onClick={() => handleRemoveInstruction(idx)}>
-            Remove
+      <ol>
+        {recipe.instructions.map((step, idx) => (
+          <li key={idx}>{step}</li>
+        ))}
+      </ol>
+
+      {recipe.source === "user" && (
+        <div className={styles.actions}>
+          <Link href={`/recipes/${recipe._id}/edit`}>
+            <button>Edit</button>
+          </Link>
+          <button onClick={handleDelete} disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete"}
           </button>
         </div>
-      ))}
-      <button type="button" onClick={handleAddInstruction}>
-        + Add Instruction
-      </button>
-
-      {/* Save */}
-      <div style={{ marginTop: "20px" }}>
-        <button onClick={handleSubmit} disabled={saving}>
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
-      </div>
+      )}
     </div>
   );
 }

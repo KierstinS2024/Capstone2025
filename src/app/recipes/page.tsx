@@ -1,91 +1,157 @@
-//src/app/recipes/page.tsx
+// src/app/recipes/page.tsx
 /**
  * Recipes List Page
  * -----------------
  * Displays all recipes for the logged-in user.
- * From here, the user can:
+ * Features:
  *  - View existing recipes
+ *  - Search for external recipes
  *  - Navigate to create a new recipe
- *  - Click on a recipe to edit it
+ *  - Edit or delete recipes
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import RecipeCard, { Recipe } from "@/components/RecipeCard";
 
 export default function RecipesPage() {
-  const [recipes, setRecipes] = useState<any[]>([]); // Store fetched recipes
-  const [loading, setLoading] = useState(true); // Loading state
+  const router = useRouter();
+  const { token } = useAuth();
 
-  // Fetch all recipes on component mount
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searching, setSearching] = useState(false);
+
+  // Fetch all user recipes
   useEffect(() => {
     const fetchRecipes = async () => {
+      if (!token) return;
+      setLoading(true);
+      setError(null);
+
       try {
         const res = await fetch("/api/recipes", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
-        if (res.ok) {
-          const data = await res.json();
-          setRecipes(data.data || []);
-        } else {
-          console.error("Failed to fetch recipes");
-        }
-      } catch (err) {
-        console.error("Error fetching recipes:", err);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to fetch recipes");
+        setRecipes(data.data || []);
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message || "Error fetching recipes");
       } finally {
         setLoading(false);
       }
     };
 
     fetchRecipes();
-  }, []);
+  }, [token]);
 
-  if (loading) {
-    return <p style={{ padding: "20px" }}>Loading recipes...</p>;
-  }
+  // Navigate to edit page
+  const handleEdit = (id: string) => {
+    router.push(`/recipes/${id}/edit`);
+  };
+
+  // Delete a recipe
+  const handleDelete = async (id: string) => {
+    if (!token) return;
+    if (!confirm("Are you sure you want to delete this recipe?")) return;
+
+    try {
+      const res = await fetch(`/api/recipes/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to delete recipe");
+      }
+      setRecipes((prev) => prev.filter((r) => r._id !== id));
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Error deleting recipe");
+    }
+  };
+
+  // Search external recipes
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchTerm.trim()) return;
+    setSearching(true);
+    try {
+      const res = await fetch(
+        `/api/external/recipes?search=${encodeURIComponent(searchTerm)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.message || "Failed to fetch external recipes");
+
+      // Merge external recipes with user recipes
+      const merged: Recipe[] = [
+        ...recipes,
+        ...(data.data || []).map((r: any) => ({ ...r, source: "external" })),
+      ];
+      setRecipes(merged);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Error searching external recipes");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  if (loading) return <p style={{ padding: "20px" }}>Loading recipes...</p>;
+  if (error) return <p style={{ padding: "20px", color: "red" }}>{error}</p>;
 
   return (
     <div style={{ padding: "20px" }}>
       <h1>My Recipes</h1>
 
-      {/* Button to create a new recipe */}
       <div style={{ marginBottom: "20px" }}>
-        <Link href="/recipes/new">
-          <button>Create New Recipe</button>
-        </Link>
+        <button onClick={() => router.push("/recipes/new")}>
+          Create New Recipe
+        </button>
       </div>
 
-      {/* Show message if no recipes exist */}
+      <form onSubmit={handleSearch} style={{ marginBottom: "20px" }}>
+        <input
+          type="text"
+          placeholder="Search external recipes..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ padding: "8px", width: "300px" }}
+        />
+        <button
+          type="submit"
+          disabled={searching}
+          style={{ marginLeft: "5px" }}
+        >
+          {searching ? "Searching..." : "Search"}
+        </button>
+      </form>
+
       {recipes.length === 0 ? (
         <p>You have no recipes yet. Add one to get started!</p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {recipes.map((recipe) => (
-            <li
-              key={recipe._id}
-              style={{
-                border: "1px solid #ccc",
-                padding: "10px",
-                marginBottom: "10px",
-                borderRadius: "4px",
-              }}
-            >
-              {/* Link to edit/view the recipe */}
-              <Link href={`/recipes/${recipe._id}`}>
-                <strong>{recipe.name}</strong>
-              </Link>
-              <p>{recipe.description}</p>
-              <p>
-                Ingredients:{" "}
-                {recipe.ingredients?.length
-                  ? recipe.ingredients.length
-                  : "No ingredients added"}
-              </p>
-            </li>
+            <RecipeCard
+              key={recipe._id || recipe.name}
+              recipe={recipe}
+              showActions={recipe.source === "user"}
+              onEdit={() => handleEdit(recipe._id!)}
+              onDelete={() => handleDelete(recipe._id!)}
+            />
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

@@ -1,34 +1,34 @@
 // src/components/RecipeCard.tsx
 "use client";
 
-// --- React import ---
 import React from "react";
 
-// --- Recipe type ---
-interface Ingredient {
+// --- Ingredient type ---
+export interface Ingredient {
+  ingredientId?: string; // optional, used for internal references
   name: string;
-  quantity: string;
+  quantity: number | string; // quantity can be numeric or string for display
   unit: string;
-  ingredientId?: string;
 }
 
+// --- Recipe type ---
 export interface Recipe {
   _id?: string;
   name: string;
   description: string;
-  cuisine: string;
+  cuisine?: string;
   ingredients: Ingredient[];
-  instructions: string[];
-  source: "user" | "spoonacular"; // internal or external
+  instructions?: string[];
+  source: "user" | "spoonacular"; // internal or external recipe
   externalId?: string; // only for external recipes
 }
 
-// --- Props for the component ---
-interface RecipeCardProps {
+// --- Props for RecipeCard ---
+export interface RecipeCardProps {
   recipe: Recipe;
-  showActions?: boolean; // whether edit/delete buttons are shown
-  onEdit?: () => void;
-  onDelete?: () => void;
+  showActions?: boolean; // whether to display edit/delete buttons
+  onEdit?: () => void; // edit callback
+  onDelete?: () => void; // delete callback
 }
 
 export default function RecipeCard({
@@ -49,7 +49,7 @@ export default function RecipeCard({
       {/* Recipe title */}
       <h2>{recipe.name}</h2>
 
-      {/* Cuisine type */}
+      {/* Cuisine */}
       {recipe.cuisine && (
         <p>
           <strong>Cuisine:</strong> {recipe.cuisine}
@@ -59,8 +59,8 @@ export default function RecipeCard({
       {/* Description */}
       {recipe.description && <p>{recipe.description}</p>}
 
-      {/* Ingredients preview (first 3 for brevity) */}
-      {recipe.ingredients?.length > 0 && (
+      {/* Ingredients preview (first 3) */}
+      {recipe.ingredients.length > 0 && (
         <p>
           <strong>Ingredients:</strong>{" "}
           {recipe.ingredients
@@ -71,7 +71,7 @@ export default function RecipeCard({
         </p>
       )}
 
-      {/* Actions (edit/delete) */}
+      {/* Optional Actions (Edit/Delete buttons) */}
       {showActions && (
         <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
           {onEdit && (

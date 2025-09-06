@@ -1,98 +1,108 @@
-// src/components/RecipeForm.tsx
+// path: src/components/RecipeForm.tsx
 "use client";
 
-// --- React imports ---
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import styles from "./RecipeForm.module.css";
 
-// --- Ingredient input type ---
-export interface IngredientInput {
-  ingredientId: string; // links to an ingredient in your DB
-  name?: string; // optional, for display purposes
-  quantity: number; // amount of ingredient
-  unit: string; // measurement unit
+interface Ingredient {
+  ingredientId: string; // required for internal recipes
+  name: string;
+  quantity: number;
+  unit: string;
 }
 
-// --- Props for RecipeForm ---
-export interface RecipeFormProps {
-  initialData?: {
-    _id?: string;
-    name?: string;
-    description?: string;
-    ingredients?: IngredientInput[];
-    instructions?: string[];
-    cuisine?: string;
-  };
-  onSave?: () => void; // callback after successfully saving
+export interface Recipe {
+  _id?: string; // present for internal recipes being edited
+  name: string;
+  description: string;
+  cuisine: string;
+  ingredients: Ingredient[];
+  instructions: string[];
+  source: "user" | "spoonacular";
 }
 
-// --- RecipeForm component ---
+// Props for the RecipeForm
+interface RecipeFormProps {
+  initialData: Recipe;
+  onSave: () => void; // callback to refresh list or close form
+}
+
 export default function RecipeForm({ initialData, onSave }: RecipeFormProps) {
-  const { token } = useAuth(); // JWT token from context
-
-  // --- Local state ---
-  const [name, setName] = useState(initialData?.name || "");
-  const [description, setDescription] = useState(
-    initialData?.description || ""
-  );
-  const [cuisine, setCuisine] = useState(initialData?.cuisine || "");
-  const [ingredients, setIngredients] = useState<IngredientInput[]>(
-    initialData?.ingredients || []
-  );
-  const [instructions, setInstructions] = useState<string[]>(
-    initialData?.instructions || []
-  );
+  const [recipe, setRecipe] = useState<Recipe>({ ...initialData });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  // --- Ingredient handlers ---
-  const handleAddIngredient = () => {
-    setIngredients([
-      ...ingredients,
-      { ingredientId: "", quantity: 1, unit: "" },
-    ]);
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  // ------------------- Handlers -------------------
+  const handleChange = (field: keyof Recipe, value: any) => {
+    setRecipe((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleIngredientChange = (index: number, field: string, value: any) => {
-    const updated = [...ingredients];
-    (updated[index] as any)[field] = value;
-    setIngredients(updated);
+  const handleIngredientChange = (
+    index: number,
+    field: keyof Ingredient,
+    value: any
+  ) => {
+    const updatedIngredients = [...recipe.ingredients];
+    updatedIngredients[index] = {
+      ...updatedIngredients[index],
+      [field]: value,
+    };
+    setRecipe((prev) => ({ ...prev, ingredients: updatedIngredients }));
   };
 
-  const handleRemoveIngredient = (index: number) => {
-    const updated = [...ingredients];
-    updated.splice(index, 1);
-    setIngredients(updated);
+  const addIngredient = () => {
+    setRecipe((prev) => ({
+      ...prev,
+      ingredients: [
+        ...prev.ingredients,
+        { ingredientId: "", name: "", quantity: 1, unit: "" },
+      ],
+    }));
   };
 
-  // --- Instruction handlers ---
-  const handleAddInstruction = () => setInstructions([...instructions, ""]);
+  const removeIngredient = (index: number) => {
+    const updatedIngredients = [...recipe.ingredients];
+    updatedIngredients.splice(index, 1);
+    setRecipe((prev) => ({ ...prev, ingredients: updatedIngredients }));
+  };
 
   const handleInstructionChange = (index: number, value: string) => {
-    const updated = [...instructions];
-    updated[index] = value;
-    setInstructions(updated);
+    const updatedInstructions = [...recipe.instructions];
+    updatedInstructions[index] = value;
+    setRecipe((prev) => ({ ...prev, instructions: updatedInstructions }));
   };
 
-  const handleRemoveInstruction = (index: number) => {
-    const updated = [...instructions];
-    updated.splice(index, 1);
-    setInstructions(updated);
+  const addInstruction = () => {
+    setRecipe((prev) => ({
+      ...prev,
+      instructions: [...prev.instructions, ""],
+    }));
   };
 
-  // --- Submit handler (create or update) ---
-  const handleSubmit = async () => {
+  const removeInstruction = (index: number) => {
+    const updatedInstructions = [...recipe.instructions];
+    updatedInstructions.splice(index, 1);
+    setRecipe((prev) => ({ ...prev, instructions: updatedInstructions }));
+  };
+
+  // ------------------- Submit -------------------
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) {
+      setError("No authentication token found.");
+      return;
+    }
+
     setLoading(true);
-    setError(null);
+    setError("");
 
     try {
-      // Determine URL and HTTP method
-      const url = initialData?._id
-        ? `/api/recipes/${initialData._id}`
-        : "/api/recipes";
-      const method = initialData?._id ? "PUT" : "POST";
+      const method = recipe._id ? "PUT" : "POST";
+      const url = recipe._id ? `/api/recipes/${recipe._id}` : "/api/recipes";
 
-      // Send request
       const res = await fetch(url, {
         method,
         headers: {
@@ -100,104 +110,84 @@ export default function RecipeForm({ initialData, onSave }: RecipeFormProps) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          name,
-          description,
-          cuisine,
-          ingredients,
-          instructions,
+          name: recipe.name,
+          description: recipe.description,
+          cuisine: recipe.cuisine,
+          ingredients: recipe.ingredients.map((ing) => ({
+            ...ing,
+            quantity: Number(ing.quantity),
+          })),
+          instructions: recipe.instructions,
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to save recipe");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to save recipe");
 
-      // Callback after successful save
-      if (onSave) onSave();
+      alert(`Recipe ${recipe._id ? "updated" : "created"} successfully`);
+      onSave(); // close form and refresh list
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Error saving recipe");
+      setError(err.message || "Failed to save recipe");
     } finally {
       setLoading(false);
     }
   };
 
+  // ------------------- Render -------------------
   return (
-    <div>
-      {/* Error message */}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <form className={styles.form} onSubmit={handleSubmit}>
+      <h2>{recipe._id ? "Edit Recipe" : "New Recipe"}</h2>
+      {error && <p className={styles.error}>{error}</p>}
 
-      {/* Recipe Name */}
-      <div style={{ marginBottom: "10px" }}>
-        <label>
-          Name:
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </label>
-      </div>
+      <label>
+        Name:
+        <input
+          type="text"
+          value={recipe.name}
+          onChange={(e) => handleChange("name", e.target.value)}
+          required
+        />
+      </label>
 
-      {/* Description */}
-      <div style={{ marginBottom: "10px" }}>
-        <label>
-          Description:
-          <textarea
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </label>
-      </div>
+      <label>
+        Description:
+        <textarea
+          value={recipe.description}
+          onChange={(e) => handleChange("description", e.target.value)}
+        />
+      </label>
 
-      {/* Cuisine */}
-      <div style={{ marginBottom: "10px" }}>
-        <label>
-          Cuisine:
-          <input
-            type="text"
-            value={cuisine}
-            onChange={(e) => setCuisine(e.target.value)}
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </label>
-      </div>
+      <label>
+        Cuisine:
+        <input
+          type="text"
+          value={recipe.cuisine}
+          onChange={(e) => handleChange("cuisine", e.target.value)}
+        />
+      </label>
 
       {/* Ingredients */}
-      <h2>Ingredients</h2>
-      {ingredients.map((ing, idx) => (
-        <div
-          key={idx}
-          style={{
-            display: "flex",
-            gap: "10px",
-            marginBottom: "5px",
-            alignItems: "center",
-          }}
-        >
+      <h3>Ingredients</h3>
+      {recipe.ingredients.map((ing, idx) => (
+        <div key={idx} className={styles.ingredientRow}>
           <input
             type="text"
-            placeholder="Ingredient ID"
-            value={ing.ingredientId}
+            placeholder="Name"
+            value={ing.name}
             onChange={(e) =>
-              handleIngredientChange(idx, "ingredientId", e.target.value)
+              handleIngredientChange(idx, "name", e.target.value)
             }
-            style={{ flex: 1 }}
+            required
           />
           <input
             type="number"
-            min="1"
-            placeholder="Qty"
+            placeholder="Quantity"
             value={ing.quantity}
             onChange={(e) =>
-              handleIngredientChange(
-                idx,
-                "quantity",
-                parseFloat(e.target.value)
-              )
+              handleIngredientChange(idx, "quantity", e.target.value)
             }
-            style={{ width: "80px" }}
+            required
           />
           <input
             type="text"
@@ -206,58 +196,37 @@ export default function RecipeForm({ initialData, onSave }: RecipeFormProps) {
             onChange={(e) =>
               handleIngredientChange(idx, "unit", e.target.value)
             }
-            style={{ width: "80px" }}
           />
-          <button type="button" onClick={() => handleRemoveIngredient(idx)}>
+          <button type="button" onClick={() => removeIngredient(idx)}>
             Remove
           </button>
         </div>
       ))}
-      <button
-        type="button"
-        onClick={handleAddIngredient}
-        style={{ marginTop: "5px" }}
-      >
-        + Add Ingredient
+      <button type="button" onClick={addIngredient}>
+        Add Ingredient
       </button>
 
       {/* Instructions */}
-      <h2>Instructions</h2>
-      {instructions.map((inst, idx) => (
-        <div
-          key={idx}
-          style={{ marginBottom: "5px", display: "flex", gap: "10px" }}
-        >
+      <h3>Instructions</h3>
+      {recipe.instructions.map((step, idx) => (
+        <div key={idx} className={styles.instructionRow}>
           <textarea
-            rows={2}
-            placeholder={`Step ${idx + 1}`}
-            value={inst}
+            value={step}
             onChange={(e) => handleInstructionChange(idx, e.target.value)}
-            style={{ flex: 1 }}
+            required
           />
-          <button type="button" onClick={() => handleRemoveInstruction(idx)}>
+          <button type="button" onClick={() => removeInstruction(idx)}>
             Remove
           </button>
         </div>
       ))}
-      <button type="button" onClick={handleAddInstruction}>
-        + Add Instruction
+      <button type="button" onClick={addInstruction}>
+        Add Step
       </button>
 
-      {/* Submit button */}
-      <div style={{ marginTop: "20px" }}>
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          style={{ padding: "10px 20px" }}
-        >
-          {loading
-            ? "Saving..."
-            : initialData?._id
-            ? "Save Changes"
-            : "Create Recipe"}
-        </button>
-      </div>
-    </div>
+      <button type="submit" disabled={loading}>
+        {loading ? "Saving..." : recipe._id ? "Update Recipe" : "Create Recipe"}
+      </button>
+    </form>
   );
 }

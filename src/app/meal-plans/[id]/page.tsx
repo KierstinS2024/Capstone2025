@@ -1,264 +1,175 @@
-// path: src/app/meal-plans/[id]/page.tsx
-/**
- * EditMealPlanPage
- * -----------------
- * Allows the user to edit an existing meal plan.
- * Features:
- *  - Edit week start date and notes
- *  - Add, edit, remove entries
- *  - Validations:
- *      - No empty recipeId
- *      - No duplicate dayOfWeek + mealType
- *      - Servings >= 1
- */
-
+// path: src/app/dashboard/meal-plans/[id]/MealPlanDetailPage.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import NavBar from "@/components/NavBar";
+/**
+ * MealPlanDetailPage
+ * -----------------
+ * - Fetches a meal plan and recipes
+ * - Displays entries in a kanban-style board
+ * - Supports adding, editing, deleting entries
+ * - Fully type-safe with MealPlanEntryWithId
+ */
 
-interface MealEntry {
-  dayOfWeek: string;
-  mealType: string;
-  recipeId: string;
-  servings: number;
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  useMealPlanContext,
+  MealPlan,
+  MealPlanEntry,
+} from "@/context/MealPlanContext";
+
+import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
+import DayColumn from "@/components/DayColumn";
+import AddEntryForm from "@/components/AddEntryForm";
+import SortableEntry from "@/components/SortableEntry";
+
+// --- Types ---
+interface ObjectId {
+  $oid: string;
 }
 
-export default function EditMealPlanPage() {
-  const params = useParams();
+export interface MealPlanEntryWithId extends MealPlanEntry {
+  _id: string;
+  recipeId: ObjectId;
+}
+
+// --- Component ---
+export default function MealPlanDetailPage() {
+  const { mealPlans, setMealPlans } = useMealPlanContext();
   const router = useRouter();
+  const params = useParams();
+  const planId = typeof params?.id === "string" ? params.id : "";
 
-  const [weekStartDate, setWeekStartDate] = useState("");
-  const [notes, setNotes] = useState("");
-  const [entries, setEntries] = useState<MealEntry[]>([]);
-  const [recipes, setRecipes] = useState<any[]>([]);
+  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [entriesWithRecipes, setEntriesWithRecipes] = useState<
+    MealPlanEntryWithId[]
+  >([]);
+  const [availableRecipes, setAvailableRecipes] = useState<
+    { _id: string; name: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  // Load recipes and existing meal plan
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
   useEffect(() => {
-    const fetchData = async () => {
+    if (!token) router.push("/auth/login");
+  }, [token, router]);
+
+  // --- Fetch meal plan & recipes ---
+  useEffect(() => {
+    if (!planId || !token) return;
+
+    const fetchMealPlan = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const token = localStorage.getItem("token") || "";
-        const [recipesRes, planRes] = await Promise.all([
-          fetch("/api/recipes", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`/api/meal-plans/${params.id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+        // Fetch meal plan
+        const res = await fetch(`/api/meal-plans/${planId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to fetch meal plan");
+        const data = await res.json();
 
-        if (!recipesRes.ok) throw new Error("Failed to load recipes");
-        if (!planRes.ok) throw new Error("Failed to load meal plan");
+        setMealPlan(data.mealPlan);
 
+        // Map entries to MealPlanEntryWithId
+        const mappedEntries: MealPlanEntryWithId[] = (
+          data.mealPlan.entries || []
+        ).map((entry: any) => ({
+          ...entry,
+          _id: entry._id,
+          recipeId:
+            typeof entry.recipeId === "string"
+              ? { $oid: entry.recipeId }
+              : entry.recipeId,
+        }));
+
+        setEntriesWithRecipes(mappedEntries);
+
+        // Fetch recipes for dropdown
+        const recipesRes = await fetch("/api/recipes", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const recipesData = await recipesRes.json();
-        setRecipes(recipesData.data || []);
-
-        const planData = await planRes.json();
-        setWeekStartDate(planData.data.weekStartDate.split("T")[0]);
-        setNotes(planData.data.notes || "");
-        setEntries(planData.data.entries || []);
+        setAvailableRecipes(recipesData.recipes || []);
       } catch (err: any) {
-        console.error(err);
-        setError(err.message || "Error loading data");
+        setError(err.message || "Error loading meal plan");
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [params.id]);
 
-  const handleEntryChange = (
-    index: number,
-    field: keyof MealEntry,
-    value: string | number
-  ) => {
-    const updated = [...entries];
-    (updated[index] as any)[field] = value;
-    setEntries(updated);
-  };
+    fetchMealPlan();
+  }, [planId, token]);
 
-  const handleAddEntry = () => {
-    setEntries([
-      ...entries,
-      { dayOfWeek: "Monday", mealType: "Breakfast", recipeId: "", servings: 1 },
-    ]);
-  };
+  // --- Drag and Drop handler ---
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
 
-  const handleRemoveEntry = (index: number) => {
-    const updated = [...entries];
-    updated.splice(index, 1);
-    setEntries(updated);
-  };
-
-  // Validate entries before submitting
-  const validateEntries = (): string | null => {
-    const seen = new Set<string>();
-    for (const entry of entries) {
-      if (!entry.recipeId) return "All meals must have a recipe selected.";
-      if (entry.servings < 1) return "Servings must be at least 1.";
-      const key = `${entry.dayOfWeek}-${entry.mealType}`;
-      if (seen.has(key))
-        return `Duplicate meal for ${entry.dayOfWeek} ${entry.mealType}.`;
-      seen.add(key);
-    }
-    return null;
-  };
-
-  const handleSubmit = async () => {
-    const validationError = validateEntries();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setSaving(true);
-    setError("");
-
-    try {
-      const res = await fetch(`/api/meal-plans/${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ weekStartDate, notes, entries }),
-      });
-
-      if (!res.ok) throw new Error("Failed to save meal plan");
-      router.push("/meal-plans");
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Error saving meal plan");
-    } finally {
-      setSaving(false);
+    const oldIndex = entriesWithRecipes.findIndex((e) => e._id === active.id);
+    const newIndex = entriesWithRecipes.findIndex((e) => e._id === over.id);
+    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+      setEntriesWithRecipes((items) => arrayMove(items, oldIndex, newIndex));
     }
   };
 
-  if (loading) return <p style={{ padding: "20px" }}>Loading meal plan...</p>;
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
+  if (!mealPlan) return <p>Meal plan not found.</p>;
+
+  // --- Split entries by day ---
+  const daysOfWeek = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+  const entriesByDay: Record<string, MealPlanEntryWithId[]> = {};
+  daysOfWeek.forEach((day) => {
+    entriesByDay[day] = entriesWithRecipes.filter((e) => e.dayOfWeek === day);
+  });
 
   return (
-    <ProtectedRoute>
-      <NavBar />
-      <div style={{ padding: "20px" }}>
-        <h1>Edit Meal Plan</h1>
-        {error && <p style={{ color: "red" }}>{error}</p>}
+    <div>
+      <h1>
+        Meal Plan - Week of {new Date(mealPlan.weekStartDate).toDateString()}
+      </h1>
+      <p>Notes: {mealPlan.notes || "None"}</p>
 
-        <label>
-          Week Start Date:
-          <input
-            type="date"
-            value={weekStartDate}
-            onChange={(e) => setWeekStartDate(e.target.value)}
-          />
-        </label>
-
-        <label>
-          Notes:
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            cols={50}
-            placeholder="Optional notes for the week"
-          />
-        </label>
-
-        <h2>Entries</h2>
-        {entries.map((entry, idx) => (
-          <div
-            key={idx}
-            style={{
-              border: "1px solid #ccc",
-              padding: "10px",
-              marginBottom: "10px",
-            }}
-          >
-            {/* Day */}
-            <select
-              value={entry.dayOfWeek}
-              onChange={(e) =>
-                handleEntryChange(idx, "dayOfWeek", e.target.value)
-              }
+      <DndContext onDragEnd={handleDragEnd}>
+        <div style={{ display: "flex", gap: "1rem" }}>
+          {daysOfWeek.map((day) => (
+            <DayColumn
+              key={day}
+              day={day}
+              entries={entriesByDay[day]}
+              availableRecipes={availableRecipes}
             >
-              {[
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday",
-              ].map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-
-            {/* Meal Type */}
-            <select
-              value={entry.mealType}
-              onChange={(e) =>
-                handleEntryChange(idx, "mealType", e.target.value)
-              }
-            >
-              {["Breakfast", "Lunch", "Dinner", "Snack"].map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-
-            {/* Recipe */}
-            <select
-              value={entry.recipeId}
-              onChange={(e) =>
-                handleEntryChange(idx, "recipeId", e.target.value)
-              }
-            >
-              <option value="">--Pick Recipe--</option>
-              {recipes.map((r) => (
-                <option key={r._id} value={r._id}>
-                  {r.title}
-                </option>
-              ))}
-            </select>
-
-            {/* Servings */}
-            <input
-              type="number"
-              min={1}
-              value={entry.servings}
-              onChange={(e) =>
-                handleEntryChange(idx, "servings", parseInt(e.target.value))
-              }
-            />
-
-            <button
-              type="button"
-              onClick={() => handleRemoveEntry(idx)}
-              style={{ marginLeft: "10px" }}
-            >
-              Remove
-            </button>
-          </div>
-        ))}
-
-        <button type="button" onClick={handleAddEntry}>
-          + Add Entry
-        </button>
-
-        <div style={{ marginTop: "20px" }}>
-          <button type="button" onClick={handleSubmit} disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
+              <SortableContext
+                items={entriesByDay[day].map((e) => e._id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {entriesByDay[day].map((entry) => (
+                  <SortableEntry key={entry._id} entry={entry} />
+                ))}
+              </SortableContext>
+              <AddEntryForm day={day} availableRecipes={availableRecipes} />
+            </DayColumn>
+          ))}
         </div>
-      </div>
-    </ProtectedRoute>
+      </DndContext>
+    </div>
   );
 }

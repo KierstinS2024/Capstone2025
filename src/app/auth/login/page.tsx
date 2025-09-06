@@ -1,93 +1,94 @@
-// Path: src/app/auth/login/page.tsx
+// path: src/app/auth/login/page.tsx
+/**
+ * LoginPage
+ * ----------
+ * Renders the login form for existing users
+ * - Uses shared AuthForm styles
+ * - ThemeToggle floats in top-right
+ * - Redirects logged-in users to dashboard
+ * - Fully type-safe with intuitive state naming
+ */
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
-import styles from "./LoginPage.module.css";
+import styles from "../AuthForm.module.css"; // relative import to shared AuthForm CSS
 
-/**
- * LoginPage component
- * ------------------
- * Handles user login with email and password.
- * - Emails are normalized to lowercase to match signup.
- * - Validates required fields and email format on client-side.
- */
 export default function LoginPage() {
-  const { login } = useAuth();
   const router = useRouter();
+  const { login, user } = useAuth();
 
-  const [emailInput, setEmailInput] = useState("");
-  const [passwordInput, setPasswordInput] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  // --- Local state ---
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const validateForm = () => {
-    if (!emailInput || !passwordInput) {
-      setErrorMessage("Email and password are required.");
-      return false;
+  // --- Redirect logged-in users to dashboard ---
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard/recipes");
     }
+  }, [user, router]);
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailInput)) {
-      setErrorMessage("Invalid email format.");
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleLogin = async (event: React.FormEvent) => {
+  // --- Handle form submission ---
+  const handleLoginSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setErrorMessage("");
+    setErrorMessage(null);
+    setIsLoading(true);
 
-    if (!validateForm()) return;
-
-    setLoading(true);
     try {
-      await login(emailInput.toLowerCase(), passwordInput);
-      router.push("/recipes"); // Navigate to recipes after login
+      await login(email, password); // login function from AuthContext
+      router.push("/dashboard/recipes"); // redirect after successful login
     } catch (error: any) {
-      setErrorMessage(error.message || "Login failed");
+      setErrorMessage(error?.message || "Failed to login. Please try again.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className={styles.container}>
+      {/* Floating theme toggle in top-right */}
       <ThemeToggle />
 
-      <form className={styles.form} onSubmit={handleLogin}>
-        <h2>Login</h2>
+      <form className={styles.form} onSubmit={handleLoginSubmit}>
+        <h1 className={styles.title}>Login</h1>
 
-        {errorMessage && <p className={styles.errorMsg}>{errorMessage}</p>}
+        {/* Display error message if login fails */}
+        {errorMessage && <p className={styles.error}>{errorMessage}</p>}
 
+        {/* Email input */}
         <input
           type="email"
           placeholder="Email"
-          value={emailInput}
-          onChange={(e) => setEmailInput(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={styles.input}
           required
-          className={styles.inputField}
         />
 
+        {/* Password input */}
         <input
           type="password"
           placeholder="Password"
-          value={passwordInput}
-          onChange={(e) => setPasswordInput(e.target.value)}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className={styles.input}
           required
-          className={styles.inputField}
         />
 
-        <button type="submit" className={styles.btnPrimary} disabled={loading}>
-          {loading ? "Logging in..." : "Log In"}
+        {/* Submit button */}
+        <button type="submit" className={styles.button} disabled={isLoading}>
+          {isLoading ? "Logging in..." : "Login"}
         </button>
 
-        <p className={styles.authLink}>
-          Don’t have an account? <a href="/auth/signup">Sign up here</a>
+        {/* Link to signup page */}
+        <p className={styles.link}>
+          Don’t have an account? <a href="/auth/signup">Sign up</a>
         </p>
       </form>
     </div>

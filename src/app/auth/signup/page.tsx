@@ -1,115 +1,116 @@
-// Path: src/app/auth/signup/page.tsx
+// path: src/app/auth/signup/page.tsx
+/**
+ * SignupPage
+ * ----------
+ * Renders the signup form for new users
+ * - Uses shared AuthForm styles
+ * - ThemeToggle floats in top-right
+ * - Redirects logged-in users to dashboard
+ * - Fully type-safe with intuitive state naming
+ */
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
-import styles from "./SignupPage.module.css";
+import styles from "../AuthForm.module.css"; // relative import to shared AuthForm CSS
 
-/**
- * SignupPage component
- * --------------------
- * Handles user registration with email and password.
- * - Emails are normalized to lowercase to avoid case-sensitivity issues.
- * - Validates email format and password length on client-side.
- * - Requires "Confirm Password" to match the password.
- */
 export default function SignupPage() {
-  const { signup } = useAuth();
   const router = useRouter();
+  const { signup, user } = useAuth();
 
-  const [emailInput, setEmailInput] = useState("");
-  const [passwordInput, setPasswordInput] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  // --- Local state ---
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const validateForm = () => {
-    if (!emailInput || !passwordInput || !confirmPassword) {
-      setErrorMessage("All fields are required.");
-      return false;
+  // --- Redirect logged-in users to dashboard ---
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard/recipes");
     }
+  }, [user, router]);
 
-    // Basic email regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailInput)) {
-      setErrorMessage("Invalid email format.");
-      return false;
-    }
-
-    if (passwordInput.length < 6) {
-      setErrorMessage("Password must be at least 6 characters.");
-      return false;
-    }
-
-    if (passwordInput !== confirmPassword) {
-      setErrorMessage("Passwords do not match.");
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSignup = async (event: React.FormEvent) => {
+  // --- Handle form submission ---
+  const handleSignupSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
-    setErrorMessage("");
+    setErrorMessage(null);
 
-    if (!validateForm()) return;
+    // Basic client-side validation
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
 
-    setLoading(true);
+    setIsLoading(true);
+
     try {
-      await signup(emailInput.toLowerCase(), passwordInput);
-      router.push("/recipes"); // Navigate to recipes after signup
+      await signup(email, password); // signup function from AuthContext
+      router.push("/dashboard/recipes"); // redirect after successful signup
     } catch (error: any) {
-      setErrorMessage(error.message || "Signup failed");
+      setErrorMessage(
+        error?.message || "Failed to create account. Please try again."
+      );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className={styles.container}>
+      {/* Floating theme toggle in top-right */}
       <ThemeToggle />
 
-      <form onSubmit={handleSignup} className={styles.form}>
-        <h1>Create Account</h1>
+      <form className={styles.form} onSubmit={handleSignupSubmit}>
+        <h1 className={styles.title}>Sign Up</h1>
 
-        {errorMessage && <p className={styles.errorMsg}>{errorMessage}</p>}
+        {/* Display error message if signup fails */}
+        {errorMessage && <p className={styles.error}>{errorMessage}</p>}
 
+        {/* Email input */}
         <input
           type="email"
           placeholder="Email"
-          value={emailInput}
-          onChange={(e) => setEmailInput(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={styles.input}
           required
-          className={styles.inputField}
         />
 
+        {/* Password input */}
         <input
           type="password"
           placeholder="Password"
-          value={passwordInput}
-          onChange={(e) => setPasswordInput(e.target.value)}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className={styles.input}
           required
-          className={styles.inputField}
         />
 
+        {/* Confirm Password input */}
         <input
           type="password"
           placeholder="Confirm Password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
+          className={styles.input}
           required
-          className={styles.inputField}
         />
 
-        <button type="submit" className={styles.btnPrimary} disabled={loading}>
-          {loading ? "Creating Account..." : "Sign Up"}
+        {/* Submit button */}
+        <button type="submit" className={styles.button} disabled={isLoading}>
+          {isLoading ? "Signing up..." : "Sign Up"}
         </button>
 
-        <p className={styles.authLink}>
-          Already have an account? <a href="/auth/login">Log in here</a>
+        {/* Link to login page */}
+        <p className={styles.link}>
+          Already have an account? <a href="/auth/login">Login</a>
         </p>
       </form>
     </div>
