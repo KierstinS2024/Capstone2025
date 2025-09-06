@@ -1,13 +1,5 @@
+// components/ProtectedRoute.tsx
 "use client";
-
-/**
- * ProtectedRoute
- * ---------------
- * Wraps around children and ensures authentication.
- * - Allows public pages: "/", "/auth/login", "/auth/signup"
- * - Redirects to login if user is missing
- * - Prevents flicker with checkingAuth state
- */
 
 import { ReactNode, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -32,13 +24,13 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
 
     if (!user) {
-      router.push("/auth/login");
+      router.replace("/auth/login"); // use replace to avoid back-navigation issues
     } else {
       setCheckingAuth(false);
     }
   }, [user, pathname, router]);
 
-  if (checkingAuth) return null;
+  if (checkingAuth) return null; // could render a spinner instead
 
   return <>{children}</>;
 }

@@ -1,0 +1,15 @@
+/* src/components/RecipeForm.module.css */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.input {
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.button {
+  padding: 6px 12px;
+  cursor: pointer;
+}

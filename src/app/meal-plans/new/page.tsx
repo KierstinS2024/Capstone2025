@@ -4,48 +4,66 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import MealPlanEntryForm, {
-  MealPlanEntryFormProps,
+  MealPlanEntry,
+  RecipeLite,
 } from "@/components/MealPlanEntryForm";
-
-// --- Type for new entries (no _id yet) ---
-interface NewMealEntry {
-  dayOfWeek: string;
-  mealType: string;
-  recipeId: string;
-  servings: number;
-}
 
 export default function NewMealPlanPage() {
   const router = useRouter();
-  const [entries, setEntries] = useState<NewMealEntry[]>([
-    { dayOfWeek: "Monday", mealType: "Breakfast", recipeId: "", servings: 1 },
-  ]);
+  const [entries, setEntries] = useState<MealPlanEntry[]>([]);
   const [notes, setNotes] = useState("");
+  const [recipes, setRecipes] = useState<RecipeLite[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const handleEntryChange = (
-    index: number,
-    updatedEntry: Partial<NewMealEntry>
-  ) => {
-    setEntries((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], ...updatedEntry };
-      return copy;
-    });
-  };
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
 
+  // Fetch all recipes for dropdown
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      try {
+        const res = await fetch("/api/recipes", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load recipes");
+        const data = await res.json();
+        setRecipes(data.data || []);
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message || "Error fetching recipes");
+      }
+    };
+    if (token) fetchRecipes();
+  }, [token]);
+
+  // Add new empty entry
   const handleAddEntry = () => {
     setEntries((prev) => [
       ...prev,
-      { dayOfWeek: "Monday", mealType: "Breakfast", recipeId: "", servings: 1 },
+      {
+        _id: Date.now().toString(),
+        dayOfWeek: "Monday",
+        mealType: "Breakfast",
+        recipeId: "",
+        servings: 1,
+      },
     ]);
   };
 
-  const handleRemoveEntry = (index: number) => {
-    setEntries((prev) => prev.filter((_, i) => i !== index));
+  // Update entry (called by MealPlanEntryForm)
+  const handleUpdateEntry = (updated: MealPlanEntry) => {
+    setEntries((prev) =>
+      prev.map((e) => (e._id === updated._id ? updated : e))
+    );
   };
 
+  // Remove entry
+  const handleRemoveEntry = (id: string) => {
+    setEntries((prev) => prev.filter((e) => e._id !== id));
+  };
+
+  // Validate entries before submit
   const validateEntries = (): string | null => {
     const seen = new Set<string>();
     for (const entry of entries) {
@@ -59,7 +77,8 @@ export default function NewMealPlanPage() {
     return null;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     const validationError = validateEntries();
     if (validationError) {
       setError(validationError);
@@ -74,7 +93,7 @@ export default function NewMealPlanPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ notes, entries }),
       });
@@ -88,7 +107,15 @@ export default function NewMealPlanPage() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        padding: "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}
+    >
       <h1>Create Meal Plan</h1>
       {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -98,33 +125,43 @@ export default function NewMealPlanPage() {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
-          cols={50}
           placeholder="Optional notes for the week"
+          style={{ width: "100%" }}
         />
       </label>
 
       <h2>Entries</h2>
-      {entries.map((entry, idx) => (
+      {entries.map((entry) => (
         <div
-          key={idx}
+          key={entry._id}
           style={{
             border: "1px solid #ccc",
             padding: "10px",
-            marginBottom: "10px",
+            borderRadius: "6px",
+            position: "relative",
           }}
         >
           <MealPlanEntryForm
-            mealPlanId="" // not needed for new meal plan
-            token={localStorage.getItem("token") || ""}
-            initialData={undefined} // new entry, no _id
-            onSuccess={(savedEntry) => handleEntryChange(idx, savedEntry)}
-            onCancel={() => handleRemoveEntry(idx)}
+            token={token}
+            initialData={entry}
+            mealPlanId="new"
+            onSuccess={handleUpdateEntry}
+            onCancel={() => handleRemoveEntry(entry._id)}
           />
-
           <button
             type="button"
-            onClick={() => handleRemoveEntry(idx)}
-            style={{ marginTop: "10px" }}
+            onClick={() => handleRemoveEntry(entry._id)}
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              background: "red",
+              color: "white",
+              border: "none",
+              padding: "2px 6px",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
           >
             Remove
           </button>
@@ -134,16 +171,18 @@ export default function NewMealPlanPage() {
       <button
         type="button"
         onClick={handleAddEntry}
-        style={{ marginTop: "10px" }}
+        style={{ marginTop: "8px" }}
       >
         + Add Another Meal
       </button>
 
-      <div style={{ marginTop: "20px" }}>
-        <button type="button" onClick={handleSubmit} disabled={saving}>
-          {saving ? "Saving..." : "Save Meal Plan"}
-        </button>
-      </div>
-    </div>
+      <button
+        type="submit"
+        disabled={saving}
+        style={{ marginTop: "20px", padding: "8px 16px" }}
+      >
+        {saving ? "Saving..." : "Save Meal Plan"}
+      </button>
+    </form>
   );
 }

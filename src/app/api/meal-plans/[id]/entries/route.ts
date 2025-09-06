@@ -1,4 +1,4 @@
-// src/app/api/meal-plans/[id]/entries/route.ts
+//src/app/api/meal-plans/[id]/entries/route.ts
 /**
  * Meal Plan Entries API
  * Add a new entry to a specific meal plan
@@ -20,12 +20,16 @@ function getToken(req: NextRequest) {
 }
 
 // --- POST add a new entry ---
-export async function POST(req: NextRequest, context: { params: { id: string } }) {
+export async function POST(
+  req: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
 
     const token = getToken(req);
-    if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!token)
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const userId = verifyToken(token);
     if (!userId)
@@ -46,16 +50,26 @@ export async function POST(req: NextRequest, context: { params: { id: string } }
       );
 
     const mealPlan = await MealPlan.findOne({ _id: mealPlanId, userId });
-    if (!mealPlan) return NextResponse.json({ message: "Meal plan not found" }, { status: 404 });
+    if (!mealPlan)
+      return NextResponse.json(
+        { message: "Meal plan not found" },
+        { status: 404 }
+      );
 
     const newEntry = { recipeId, dayOfWeek, mealType, servings };
     mealPlan.entries.push(newEntry);
     await mealPlan.save();
 
     const addedEntry = mealPlan.entries[mealPlan.entries.length - 1];
-    return NextResponse.json({ message: "Entry added successfully", entry: addedEntry }, { status: 201 });
+    return NextResponse.json(
+      { message: "Entry added successfully", entry: addedEntry },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("POST /meal-plans/:id/entries error:", err);
-    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

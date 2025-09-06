@@ -2,34 +2,20 @@
 /**
  * Meal Plan API
  * Handles creating and listing meal plans
- * Fully JWT-protected
+ * Fully JWT-protected using requireAuth
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import MealPlan from "@/models/MealPlan";
-import { verifyToken } from "@/lib/auth";
-
-// --- Extract JWT from Authorization header ---
-function getToken(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return null;
-  const [type, token] = authHeader.split(" ");
-  return type === "Bearer" ? token : null;
-}
+import { requireAuth } from "@/lib/authHelpers";
 
 // --- GET all meal plans for the logged-in user ---
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    const token = getToken(req);
-    if (!token)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-
-    const userId = verifyToken(token);
-    if (!userId)
-      return NextResponse.json({ message: "Invalid token" }, { status: 403 });
+    const userId = requireAuth(req); // secure auth check
 
     const mealPlans = await MealPlan.find({ userId }).sort({
       weekStartDate: -1,
@@ -50,13 +36,7 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    const token = getToken(req);
-    if (!token)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-
-    const userId = verifyToken(token);
-    if (!userId)
-      return NextResponse.json({ message: "Invalid token" }, { status: 403 });
+    const userId = requireAuth(req); // secure auth check
 
     let body: any;
     try {

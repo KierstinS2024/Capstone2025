@@ -1,15 +1,14 @@
 // path: src/app/api/recipes/[id]/favorite/route.ts
 /**
- * Add or remove a recipe from user's favorites
- * - POST: add to favorites
- * - DELETE: remove from favorites
+ * Recipe Favorite API
+ * - POST: add recipe to favorites
+ * - DELETE: remove recipe from favorites
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
-import Recipe from "@/models/Recipe";
 import Favorite from "@/models/Favorite";
-import { verifyToken } from "@/lib/auth";
+import { requireAuth } from "@/lib/authHelpers";
 import mongoose from "mongoose";
 
 export async function POST(
@@ -18,33 +17,24 @@ export async function POST(
 ) {
   try {
     await connectToDatabase();
-    const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id))
+    const userId = requireAuth(req);
+
+    const { id: recipeId } = params;
+    if (!mongoose.Types.ObjectId.isValid(recipeId)) {
       return NextResponse.json(
         { message: "Invalid recipe ID" },
         { status: 400 }
       );
+    }
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader)
-      return NextResponse.json(
-        { message: "Authorization required" },
-        { status: 401 }
-      );
-    const token = authHeader.replace("Bearer ", "");
-    const userId = verifyToken(token);
-    if (!userId)
-      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
-
-    // Check if already favorited
-    const existing = await Favorite.findOne({ userId, recipeId: id });
+    const existing = await Favorite.findOne({ userId, recipeId });
     if (existing)
       return NextResponse.json(
         { message: "Already in favorites" },
         { status: 400 }
       );
 
-    const favorite = await Favorite.create({ userId, recipeId: id });
+    const favorite = await Favorite.create({ userId, recipeId });
     return NextResponse.json({ data: favorite, message: "Added to favorites" });
   } catch (err) {
     console.error("Adding favorite error:", err);
@@ -61,25 +51,17 @@ export async function DELETE(
 ) {
   try {
     await connectToDatabase();
-    const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id))
+    const userId = requireAuth(req);
+
+    const { id: recipeId } = params;
+    if (!mongoose.Types.ObjectId.isValid(recipeId)) {
       return NextResponse.json(
         { message: "Invalid recipe ID" },
         { status: 400 }
       );
+    }
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader)
-      return NextResponse.json(
-        { message: "Authorization required" },
-        { status: 401 }
-      );
-    const token = authHeader.replace("Bearer ", "");
-    const userId = verifyToken(token);
-    if (!userId)
-      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
-
-    const deleted = await Favorite.findOneAndDelete({ userId, recipeId: id });
+    const deleted = await Favorite.findOneAndDelete({ userId, recipeId });
     if (!deleted)
       return NextResponse.json(
         { message: "Recipe not in favorites" },
@@ -95,3 +77,4 @@ export async function DELETE(
     );
   }
 }
+

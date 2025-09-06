@@ -1,8 +1,6 @@
-// path: src/app/api/auth/me/route.ts
 /**
  * GET /api/auth/me
- * Returns currently logged-in user info
- * JWT required in Authorization header
+ * Returns the currently authenticated user's info
  */
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
@@ -11,20 +9,40 @@ import { verifyToken } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
-
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return NextResponse.json({ message: "Authorization required" }, { status: 401 });
+    if (!authHeader) {
+      return NextResponse.json(
+        { message: "Authorization header missing" },
+        { status: 401 }
+      );
+    }
 
     const token = authHeader.replace("Bearer ", "");
-    const userId = verifyToken(token); // returns userId or throws error
+    const userId = verifyToken(token);
+    if (!userId) {
+      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+    }
 
-    const user = await User.findById(userId);
-    if (!user) return NextResponse.json({ message: "User not found" }, { status: 404 });
+    await connectToDatabase();
 
-    return NextResponse.json({ user: { id: user._id, email: user.email, preferences: user.preferences, avatarUrl: user.avatarUrl } });
+    const user = await User.findById(userId).select("-passwordHash");
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        preferences: user.preferences,
+        avatarUrl: user.avatarUrl,
+      },
+    });
   } catch (err) {
-    console.error("Get user error:", err);
-    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    console.error("GET /auth/me error:", err);
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

@@ -1,4 +1,4 @@
-/* src/app/api/auth/signup/route.ts/**
+/**
  * POST /api/auth/signup
  * Registers a new user and returns a JWT
  */
@@ -14,25 +14,51 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
 
-    if (!email || !password) return NextResponse.json({ message: "Email and password required" }, { status: 400 });
+    if (!email || !password) {
+      return NextResponse.json(
+        { message: "Email and password required" },
+        { status: 400 }
+      );
+    }
 
     await connectToDatabase();
 
     const existingUser = await User.findOne({ email });
-    if (existingUser) return NextResponse.json({ message: "User already exists" }, { status: 409 });
+    if (existingUser) {
+      return NextResponse.json(
+        { message: "User already exists" },
+        { status: 409 }
+      );
+    }
 
+    // Hash password
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    const newUser = await User.create({ email, passwordHash, preferences: {}, avatarUrl: "" });
+    // Create user
+    const newUser = await User.create({
+      email,
+      passwordHash,
+      preferences: {},
+      avatarUrl: "",
+    });
 
+    // Generate secure JWT
     const token = generateToken(newUser._id.toString());
 
     return NextResponse.json({
       token,
-      user: { id: newUser._id, email: newUser.email, preferences: newUser.preferences, avatarUrl: newUser.avatarUrl },
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+        preferences: newUser.preferences,
+        avatarUrl: newUser.avatarUrl,
+      },
     });
   } catch (err) {
     console.error("Registration error:", err);
-    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

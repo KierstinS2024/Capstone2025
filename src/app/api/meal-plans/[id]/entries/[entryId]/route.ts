@@ -1,41 +1,26 @@
 // src/app/api/meal-plans/[id]/entries/[entryId]/route.ts
 /**
- * Meal Plan Entry API
- * Update or delete a specific entry in a meal plan
+ * Meal Plan Entry API (Individual)
+ * Handles updating or deleting a specific entry in a meal plan
  * Fully JWT-protected
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import MealPlan from "@/models/MealPlan";
-import { verifyToken } from "@/lib/auth";
+import { requireAuth } from "@/lib/authHelpers";
 
-// --- Extract JWT from Authorization header ---
-function getToken(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return null;
-  const [type, token] = authHeader.split(" ");
-  return type === "Bearer" ? token : null;
-}
-
-// --- PATCH update an entry ---
-export async function PATCH(
+export async function PUT(
   req: NextRequest,
-  context: { params: { id: string; entryId: string } }
+  { params }: { params: { id: string; entryId: string } }
 ) {
   try {
     await connectToDatabase();
 
-    const token = getToken(req);
-    if (!token)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    const userId = requireAuth(req);
 
-    const userId = verifyToken(token);
-    if (!userId)
-      return NextResponse.json({ message: "Invalid token" }, { status: 403 });
-
-    const { id, entryId } = context.params;
-    const { servings, mealType, dayOfWeek } = await req.json();
+    const { id, entryId } = params;
+    const updates = await req.json(); // { recipeId?, day?, servings? }
 
     const mealPlan = await MealPlan.findOne({ _id: id, userId });
     if (!mealPlan)
@@ -48,17 +33,18 @@ export async function PATCH(
     if (!entry)
       return NextResponse.json({ message: "Entry not found" }, { status: 404 });
 
-    if (servings !== undefined) entry.servings = servings;
-    if (mealType) entry.mealType = mealType;
-    if (dayOfWeek) entry.dayOfWeek = dayOfWeek;
+    if (updates.recipeId !== undefined) entry.recipeId = updates.recipeId;
+    if (updates.day !== undefined) entry.day = updates.day;
+    if (updates.servings !== undefined) entry.servings = updates.servings;
 
     await mealPlan.save();
+
     return NextResponse.json(
       { message: "Entry updated", entry },
       { status: 200 }
     );
   } catch (err) {
-    console.error("PATCH /meal-plans/:id/entries/:entryId error:", err);
+    console.error("PUT /meal-plans/:id/entries/:entryId error:", err);
     return NextResponse.json(
       { message: err instanceof Error ? err.message : "Server error" },
       { status: 500 }
@@ -66,24 +52,16 @@ export async function PATCH(
   }
 }
 
-// --- DELETE remove an entry ---
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string; entryId: string } }
+  { params }: { params: { id: string; entryId: string } }
 ) {
   try {
     await connectToDatabase();
 
-    const token = getToken(req);
-    if (!token)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    const userId = requireAuth(req);
 
-    const userId = verifyToken(token);
-    if (!userId)
-      return NextResponse.json({ message: "Invalid token" }, { status: 403 });
-
-    const { id, entryId } = context.params;
-
+    const { id, entryId } = params;
     const mealPlan = await MealPlan.findOne({ _id: id, userId });
     if (!mealPlan)
       return NextResponse.json(

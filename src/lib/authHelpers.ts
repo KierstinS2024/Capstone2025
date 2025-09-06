@@ -7,24 +7,33 @@ import { NextRequest } from "next/server";
 import { verifyToken } from "./auth";
 
 /**
- * Safely extracts a JWT token from the Authorization header.
- * Returns null if missing or malformed.
+ * Extract token from Authorization header
  */
-export function getTokenFromHeader(req: NextRequest): string | null {
+export function getTokenFromRequest(req: NextRequest): string | null {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return null;
-  const parts = authHeader.split(" ");
-  if (parts.length !== 2 || parts[0] !== "Bearer") return null;
-  return parts[1];
+
+  const [type, token] = authHeader.split(" ");
+  return type === "Bearer" ? token : null;
 }
 
 /**
- * Safely verifies a JWT token.
- * Throws an error if token is missing or invalid.
+ * Get userId from request or return null
  */
-export function getUserIdFromRequest(req: NextRequest): string {
-  const token = getTokenFromHeader(req);
-  if (!token) throw new Error("Missing or invalid token");
-  const userId = verifyToken(token); // assumes verifyToken throws if invalid
+export function getUserIdFromRequest(req: NextRequest): string | null {
+  const token = getTokenFromRequest(req);
+  return verifyToken(token);
+}
+
+/**
+ * Middleware helper for protected routes
+ * Returns userId if authorized, otherwise throws NextResponse 401
+ */
+import { NextResponse } from "next/server";
+
+export function requireAuth(req: NextRequest): string {
+  const userId = getUserIdFromRequest(req);
+  if (!userId)
+    throw NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   return userId;
 }

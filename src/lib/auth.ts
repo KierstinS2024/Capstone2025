@@ -1,28 +1,30 @@
 /** src/lib/auth.ts
- * JWT Authentication Utilities
- * - generateToken: creates JWT
- * - verifyToken: verifies JWT from Authorization header
+ * requireAuth.ts
+ * Helper to enforce JWT authentication for Next.js API routes
  */
+
+// JWT utility functions
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET: string = process.env.JWT_SECRET || "supersecretkey";
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
-if (!JWT_SECRET) throw new Error("JWT_SECRET must be defined");
-
+/**
+ * Generate a JWT for a user
+ */
 export function generateToken(userId: string): string {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "7d" });
 }
 
-export function verifyToken(authHeader: string | null): string {
-  if (!authHeader) throw new Error("Authorization header missing");
-
-  const token = authHeader.replace("Bearer ", "");
-  if (!token) throw new Error("Token not found");
+/**
+ * Verify a JWT and return the userId if valid
+ */
+export function verifyToken(token: string | undefined | null): string | null {
+  if (!token) return null;
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     return decoded.userId;
   } catch {
-    throw new Error("Invalid token");
+    return null;
   }
 }

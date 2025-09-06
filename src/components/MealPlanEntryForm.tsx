@@ -2,8 +2,15 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import styles from "./MealPlanEntryForm.module.css";
-import { MealPlanEntry } from "@/context/MealPlanContext";
+
+// --- Types ---
+export interface MealPlanEntry {
+  _id: string;
+  dayOfWeek: string;
+  mealType: string;
+  recipeId: string;
+  servings: number;
+}
 
 export interface RecipeLite {
   _id: string;
@@ -13,14 +20,14 @@ export interface RecipeLite {
 }
 
 export interface MealPlanEntryFormProps {
-  mealPlanId?: string; // optional for parent-managed mode
-  token?: string; // optional for parent-managed mode
-  initialData?: MealPlanEntry;
-  onSuccess?: (entry: MealPlanEntry) => void; // optional for parent-managed
+  mealPlanId: string;
+  token: string;
+  initialData?: Partial<MealPlanEntry>;
+  onSuccess: (entry: MealPlanEntry) => void;
   onCancel?: () => void;
-  onChange?: (entry: MealPlanEntry) => void; // new prop for parent-managed
 }
 
+// --- Constants ---
 const DAYS = [
   "Monday",
   "Tuesday",
@@ -32,24 +39,24 @@ const DAYS = [
 ];
 const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
+// --- Component ---
 export default function MealPlanEntryForm({
   mealPlanId,
   token,
   initialData,
   onSuccess,
   onCancel,
-  onChange,
 }: MealPlanEntryFormProps) {
-  const [recipeId, setRecipeId] = useState(initialData?.recipeId || "");
-  const [mealType, setMealType] = useState(
-    initialData?.mealType || "Breakfast"
-  );
-  const [dayOfWeek, setDayOfWeek] = useState(
-    initialData?.dayOfWeek || "Monday"
-  );
-  const [servings, setServings] = useState(initialData?.servings || 1);
-  const [loading, setLoading] = useState(false);
+  const [entry, setEntry] = useState<MealPlanEntry>({
+    _id: initialData?._id || Date.now().toString(),
+    dayOfWeek: initialData?.dayOfWeek || "Monday",
+    mealType: initialData?.mealType || "Breakfast",
+    recipeId: initialData?.recipeId || "",
+    servings: initialData?.servings || 1,
+  });
+
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [userRecipes, setUserRecipes] = useState<RecipeLite[]>([]);
@@ -57,21 +64,21 @@ export default function MealPlanEntryForm({
   const [showDropdown, setShowDropdown] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const isEditing = Boolean(initialData?._id && !onChange); // only API mode if no onChange
+  const isEditing = Boolean(initialData?._id);
 
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (!dropdownRef.current?.contains(event.target as Node)) {
+      if (!dropdownRef.current?.contains(event.target as Node))
         setShowDropdown(false);
-      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch recipes live
+  // Recipe search
   useEffect(() => {
-    if (!searchQuery.trim() || !token) {
+    if (!searchQuery.trim()) {
       setUserRecipes([]);
       setExternalRecipes([]);
       return;
@@ -82,35 +89,33 @@ export default function MealPlanEntryForm({
       try {
         const res = await fetch(
           `/api/recipes/search?q=${encodeURIComponent(searchQuery)}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
         if (!res.ok) return;
         const data = await res.json();
         if (!active) return;
 
-        const mappedUser: RecipeLite[] = (data.userRecipes || []).map(
-          (r: any) => ({
+        setUserRecipes(
+          (data.userRecipes || []).map((r: any) => ({
             _id: r._id,
             title: r.name,
             image: r.image,
             source: "user",
-          })
+          }))
         );
-
-        const mappedExternal: RecipeLite[] = (
-          data.spoonacularRecipes || []
-        ).map((r: any) => ({
-          _id: r._id,
-          title: r.title,
-          image: r.image,
-          source: "spoonacular",
-        }));
-
-        setUserRecipes(mappedUser);
-        setExternalRecipes(mappedExternal);
+        setExternalRecipes(
+          (data.spoonacularRecipes || []).map((r: any) => ({
+            _id: r._id,
+            title: r.title,
+            image: r.image,
+            source: "spoonacular",
+          }))
+        );
         setShowDropdown(true);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching recipes:", err);
       }
     };
 
@@ -119,50 +124,28 @@ export default function MealPlanEntryForm({
   }, [searchQuery, token]);
 
   const handleSelectRecipe = (id: string) => {
-    setRecipeId(id);
+    setEntry((prev) => ({ ...prev, recipeId: id }));
     setShowDropdown(false);
     setSearchQuery("");
-    // notify parent if in parent-managed mode
-    if (onChange) onChange({ dayOfWeek, mealType, recipeId: id, servings });
+  };
+
+  const handleChange = (field: keyof MealPlanEntry, value: string | number) => {
+    setEntry((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recipeId) {
+    if (!entry.recipeId) {
       setError("Please select a recipe.");
       return;
     }
 
-    if (onChange) {
-      // parent-managed mode: just notify parent
-      onChange({ dayOfWeek, mealType, recipeId, servings });
-      return;
-    }
-
-    // standalone mode: POST/PATCH API
-    if (!mealPlanId || !token) return;
     setLoading(true);
     setError(null);
 
     try {
-      const endpoint = isEditing
-        ? `/api/meal-plans/${mealPlanId}/entries/${initialData!._id}`
-        : `/api/meal-plans/${mealPlanId}/entries`;
-      const method = isEditing ? "PATCH" : "POST";
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ recipeId, mealType, dayOfWeek, servings }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to save entry");
-
-      onSuccess?.(data.entry as MealPlanEntry);
+      // API call can be added here for real persistence
+      onSuccess(entry);
     } catch (err: any) {
       setError(err.message || "Failed to save entry");
     } finally {
@@ -171,146 +154,139 @@ export default function MealPlanEntryForm({
   };
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      {error && <p className={styles.error}>{error}</p>}
+    <form
+      onSubmit={handleSubmit}
+      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+    >
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <label className={styles.label}>
-        Recipe
+      {/* Recipe search */}
+      <div style={{ position: "relative" }} ref={dropdownRef}>
         <input
           type="text"
-          value={searchQuery || recipeId}
+          placeholder="Search or paste recipe ID"
+          value={searchQuery || entry.recipeId}
           onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={() => setShowDropdown(!!searchQuery)}
-          placeholder="Search or paste recipe ID"
-          className={styles.input}
+          style={{ padding: "6px" }}
         />
-        {showDropdown &&
-          (userRecipes.length > 0 || externalRecipes.length > 0) && (
-            <div className={styles.dropdown} ref={dropdownRef}>
-              {userRecipes.length > 0 && (
-                <>
-                  <div className={styles.dropdownHeader}>Your Recipes</div>
-                  {userRecipes.map((r) => (
-                    <div
-                      key={r._id}
-                      className={styles.card}
-                      onClick={() => handleSelectRecipe(r._id)}
-                    >
-                      {r.image && (
-                        <img src={r.image} className={styles.thumbnail} />
-                      )}
-                      <div className={styles.cardText}>
-                        <div className={styles.cardTitle}>{r.title}</div>
-                        <div className={styles.cardSource}>User</div>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-              {externalRecipes.length > 0 && (
-                <>
-                  <div className={styles.dropdownHeader}>Spoonacular</div>
-                  {externalRecipes.map((r) => (
-                    <div
-                      key={r._id}
-                      className={styles.card}
-                      onClick={() => handleSelectRecipe(r._id)}
-                    >
-                      {r.image && (
-                        <img src={r.image} className={styles.thumbnail} />
-                      )}
-                      <div className={styles.cardText}>
-                        <div className={styles.cardTitle}>{r.title}</div>
-                        <div className={styles.cardSource}>Spoonacular</div>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-          )}
-      </label>
+        {showDropdown && (userRecipes.length || externalRecipes.length) > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              top: "36px",
+              left: 0,
+              right: 0,
+              background: "#fff",
+              border: "1px solid #ccc",
+              maxHeight: "200px",
+              overflowY: "auto",
+              zIndex: 10,
+            }}
+          >
+            {userRecipes.length > 0 && (
+              <>
+                <div style={{ fontWeight: "bold", padding: "4px" }}>
+                  Your Recipes
+                </div>
+                {userRecipes.map((r) => (
+                  <div
+                    key={r._id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "4px",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => handleSelectRecipe(r._id)}
+                  >
+                    {r.image && (
+                      <img
+                        src={r.image}
+                        alt=""
+                        style={{ width: 30, height: 30, marginRight: 4 }}
+                      />
+                    )}
+                    <div>{r.title}</div>
+                  </div>
+                ))}
+              </>
+            )}
+            {externalRecipes.length > 0 && (
+              <>
+                <div style={{ fontWeight: "bold", padding: "4px" }}>
+                  Spoonacular
+                </div>
+                {externalRecipes.map((r) => (
+                  <div
+                    key={r._id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "4px",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => handleSelectRecipe(r._id)}
+                  >
+                    {r.image && (
+                      <img
+                        src={r.image}
+                        alt=""
+                        style={{ width: 30, height: 30, marginRight: 4 }}
+                      />
+                    )}
+                    <div>{r.title}</div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
-      <label className={styles.label}>
-        Day of Week
-        <select
-          value={dayOfWeek}
-          onChange={(e) => {
-            setDayOfWeek(e.target.value);
-            onChange?.({
-              dayOfWeek: e.target.value,
-              mealType,
-              recipeId,
-              servings,
-            });
-          }}
-          className={styles.select}
-        >
-          {DAYS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-      </label>
+      {/* Day of Week */}
+      <select
+        value={entry.dayOfWeek}
+        onChange={(e) => handleChange("dayOfWeek", e.target.value)}
+      >
+        {DAYS.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
 
-      <label className={styles.label}>
-        Meal Type
-        <select
-          value={mealType}
-          onChange={(e) => {
-            setMealType(e.target.value);
-            onChange?.({
-              dayOfWeek,
-              mealType: e.target.value,
-              recipeId,
-              servings,
-            });
-          }}
-          className={styles.select}
-        >
-          {MEAL_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-      </label>
+      {/* Meal Type */}
+      <select
+        value={entry.mealType}
+        onChange={(e) => handleChange("mealType", e.target.value)}
+      >
+        {MEAL_TYPES.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </select>
 
-      <label className={styles.label}>
-        Servings
-        <input
-          type="number"
-          min={1}
-          value={servings}
-          onChange={(e) => {
-            const val = Number(e.target.value);
-            setServings(val);
-            onChange?.({ dayOfWeek, mealType, recipeId, servings: val });
-          }}
-          className={styles.input}
-        />
-      </label>
+      {/* Servings */}
+      <input
+        type="number"
+        min={1}
+        value={entry.servings}
+        onChange={(e) => handleChange("servings", Number(e.target.value))}
+      />
 
-      {onCancel && (
-        <button
-          type="button"
-          onClick={onCancel}
-          className={styles.cancelButton}
-        >
-          Remove
+      {/* Buttons */}
+      <div style={{ display: "flex", gap: "4px" }}>
+        <button type="submit" disabled={loading}>
+          {loading ? "Saving..." : isEditing ? "Update Entry" : "Add Entry"}
         </button>
-      )}
-
-      {isEditing && (
-        <button
-          type="submit"
-          disabled={loading}
-          className={styles.submitButton}
-        >
-          {loading ? "Updating..." : "Update Entry"}
-        </button>
-      )}
+        {onCancel && (
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

@@ -1,39 +1,25 @@
 // path: src/app/api/recipes/favorites/route.ts
 /**
- * Favorites endpoints for recipes
- * - GET: list all saved/favorited recipes for the authenticated user
+ * Favorites API (List)
+ * - GET: list all recipes favorited by the authenticated user
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import Recipe from "@/models/Recipe";
-import Favorite from "@/models/Favorite"; // Separate collection to track user favorites
-import { verifyToken } from "@/lib/auth";
+import Favorite from "@/models/Favorite";
+import { requireAuth } from "@/lib/authHelpers";
 
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
+    const userId = requireAuth(req);
 
-    // --- AUTH ---
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader)
-      return NextResponse.json(
-        { message: "Authorization required" },
-        { status: 401 }
-      );
-    const token = authHeader.replace("Bearer ", "");
-    const userId = verifyToken(token);
-    if (!userId)
-      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
-
-    // --- FETCH FAVORITES ---
+    // Fetch favorites for this user
     const favorites = await Favorite.find({ userId }).lean();
-
-    // Map to recipe objects
     const recipeIds = favorites.map((f) => f.recipeId);
-    const recipes = await Recipe.find({ _id: { $in: recipeIds } }).lean();
 
-    // Merge internal recipes with external flag if needed
+    const recipes = await Recipe.find({ _id: { $in: recipeIds } }).lean();
     const merged = recipes.map((r) => ({ ...r, isExternal: false }));
 
     return NextResponse.json({ data: merged });
