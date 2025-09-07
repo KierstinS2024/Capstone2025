@@ -1,16 +1,15 @@
-export interface RecipeIngredient {
-  ingredientId: string;
-  name: string;
-  quantity: number;
-  unit: string;
-}
+// src/types/recipe.d.ts
 
 export interface Recipe {
   _id: string;
   title: string;
   description?: string;
-  ingredients: RecipeIngredient[];
-  steps?: string[];
   servings: number;
-  [key: string]: any;
+  ingredients?: {
+    ingredientId: string;
+    quantity: number;
+    unit?: string;
+  }[];
+  instructions?: string;
+  userId: string;
 }

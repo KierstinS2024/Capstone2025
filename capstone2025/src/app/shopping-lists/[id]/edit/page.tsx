@@ -1,65 +1,56 @@
-// Path: src/app/shopping-lists/new/page.tsx
+// src/app/shopping-lists/[id]/edit/page.tsx
+
 "use client";
 
 /**
- * NewShoppingListPage
- * -------------------
- * Allows users to create a new shopping list.
+ * EditShoppingListPage
+ * --------------------
+ * Allows users to edit an existing shopping list.
  * Features:
  * - Protected route
+ * - Pre-fills form with shopping list data from `/api/shopping-lists/[id]`
  * - Dynamic items list (add/remove)
  * - React Hook Form + TypeScript for type safety
- * - Validation: title required, item name required, quantity ≥ 0.01
+ * - PUT request to `/api/shopping-lists/[id]`
  */
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import {
-  useForm,
-  useFieldArray,
-  SubmitHandler,
-  Controller,
-} from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { ShoppingList, ShoppingListItem } from "@/types/shoppingList";
-import { IngredientBody } from "@/types/ingredient";
 import styles from "./ShoppingListFormPage.module.css";
 
-/**
- * ShoppingListForm
- * ----------------
- * Matches ShoppingList but omits `_id` (handled by DB)
- */
-interface ShoppingListForm extends Omit<ShoppingList, "_id"> {}
+// -----------------------------
+// Form interface
+// -----------------------------
+interface ShoppingListForm extends Omit<ShoppingList, "_id" | "userId"> {}
 
-export default function NewShoppingListPage() {
+export default function EditShoppingListPage() {
   return (
     <ProtectedRoute>
-      <ShoppingListCreateForm />
+      <ShoppingListEditForm />
     </ProtectedRoute>
   );
 }
 
-function ShoppingListCreateForm() {
+function ShoppingListEditForm() {
   const router = useRouter();
-  const [allIngredients, setAllIngredients] = useState<IngredientBody[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const params = useParams();
+  const listId = params.id as string;
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<ShoppingListForm>({
-    defaultValues: {
-      title: "",
-      notes: "",
-      items: [],
-      userId: "",
-    },
-  });
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const { register, control, handleSubmit, setValue, formState: { errors } } =
+    useForm<ShoppingListForm>({
+      defaultValues: {
+        title: "",
+        notes: "",
+        items: [],
+      },
+    });
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -67,36 +58,40 @@ function ShoppingListCreateForm() {
   });
 
   // -----------------------------
-  // Fetch ingredients for dropdown
+  // Fetch shopping list to pre-fill form
   // -----------------------------
   useEffect(() => {
-    async function fetchIngredients() {
+    async function fetchShoppingList() {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("/api/ingredients", {
+        const res = await fetch(`/api/shopping-lists/${listId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error("Failed to fetch ingredients");
+        if (!res.ok) throw new Error("Failed to fetch shopping list");
         const data = await res.json();
-        setAllIngredients(data.data || []);
+        const list: ShoppingList = data.data;
+
+        setValue("title", list.title);
+        setValue("notes", list.notes || "");
+        setValue("items", list.items || []);
       } catch (err) {
         console.error(err);
+        setServerError(err instanceof Error ? err.message : "Unexpected error");
       }
     }
-    fetchIngredients();
-  }, []);
+    fetchShoppingList();
+  }, [listId, setValue]);
 
   // -----------------------------
-  // Submit handler
+  // Form submit handler
   // -----------------------------
   const onSubmit: SubmitHandler<ShoppingListForm> = async (data) => {
     setLoading(true);
     setServerError(null);
-
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/shopping-lists", {
-        method: "POST",
+      const res = await fetch(`/api/shopping-lists/${listId}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -105,7 +100,7 @@ function ShoppingListCreateForm() {
       });
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to create shopping list");
+        throw new Error(errorData.message || "Failed to update shopping list");
       }
       router.push("/dashboard/shopping-lists");
     } catch (err) {
@@ -121,11 +116,11 @@ function ShoppingListCreateForm() {
   // -----------------------------
   return (
     <main className={styles.container}>
-      <h1 className={styles.title}>New Shopping List</h1>
+      <h1 className={styles.title}>Edit Shopping List</h1>
       {serverError && <p className={styles.error}>{serverError}</p>}
 
       <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
-        {/* Title */}
+        {/* Title field */}
         <label>
           Title *
           <input
@@ -137,39 +132,22 @@ function ShoppingListCreateForm() {
           )}
         </label>
 
-        {/* Notes */}
+        {/* Notes field */}
         <label>
           Notes
           <textarea {...register("notes")} />
         </label>
 
-        {/* Items */}
+        {/* Items section */}
         <section className={styles.section}>
           <h2>Items</h2>
           {fields.map((field, index) => (
-            <div key={field.id ?? index} className={styles.itemRow}>
-              {/* Ingredient selector */}
-              <Controller
-                control={control}
-                name={`items.${index}.ingredientId`}
-                render={({ field: selectField }) => (
-                  <select {...selectField}>
-                    <option value="">Select ingredient</option>
-                    {allIngredients.map((ing) => (
-                      <option key={ing._id} value={ing._id}>
-                        {ing.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              />
-              {/* Item name */}
+            <div key={field._id ?? index} className={styles.itemRow}>
               <input
                 type="text"
-                placeholder="Item name"
+                placeholder="Item Name"
                 {...register(`items.${index}.name`, { required: true })}
               />
-              {/* Quantity */}
               <input
                 type="number"
                 step="0.01"
@@ -179,7 +157,6 @@ function ShoppingListCreateForm() {
                   min: 0.01,
                 })}
               />
-              {/* Unit */}
               <input
                 type="text"
                 placeholder="Unit"
@@ -192,21 +169,14 @@ function ShoppingListCreateForm() {
           ))}
           <button
             type="button"
-            onClick={() =>
-              append({ ingredientId: "", name: "", quantity: 1, unit: "" })
-            }
+            onClick={() => append({ name: "", quantity: 1, unit: "" })}
           >
             + Add Item
           </button>
         </section>
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className={styles.submitButton}
-        >
-          {loading ? "Saving..." : "Create Shopping List"}
+        <button type="submit" disabled={loading} className={styles.submitButton}>
+          {loading ? "Saving..." : "Update Shopping List"}
         </button>
       </form>
     </main>

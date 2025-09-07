@@ -1,14 +1,14 @@
-//src/app/dashboard/meal-plans/[id]/page.tsx
 "use client";
 
 /**
- * Individual Meal Plan Page
+ * MealPlanPage
  * -------------------------
- * Displays detailed meal plan including all entries.
+ * Individual Meal Plan view page
  * Features:
- * - ProtectedRoute
- * - Show linked recipes and servings
- * - Edit or delete meal plan
+ * - ProtectedRoute wrapper
+ * - Displays meal plan title, week start, notes, and all entries
+ * - Handles `recipeId` being either string or populated Recipe object
+ * - Edit and delete actions
  */
 
 import { useEffect, useState } from "react";
@@ -37,14 +37,18 @@ function MealPlanContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // -----------------------------
+  // Fetch meal plan by ID
+  // -----------------------------
   useEffect(() => {
     async function fetchMealPlan() {
       if (!user || !planId) return;
 
       setLoading(true);
       try {
+        const token = localStorage.getItem("token");
         const res = await fetch(`/api/meal-plans/${planId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Failed to fetch meal plan");
 
@@ -61,6 +65,9 @@ function MealPlanContent() {
     fetchMealPlan();
   }, [user, planId]);
 
+  // -----------------------------
+  // Delete meal plan handler
+  // -----------------------------
   const handleDelete = async () => {
     if (!mealPlan) return;
     if (!confirm("Are you sure you want to delete this meal plan?")) return;
@@ -78,17 +85,28 @@ function MealPlanContent() {
     }
   };
 
+  // -----------------------------
+  // Loading / Error states
+  // -----------------------------
   if (loading) return <p className={styles.message}>Loading meal plan...</p>;
   if (error) return <p className={styles.error}>{error}</p>;
   if (!mealPlan) return <p className={styles.error}>Meal plan not found.</p>;
 
+  // -----------------------------
+  // JSX
+  // -----------------------------
   return (
     <main className={styles.container}>
       <h1 className={styles.title}>{mealPlan.title}</h1>
+
       {mealPlan.weekStartDate && (
         <p>
           Week starting: {new Date(mealPlan.weekStartDate).toLocaleDateString()}
         </p>
+      )}
+
+      {mealPlan.notes && (
+        <p className={styles.notes}>Notes: {mealPlan.notes}</p>
       )}
 
       <section className={styles.section}>
@@ -98,12 +116,14 @@ function MealPlanContent() {
         ) : (
           <ul>
             {mealPlan.entries.map((entry: MealPlanEntry) => {
+              // Handle recipeId as string or populated Recipe object
               const recipe =
                 typeof entry.recipeId === "string" ? null : entry.recipeId;
+              const recipeTitle = recipe?.title || "Recipe not loaded";
+
               return (
                 <li key={entry._id}>
-                  {recipe ? recipe.title : "Recipe not loaded"} -{" "}
-                  {entry.servings} servings
+                  {recipeTitle} - {entry.servings} servings
                 </li>
               );
             })}

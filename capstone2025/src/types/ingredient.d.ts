@@ -1,12 +1,7 @@
+// Path: src/types/ingredient.d.ts
 export interface IngredientBody {
+  _id: string; // <-- add this
   name: string;
-  unit: string;
-  defaultQuantity: number;
-  nutritionInfo?: Record<string, any>;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
+  quantity?: number; // optional for some cases
+  unit?: string;
 }

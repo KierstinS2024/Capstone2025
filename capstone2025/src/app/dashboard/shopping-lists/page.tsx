@@ -1,3 +1,4 @@
+// src/app/dashboard/shopping-lists/page.tsx
 "use client";
 
 /**
