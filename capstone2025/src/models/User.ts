@@ -1,52 +1,39 @@
-// File: src/models/User.ts
-// Purpose: Mongoose model for users
-// Stores credentials, preferences, and optional avatar URL
-
+// src/models/User.ts
 import mongoose, { Schema, Document } from "mongoose";
+import bcrypt from "bcrypt";
 
-/**
- * TypeScript interface representing a User document in MongoDB
- */
-export interface UserDocument extends Document {
-  email: string; // User's unique email
-  passwordHash: string; // Hashed password stored securely
-  preferences?: Record<string, any>; // Optional: dietary restrictions, theme, etc.
-  avatarUrl?: string; // Optional: URL to user avatar
-  createdAt: Date; // Auto-generated timestamp
-  updatedAt: Date; // Auto-updated timestamp
+export interface IUser extends Document {
+  email: string;
+  password: string;
+  avatarUrl?: string;
+  preferences?: any;
+  comparePassword: (candidatePassword: string) => Promise<boolean>;
 }
 
-/**
- * Mongoose schema defining the structure of a User collection
- */
-const UserSchema = new Schema<UserDocument>(
+const UserSchema = new Schema<IUser>(
   {
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-      trim: true, // Remove leading/trailing spaces
-      lowercase: true, // Store email in lowercase
-    },
-    passwordHash: {
-      type: String,
-      required: [true, "Password hash is required"],
-    },
-    preferences: {
-      type: Schema.Types.Mixed,
-      default: {}, // Default empty preferences object
-    },
-    avatarUrl: {
-      type: String,
-      default: "", // Default to empty string if no avatar provided
-    },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    avatarUrl: { type: String },
+    preferences: { type: Schema.Types.Mixed },
   },
-  { timestamps: true } // Automatically add createdAt & updatedAt
+  { timestamps: true }
 );
 
-/**
- * Export Mongoose model
- * Checks if model already exists (useful for hot reloads in development)
- */
+// Hash password before save
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+// Compare password helper
+UserSchema.methods.comparePassword = async function (
+  candidatePassword: string
+) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
 export default mongoose.models.User ||
-  mongoose.model<UserDocument>("User", UserSchema);
+  mongoose.model<IUser>("User", UserSchema);
