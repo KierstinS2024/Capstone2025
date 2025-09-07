@@ -1,9 +1,11 @@
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
 export interface FoodEntry {
   _id?: string;
   ingredientId: string;
   quantity: number;
   unit: string;
-  mealType: "breakfast" | "lunch" | "dinner" | "snack";
+  mealType: MealType;
   date: Date;
 }
 

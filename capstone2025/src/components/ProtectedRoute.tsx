@@ -1,27 +1,17 @@
-// path: src/components/ProtectedRoute.tsx
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
-// -----------------------------
-// Props
-// -----------------------------
 interface ProtectedRouteProps {
   children: ReactNode;
 }
 
-// -----------------------------
-// Public paths
-// -----------------------------
 const publicPaths = ["/", "/auth/login", "/auth/signup"];
 
-// -----------------------------
-// ProtectedRoute Component
-// -----------------------------
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -32,15 +22,14 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       return;
     }
 
-    if (!user) {
-      router.replace("/auth/login"); // redirect if not authenticated
-    } else {
+    if (!loading && !user) {
+      router.replace("/auth/login");
+    } else if (!loading && user) {
       setCheckingAuth(false);
     }
-  }, [user, pathname, router]);
+  }, [user, loading, pathname, router]);
 
-  // Optionally, render a spinner while checking auth
-  if (checkingAuth) return null;
+  if (checkingAuth) return null; // optional spinner
 
   return <>{children}</>;
 }

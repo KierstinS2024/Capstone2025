@@ -2,7 +2,7 @@ import { Recipe } from "./recipe";
 
 export interface MealPlanEntry {
   _id: string;
-  recipeId: Recipe;
+  recipeId: string; // Can reference Recipe._id or full Recipe object
   servings: number;
 }
 

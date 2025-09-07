@@ -1,4 +1,3 @@
-// path: src/app/api/ingredients/[id]/route.ts
 /**
  * Ingredient Individual API
  * - GET: Fetch ingredient by ID (JWT-protected)
@@ -11,7 +10,7 @@ import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import Ingredient from "@/models/Ingredient";
 import { requireAuth } from "@/lib/authHelpers";
-import { IngredientBody, ApiResponse } from "./route";
+import { IngredientBody, ApiResponse } from "@/types/ingredient"; // updated import
 
 // GET /api/ingredients/:id
 export async function GET(
@@ -20,7 +19,6 @@ export async function GET(
 ) {
   try {
     await connectToDatabase();
-
     const userId = requireAuth(req);
 
     const { id } = params;
@@ -62,7 +60,6 @@ export async function PUT(
 ) {
   try {
     await connectToDatabase();
-
     const userId = requireAuth(req);
 
     const { id } = params;
@@ -121,7 +118,6 @@ export async function DELETE(
 ) {
   try {
     await connectToDatabase();
-
     const userId = requireAuth(req);
 
     const { id } = params;

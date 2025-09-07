@@ -1,4 +1,3 @@
-// path: src/context/AuthContext.tsx
 "use client";
 
 import {
@@ -9,12 +8,9 @@ import {
   useContext,
 } from "react";
 import { useRouter } from "next/navigation";
-import { ApiResponse, User } from "@/types/api";
+import { User } from "@/types/auth";
 
-// -----------------------------
-// Types
-// -----------------------------
-export interface AuthContextType {
+interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
@@ -24,44 +20,55 @@ export interface AuthContextType {
   logout: () => void;
 }
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-// -----------------------------
-// API Endpoints
-// -----------------------------
-const API_PATHS = {
-  login: "/api/auth/login",
-  signup: "/api/auth/signup",
-};
-
-// -----------------------------
-// Context Initialization
-// -----------------------------
 export const AuthContext = createContext<AuthContextType | undefined>(
   undefined
 );
 
-// -----------------------------
-// Auth Provider Component
-// -----------------------------
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+const API_PATHS = {
+  login: "/api/auth/login",
+  signup: "/api/auth/signup",
+  me: "/api/auth/me",
+};
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
   const router = useRouter();
 
-  // Load stored auth state from localStorage
+  // Load user & token from localStorage and validate
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser) as User);
+    if (!storedToken) {
+      setLoading(false);
+      return;
     }
+
+    fetch(API_PATHS.me, {
+      headers: { Authorization: `Bearer ${storedToken}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user) {
+          setUser(data.user);
+          setToken(storedToken);
+        } else {
+          localStorage.removeItem("token");
+          setUser(null);
+          setToken(null);
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+        setUser(null);
+        setToken(null);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   // -----------------------------
@@ -77,20 +84,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         body: JSON.stringify({ email, password }),
       });
 
-      const data: ApiResponse<{ token: string; user: User }> = await res.json();
+      const data: { token?: string; user?: User; message?: string } =
+        await res.json();
 
-      if (!res.ok || !data.data?.token || !data.data?.user) {
+      if (!res.ok || !data.token || !data.user) {
         throw new Error(data.message || "Login failed");
       }
 
-      setToken(data.data.token);
-      setUser(data.data.user);
-      localStorage.setItem("token", data.data.token);
-      localStorage.setItem("user", JSON.stringify(data.data.user));
-
+      setUser(data.user);
+      setToken(data.token);
+      localStorage.setItem("token", data.token);
       router.push("/dashboard/recipes");
     } catch (err: any) {
-      setError(err.message || "Unable to login. Please try again.");
+      setError(err.message || "Unable to login");
       throw err;
     } finally {
       setLoading(false);
@@ -110,20 +116,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         body: JSON.stringify({ email, password }),
       });
 
-      const data: ApiResponse<{ token: string; user: User }> = await res.json();
+      const data: { token?: string; user?: User; message?: string } =
+        await res.json();
 
-      if (!res.ok || !data.data?.token || !data.data?.user) {
+      if (!res.ok || !data.token || !data.user) {
         throw new Error(data.message || "Signup failed");
       }
 
-      setToken(data.data.token);
-      setUser(data.data.user);
-      localStorage.setItem("token", data.data.token);
-      localStorage.setItem("user", JSON.stringify(data.data.user));
-
+      setUser(data.user);
+      setToken(data.token);
+      localStorage.setItem("token", data.token);
       router.push("/dashboard/recipes");
     } catch (err: any) {
-      setError(err.message || "Unable to signup. Please try again.");
+      setError(err.message || "Unable to signup");
       throw err;
     } finally {
       setLoading(false);
@@ -137,7 +142,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
-    localStorage.removeItem("user");
     router.push("/auth/login");
   };
 
@@ -150,9 +154,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 }
 
-// -----------------------------
-// Custom Hook
-// -----------------------------
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within AuthProvider");
