@@ -1,32 +1,29 @@
 // src/app/page.tsx
+"use client";
+
 /**
- * Home / Landing Page
- * Provides navigation to Login or Signup
+ * Landing / Home Page
+ * Independent of AuthProvider nav
  */
 
 import Link from "next/link";
+import styles from "./LandingPage.module.css";
 
-export default function HomePage() {
+export default function LandingPage() {
   return (
-    <main style={{ padding: "2rem", textAlign: "center" }}>
-      <h1>Recipe & Meal Planner App</h1>
-      <p>Welcome! Please log in or sign up to continue.</p>
-
-      <div
-        style={{
-          marginTop: "2rem",
-          display: "flex",
-          justifyContent: "center",
-          gap: "1rem",
-        }}
-      >
-        <Link href="/auth/login">
-          <button type="button">Login</button>
-        </Link>
-        <Link href="/auth/signup">
-          <button type="button">Sign Up</button>
-        </Link>
-      </div>
+    <main className={styles.container}>
+      <section className={styles.hero}>
+        <h1>Eat Better, Live Better</h1>
+        <p>Plan meals, track nutrition, and build healthy habits with ease.</p>
+        <div className={styles.actions}>
+          <Link href="/auth/signup" className={styles.btnPrimary}>
+            Get Started
+          </Link>
+          <Link href="/auth/login" className={styles.btnSecondary}>
+            Log In
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }

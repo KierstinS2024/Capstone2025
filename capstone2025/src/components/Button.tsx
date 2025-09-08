@@ -1,53 +1,62 @@
 // src/components/Button.tsx
 "use client";
 
-import React, { ButtonHTMLAttributes, FC } from "react";
+import React from "react";
 
-// --------------------
-// Button Props
-// --------------------
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Text or elements inside the button */
+export type ButtonVariant = "primary" | "secondary" | "danger";
+
+interface ButtonProps {
+  /** Button label/content */
   children: React.ReactNode;
-  /** Optional variant for styling: primary (default) or secondary */
-  variant?: "primary" | "secondary";
-  /** Optional loading state */
-  isLoading?: boolean;
+  /** onClick handler */
+  onClick?: () => void;
+  /** Optional button type, defaults to 'button' */
+  type?: "button" | "submit" | "reset";
+  /** Optional variant for styling */
+  variant?: ButtonVariant;
+  /** Disable button */
+  disabled?: boolean;
+  /** Additional CSS classes */
+  className?: string;
 }
 
 /**
- * Reusable Button component.
- * Supports primary/secondary variants and loading state.
+ * Button
+ * Reusable button component with variants, disabled state, and accessibility support.
  */
-const Button: FC<ButtonProps> = ({
+export default function Button({
   children,
+  onClick,
+  type = "button",
   variant = "primary",
-  isLoading = false,
-  disabled,
-  ...rest
-}) => {
-  // Combine disabled prop with loading state
-  const isDisabled = disabled || isLoading;
-
-  // Base class names for styling
+  disabled = false,
+  className = "",
+}: ButtonProps) {
+  // Base classes for all buttons
   const baseClasses =
-    "px-4 py-2 rounded-md font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
+    "px-4 py-2 rounded font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
 
   // Variant-specific classes
-  const variantClasses =
-    variant === "primary"
-      ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300"
-      : "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-400 disabled:bg-gray-100";
+  const variantClasses = {
+    primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
+    secondary:
+      "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-400",
+    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
+  };
+
+  // Disabled state classes
+  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
+
+  const finalClassName = `${baseClasses} ${variantClasses[variant]} ${disabledClasses} ${className}`;
 
   return (
     <button
-      className={`${baseClasses} ${variantClasses}`}
-      disabled={isDisabled}
-      {...rest}
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={finalClassName}
     >
-      {isLoading ? "Loading..." : children}
+      {children}
     </button>
   );
-};
-
-export default Button;
+}

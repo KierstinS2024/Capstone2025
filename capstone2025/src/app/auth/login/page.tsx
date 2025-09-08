@@ -1,13 +1,15 @@
 // src/app/auth/login/page.tsx
-
 "use client";
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-//import styles from "./AuthForm.module.css";
+import { useRouter } from "next/navigation";
+import styles from "./AuthForm.module.css";
 
 export default function LoginPage() {
   const { login, loading, error } = useAuth();
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -15,16 +17,16 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       await login(email.trim().toLowerCase(), password);
+      router.push("/dashboard");
     } catch {
-      // error handled in context
+      // handled in AuthContext
     }
   };
 
   return (
     <div className={styles.container}>
-      <form onSubmit={handleSubmit} className={styles.form}>
+      <form className={styles.form} onSubmit={handleSubmit}>
         <h1 className={styles.title}>Login</h1>
-
         <input
           type="email"
           placeholder="Email"
@@ -41,13 +43,10 @@ export default function LoginPage() {
           required
           className={styles.input}
         />
-
         {error && <p className={styles.error}>{error}</p>}
-
         <button type="submit" disabled={loading} className={styles.button}>
           {loading ? "Logging in..." : "Login"}
         </button>
-
         <p className={styles.linkText}>
           Don't have an account?{" "}
           <a href="/auth/signup" className={styles.link}>

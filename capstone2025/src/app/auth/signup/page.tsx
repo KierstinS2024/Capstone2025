@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import styles from "./AuthForm.module.css";
 
 export default function SignupPage() {
   const { signup, loading, error } = useAuth();
@@ -15,44 +16,41 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signup(email, password);
-      router.push("/dashboard"); // Redirect handled in context too
-    } catch (err) {
-      console.error(err);
-    }
+      await signup(email.trim().toLowerCase(), password);
+      router.push("/dashboard");
+    } catch {}
   };
 
   return (
-    <div>
-      <h1>Sign Up</h1>
-      <form onSubmit={handleSubmit}>
-        {error && <p>{error}</p>}
-        <div>
-          <label htmlFor="email">Email:</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password">Password:</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-        </div>
-
-        <button type="submit" disabled={loading}>
+    <div className={styles.container}>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <h1 className={styles.title}>Sign Up</h1>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className={styles.input}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className={styles.input}
+        />
+        {error && <p className={styles.error}>{error}</p>}
+        <button type="submit" disabled={loading} className={styles.button}>
           {loading ? "Signing up..." : "Sign Up"}
         </button>
+        <p className={styles.linkText}>
+          Already have an account?{" "}
+          <a href="/auth/login" className={styles.link}>
+            Login
+          </a>
+        </p>
       </form>
     </div>
   );

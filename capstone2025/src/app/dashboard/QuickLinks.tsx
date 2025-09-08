@@ -1,62 +1,53 @@
 // src/app/dashboard/QuickLinks.tsx
 "use client";
 
-import React from "react";
+/**
+ * QuickLinks
+ * Displays shortcut buttons for common dashboard actions.
+ * Each button navigates to a specific page (e.g., new recipe, meal plan, etc.).
+ */
+
 import Link from "next/link";
 import Button from "@/components/Button";
 
-// --------------------
-// QuickLink Item Type
-// --------------------
+// Type for each quick link
 interface QuickLink {
   label: string;
   href: string;
-  variant?: "primary" | "secondary"; // Button variant
+  variant?: "primary" | "secondary";
 }
 
-/**
- * QuickLinks component
- * Displays a set of quick action buttons for the dashboard.
- */
-const QuickLinks: React.FC = () => {
-  // --------------------
-  // Define dashboard quick links
-  // --------------------
-  const links: QuickLink[] = [
-    { label: "Add Recipe", href: "/dashboard/recipes/new", variant: "primary" },
-    {
-      label: "New Meal Plan",
-      href: "/dashboard/meal-plans/new",
-      variant: "primary",
-    },
-    {
-      label: "Log Food Intake",
-      href: "/dashboard/food-intake/new",
-      variant: "secondary",
-    },
-    {
-      label: "Create Shopping List",
-      href: "/dashboard/shopping-lists/new",
-      variant: "secondary",
-    },
-  ];
+// Dashboard shortcuts
+const quickLinks: QuickLink[] = [
+  { label: "New Recipe", href: "/dashboard/recipes/new", variant: "primary" },
+  {
+    label: "New Meal Plan",
+    href: "/dashboard/meal-plans/new",
+    variant: "primary",
+  },
+  {
+    label: "Add Food Intake",
+    href: "/dashboard/food-intake/new",
+    variant: "secondary",
+  },
+  {
+    label: "New Shopping List",
+    href: "/dashboard/shopping-lists/new",
+    variant: "secondary",
+  },
+];
 
+export default function QuickLinks() {
   return (
-    <section
-      style={{
-        display: "flex",
-        gap: "1rem",
-        flexWrap: "wrap",
-        marginTop: "1rem",
-      }}
-    >
-      {links.map((link) => (
-        <Link key={link.href} href={link.href} passHref>
-          <Button variant={link.variant}>{link.label}</Button>
-        </Link>
-      ))}
+    <section className="quick-links">
+      <h2 className="quick-links__title">Quick Actions</h2>
+      <div className="quick-links__grid">
+        {quickLinks.map((link) => (
+          <Link key={link.href} href={link.href}>
+            <Button variant={link.variant}>{link.label}</Button>
+          </Link>
+        ))}
+      </div>
     </section>
   );
-};
-
-export default QuickLinks;
+}
