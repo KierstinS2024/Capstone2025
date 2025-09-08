@@ -4,9 +4,9 @@
 /**
  * EditIngredientPage
  * -----------------
- * Allows users to edit an existing ingredient.
+ * Path: /dashboard/ingredients/[id]/edit
  * Features:
- * - Protected route
+ * - Protected route (AuthContext + HttpOnly cookie)
  * - Fetch ingredient data by ID and pre-fill form
  * - React Hook Form for state + validation
  * - Type-safe using IngredientBody
@@ -52,9 +52,9 @@ function IngredientEditForm() {
 
     async function fetchIngredient() {
       try {
-        const token = localStorage.getItem("token");
         const res = await fetch(`/api/ingredients/${ingredientId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          method: "GET",
+          credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch ingredient");
 
@@ -65,9 +65,9 @@ function IngredientEditForm() {
         setValue("unit", ingredient.unit);
         setValue("defaultQuantity", ingredient.defaultQuantity);
         setValue("nutritionInfo", ingredient.nutritionInfo || {});
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
-        setServerError(err instanceof Error ? err.message : "Unexpected error");
+        setServerError(err.message || "Unexpected error");
       }
     }
 
@@ -82,13 +82,10 @@ function IngredientEditForm() {
     setServerError(null);
 
     try {
-      const token = localStorage.getItem("token");
       const res = await fetch(`/api/ingredients/${ingredientId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       });
 
@@ -98,9 +95,9 @@ function IngredientEditForm() {
       }
 
       router.push("/dashboard/ingredients"); // Redirect after edit
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setServerError(err instanceof Error ? err.message : "Unexpected error");
+      setServerError(err.message || "Unexpected error");
     } finally {
       setLoading(false);
     }

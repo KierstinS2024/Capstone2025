@@ -1,29 +1,29 @@
+// path: src/app/api/auth/login/route.ts
 /**
- * src/app/api/auth/login/route.ts
  * POST /api/auth/login
- * Logs in a user and sets an HttpOnly cookie containing a JWT
+ * --------------------
+ * Authenticates a user with email and password.
+ * Returns a JWT in an HttpOnly cookie and a client-safe user object.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
 import { verifyPassword, signToken } from "@/lib/auth";
+import { User as ClientUser } from "@/types/auth";
 
-// Constants for cookie configuration
+// Cookie configuration
 const COOKIE_NAME = "token";
 const COOKIE_PATH = "/";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export async function POST(req: NextRequest) {
   try {
-    // Connect to MongoDB
     await connectToDatabase();
 
-    // Parse the request body
     const { email, password }: { email?: string; password?: string } =
       await req.json();
 
-    // Validate input
     if (!email || !password) {
       return NextResponse.json(
         { message: "Email and password are required" },
@@ -31,43 +31,45 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find user in database
-    const user = await User.findOne({ email });
-    if (!user) {
+    // Fetch user with explicit type to fix "_id is unknown"
+    const userDoc = await User.findOne({ email }).lean<{
+      _id: string;
+      email: string;
+      password: string;
+      avatarUrl?: string;
+      preferences?: Record<string, any>;
+    }>();
+
+    if (!userDoc || !(await verifyPassword(password, userDoc.password))) {
       return NextResponse.json(
-        { message: "Invalid credentials" },
+        { message: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    // Check if password matches hashed password in DB
-    const isPasswordValid = await verifyPassword(password, user.password);
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { message: "Invalid credentials" },
-        { status: 401 }
-      );
-    }
+    const token = signToken({ userId: userDoc._id });
 
-    // Generate JWT
-    const token = signToken({ userId: user._id.toString() });
+    const safeUser: ClientUser = {
+      _id: userDoc._id,
+      email: userDoc.email,
+      avatarUrl: userDoc.avatarUrl,
+      preferences: userDoc.preferences || {},
+    };
 
-    // Create response and set HttpOnly cookie for secure client-server authentication
-    const response = NextResponse.json({ user }, { status: 200 });
+    const response = NextResponse.json({ user: safeUser }, { status: 200 });
     response.cookies.set({
       name: COOKIE_NAME,
       value: token,
-      httpOnly: true, // not accessible via JS
-      secure: process.env.NODE_ENV === "production", // HTTPS only in production
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       path: COOKIE_PATH,
       maxAge: COOKIE_MAX_AGE,
-      sameSite: "lax", // mitigates CSRF attacks
+      sameSite: "lax",
     });
 
     return response;
   } catch (err) {
-    // Log unexpected server errors
-    console.error("Login error:", err);
+    console.error("Login route error:", err);
     return NextResponse.json(
       { message: err instanceof Error ? err.message : "Server error" },
       { status: 500 }

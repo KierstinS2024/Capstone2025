@@ -1,19 +1,19 @@
-// Path: src/app/dashboard/food-intake/new/page.tsx
+// Path: src/app/dashboard/food-intake/[id]/edit/page.tsx
 "use client";
 
 /**
- * NewFoodIntakePage
- * -----------------
- * Path: /dashboard/food-intake/new
+ * EditFoodIntakePage
+ * ------------------
+ * Path: /dashboard/food-intake/[id]/edit
  * Features:
  * - Protected route (requires login)
- * - Form to log a new food intake entry
- * - Fetches recipes & ingredients for dropdowns
+ * - Loads existing food intake entry by ID
  * - Uses reusable FoodIntakeForm component
+ * - Handles update submission
  */
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
@@ -22,23 +22,28 @@ import { Recipe } from "@/types/recipe";
 import { IngredientBody } from "@/types/ingredient";
 import FoodIntakeForm from "@/components/FoodIntakeForm";
 
-export default function NewFoodIntakePage() {
+export default function EditFoodIntakePage() {
   return (
     <ProtectedRoute>
-      <FoodIntakeFormWrapper />
+      <EditFoodIntakeWrapper />
     </ProtectedRoute>
   );
 }
 
-function FoodIntakeFormWrapper() {
+function EditFoodIntakeWrapper() {
   const router = useRouter();
+  const params = useParams();
+  const { id } = params;
   const { user } = useAuth();
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [ingredients, setIngredients] = useState<IngredientBody[]>([]);
+  const [initialValues, setInitialValues] = useState<FoodIntakeFormType | null>(
+    null
+  );
   const [loading, setLoading] = useState(false);
 
-  // Fetch recipes & ingredients for dropdowns
+  // Fetch recipes & ingredients
   useEffect(() => {
     if (!user) return;
 
@@ -65,12 +70,36 @@ function FoodIntakeFormWrapper() {
     fetchData();
   }, [user]);
 
-  // Handle form submission
+  // Fetch existing entry for editing
+  useEffect(() => {
+    if (!user || !id) return;
+
+    const fetchEntry = async () => {
+      try {
+        const res = await fetch(`/api/food-intake/${id}`, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to fetch food intake entry");
+
+        const data = await res.json();
+        setInitialValues(data.data); // data.data must match FoodIntakeFormType
+      } catch (err) {
+        console.error(err);
+        alert(err instanceof Error ? err.message : "Unexpected error");
+      }
+    };
+
+    fetchEntry();
+  }, [user, id]);
+
+  // Handle update submission
   const handleSubmit = async (data: FoodIntakeFormType) => {
+    if (!id) return;
     setLoading(true);
+
     try {
-      const res = await fetch("/api/food-intake", {
-        method: "POST",
+      const res = await fetch(`/api/food-intake/${id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(data),
@@ -78,7 +107,7 @@ function FoodIntakeFormWrapper() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to log food intake");
+        throw new Error(errorData.message || "Failed to update entry");
       }
 
       router.push("/dashboard/food-intake");
@@ -90,8 +119,11 @@ function FoodIntakeFormWrapper() {
     }
   };
 
+  if (!initialValues) return <p>Loading entry...</p>;
+
   return (
     <FoodIntakeForm
+      initialValues={initialValues}
       recipes={recipes}
       ingredients={ingredients}
       onSubmit={handleSubmit}

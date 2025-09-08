@@ -35,7 +35,7 @@ const API_PATHS = {
   login: "/api/auth/login",
   signup: "/api/auth/signup",
   me: "/api/auth/me",
-  logout: "/api/auth/logout", // optional: could implement server-side cookie clearing
+  logout: "/api/auth/logout",
 };
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -44,14 +44,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // On mount, fetch the current user using the HttpOnly cookie
+  // Fetch current user on mount
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
         setLoading(true);
         const res = await fetch(API_PATHS.me, {
           method: "GET",
-          credentials: "include", // ensures cookies are sent
+          credentials: "include",
         });
 
         const data: { user?: User; message?: string } = await res.json();
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: "include", // sends and receives HttpOnly cookie
+        credentials: "include",
       });
 
       const data: { user?: User; message?: string } = await res.json();
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: "include", // sends and receives HttpOnly cookie
+        credentials: "include",
       });
 
       const data: { user?: User; message?: string } = await res.json();
@@ -142,17 +142,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
 
-      // Optionally call a logout endpoint to clear the cookie server-side
-      await fetch(API_PATHS.me, {
-        method: "POST", // could create /api/auth/logout
+      const res = await fetch(API_PATHS.logout, {
+        method: "POST",
         credentials: "include",
       });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Logout failed");
+      }
 
       setUser(null);
       router.push("/auth/login");
     } catch (err: any) {
       console.error("Logout error:", err);
       setUser(null);
+      setError(err.message || "Logout failed");
     } finally {
       setLoading(false);
     }

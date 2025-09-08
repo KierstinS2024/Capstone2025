@@ -1,7 +1,9 @@
 // Path: src/types/ingredient.d.ts
 export interface IngredientBody {
-  _id: string; // <-- add this
+  _id?: string; // optional for new ingredients
   name: string;
-  quantity?: number; // optional for some cases
-  unit?: string;
+  unit: string;
+  defaultQuantity?: number; // optional for existing data
+  nutritionInfo?: Record<string, any>; // optional JSON for nutrition details
 }
+

@@ -1,3 +1,4 @@
+//src/types/foodIntake.d.ts
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
 export interface FoodEntry {

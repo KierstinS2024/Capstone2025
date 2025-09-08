@@ -1,9 +1,18 @@
-// src/app/dashboard/page.tsx
+// path: src/app/dashboard/page.tsx
 "use client";
+
+/**
+ * DashboardPage
+ * -------------
+ * Displays user-specific dashboard data including next meal, shopping list count,
+ * recent intake, and favorites count. Protected route — only accessible to authenticated users.
+ * Fetches data from /api/dashboard using the HttpOnly cookie-based auth.
+ */
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import DashboardCard from "./DashboardCard";
+import DashboardCard from "../../components/DashboardCard";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface DashboardData {
   nextMeal: string | null;
@@ -13,6 +22,15 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
+  // Wrap dashboard in ProtectedRoute to enforce auth
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
+  );
+}
+
+function DashboardContent() {
   const { user, loading } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
     null
@@ -21,18 +39,24 @@ export default function DashboardPage() {
   const [fetching, setFetching] = useState<boolean>(true);
 
   useEffect(() => {
+    /**
+     * fetchDashboard
+     * --------------
+     * Fetches dashboard data from the server.
+     * Relies on HttpOnly cookie for authentication.
+     */
     const fetchDashboard = async () => {
       setFetching(true);
       setError(null);
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("No authentication token found");
 
+      try {
         const res = await fetch("/api/dashboard", {
-          headers: { Authorization: `Bearer ${token}` },
+          method: "GET",
+          credentials: "include", // sends HttpOnly cookie automatically
         });
 
         const data: DashboardData & { message?: string } = await res.json();
+
         if (!res.ok)
           throw new Error(data.message || "Failed to load dashboard");
 
@@ -47,10 +71,16 @@ export default function DashboardPage() {
     if (!loading && user) fetchDashboard();
   }, [loading, user]);
 
+  // Render loading state
   if (loading || fetching) return <p>Loading dashboard...</p>;
+
+  // Render error state
   if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
+
+  // Render empty state
   if (!dashboardData) return <p>No dashboard data available.</p>;
 
+  // Render dashboard cards
   return (
     <div style={{ display: "grid", gap: "1rem" }}>
       <DashboardCard title="Next Meal">

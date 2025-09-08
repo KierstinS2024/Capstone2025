@@ -1,4 +1,4 @@
-// path: src/app/api/recipes/route.ts
+// Path: src/app/api/recipes/route.ts
 
 /**
  * Recipes API (Collection)
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
       userSubmitted: true,
       createdByUserId: userId,
       ingredients,
+      source: "user", // ✅ explicitly mark as user recipe
     });
 
     return NextResponse.json({ recipe: newRecipe }, { status: 201 });

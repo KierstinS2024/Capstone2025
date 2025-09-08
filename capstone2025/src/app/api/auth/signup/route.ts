@@ -1,30 +1,28 @@
+// path: src/app/api/auth/signup/route.ts
 /**
- * src/app/api/auth/signup/route.ts
  * POST /api/auth/signup
- * Creates a new user, hashes their password, generates a JWT,
- * and sets it in an HttpOnly cookie for authentication.
+ * --------------------
+ * Registers a new user with email and password.
+ * Returns a JWT in an HttpOnly cookie and a client-safe user object.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
 import { hashPassword, signToken } from "@/lib/auth";
+import { User as ClientUser } from "@/types/auth";
 
-// Cookie configuration
 const COOKIE_NAME = "token";
 const COOKIE_PATH = "/";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 
 export async function POST(req: NextRequest) {
   try {
-    // Connect to MongoDB
     await connectToDatabase();
 
-    // Parse request body
     const { email, password }: { email?: string; password?: string } =
       await req.json();
 
-    // Validate required fields
     if (!email || !password) {
       return NextResponse.json(
         { message: "Email and password are required" },
@@ -32,40 +30,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).lean<{ _id: string }>();
     if (existingUser) {
       return NextResponse.json(
-        { message: "Email already registered" },
-        { status: 400 }
+        { message: "Email already in use" },
+        { status: 409 }
       );
     }
 
-    // Hash the password before saving
     const hashedPassword = await hashPassword(password);
 
-    // Create the new user in MongoDB
-    const newUser = await User.create({ email, password: hashedPassword });
+    // Create user and lean to get plain object with typed _id
+    const newUserDoc = await User.create({ email, password: hashedPassword });
 
-    // Generate a JWT for this user
-    const token = signToken({ userId: newUser._id.toString() });
+    const safeUser: ClientUser = {
+      _id: newUserDoc._id.toString(),
+      email: newUserDoc.email,
+      avatarUrl: newUserDoc.avatarUrl,
+      preferences: newUserDoc.preferences || {},
+    };
 
-    // Create response and set HttpOnly cookie
-    const response = NextResponse.json({ user: newUser }, { status: 201 });
+    const token = signToken({ userId: newUserDoc._id.toString() });
+
+    const response = NextResponse.json({ user: safeUser }, { status: 201 });
     response.cookies.set({
       name: COOKIE_NAME,
       value: token,
-      httpOnly: true, // protects against XSS
-      secure: process.env.NODE_ENV === "production", // only send over HTTPS in production
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       path: COOKIE_PATH,
       maxAge: COOKIE_MAX_AGE,
-      sameSite: "lax", // protects against CSRF
+      sameSite: "lax",
     });
 
     return response;
   } catch (err) {
-    // Catch and log server errors
-    console.error("Signup error:", err);
+    console.error("Signup route error:", err);
     return NextResponse.json(
       { message: err instanceof Error ? err.message : "Server error" },
       { status: 500 }

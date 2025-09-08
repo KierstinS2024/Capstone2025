@@ -1,32 +1,36 @@
-// File: src/models/FoodIntake.ts
-// Purpose: Logs what a user consumes for nutrition tracking (recipes or individual ingredients)
+// Path: src/models/FoodIntake.ts
+// Purpose: Logs what a user consumes (recipes or ingredients) for nutrition tracking.
+// Notes: Enforces one of recipeId or ingredientId, stores nutrition snapshot at logging time.
 
 import mongoose, { Schema, Document } from "mongoose";
 
-/**
- * TypeScript interface representing a Food Intake document
- */
-export interface FoodIntakeDocument extends Document {
-  userId: mongoose.Types.ObjectId; // Reference to the user
-  recipeId?: mongoose.Types.ObjectId; // Optional reference to a recipe
-  ingredientId?: mongoose.Types.ObjectId; // Optional reference to a single ingredient
-  date: Date; // Date of consumption
-  quantity: number; // Amount consumed
-  unit: string; // Unit of measurement (e.g., g, cup)
-  nutritionSnapshot?: Record<string, any>; // Captures nutrition info at logging time
-  createdAt: Date; // Timestamp of creation
-  updatedAt: Date; // Timestamp of last update
+export interface NutritionSnapshot {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  [key: string]: number; // extensible (fiber, sugar, etc.)
 }
 
-/**
- * Mongoose schema defining the structure of FoodIntake
- */
+export interface FoodIntakeDocument extends Document {
+  userId: mongoose.Types.ObjectId;
+  recipeId?: mongoose.Types.ObjectId;
+  ingredientId?: mongoose.Types.ObjectId;
+  date: Date;
+  quantity: number;
+  unit: string;
+  nutritionSnapshot?: NutritionSnapshot;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const FoodIntakeSchema = new Schema<FoodIntakeDocument>(
   {
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: [true, "User reference is required"],
+      index: true, // helpful for lookups
     },
     recipeId: {
       type: Schema.Types.ObjectId,
@@ -40,6 +44,7 @@ const FoodIntakeSchema = new Schema<FoodIntakeDocument>(
       type: Date,
       required: [true, "Consumption date is required"],
       default: Date.now,
+      index: true, // support sorting by date
     },
     quantity: {
       type: Number,
@@ -53,15 +58,25 @@ const FoodIntakeSchema = new Schema<FoodIntakeDocument>(
     },
     nutritionSnapshot: {
       type: Schema.Types.Mixed,
-      default: {}, // Store calories, macros, or other nutrition info
+      default: {},
     },
   },
-  { timestamps: true } // Adds createdAt and updatedAt automatically
+  { timestamps: true }
 );
 
-/**
- * Export the model
- * Ensures compatibility with hot-reload in development
- */
+// Index compound for user/date queries
+FoodIntakeSchema.index({ userId: 1, date: -1 });
+
+// Enforce either recipeId or ingredientId
+FoodIntakeSchema.pre("validate", function (next) {
+  if (!this.recipeId && !this.ingredientId) {
+    return next(new Error("Either recipeId or ingredientId is required"));
+  }
+  if (this.recipeId && this.ingredientId) {
+    return next(new Error("Only one of recipeId or ingredientId can be set"));
+  }
+  next();
+});
+
 export default mongoose.models.FoodIntake ||
   mongoose.model<FoodIntakeDocument>("FoodIntake", FoodIntakeSchema);

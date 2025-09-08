@@ -1,178 +1,139 @@
-// path: src/app/api/recipes/[id]/route.ts
+// Path: src/app/api/recipes/[id]/route.ts
+
 /**
- * Recipe Individual API
- * - GET: fetch a single recipe
- * - PUT: update a recipe (JWT-protected, owner-only)
- * - DELETE: delete a recipe (JWT-protected, owner-only)
+ * Recipes API (Single Recipe)
+ * - GET: fetch a recipe by ID
+ * - PUT: update recipe (user recipes only)
+ * - DELETE: remove recipe (user recipes only)
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import Recipe from "@/models/Recipe";
 import { requireAuth } from "@/lib/authHelpers";
 
-export interface RecipeBody {
-  title?: string;
-  description?: string;
-  ingredients?: Array<{
-    ingredientId: string;
-    name: string;
-    quantity: number;
-    unit: string;
-  }>;
-  steps?: string[];
-  tags?: string[];
+interface Params {
+  params: { id: string };
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-}
-
-// GET /api/recipes/:id - fetch single recipe
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+/**
+ * GET /api/recipes/:id
+ */
+export async function GET(_: NextRequest, { params }: Params) {
   try {
     await connectToDatabase();
 
-    const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Invalid recipe ID" },
-        { status: 400 }
-      );
-    }
-
-    const recipe = await Recipe.findById(id).lean();
+    const recipe = await Recipe.findById(params.id).lean();
     if (!recipe) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Recipe not found" },
+      return NextResponse.json(
+        { message: "Recipe not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json<ApiResponse<typeof recipe>>({
-      success: true,
-      data: recipe,
-    });
+    return NextResponse.json({ recipe });
   } catch (err) {
     console.error("GET /api/recipes/:id error:", err);
-    return NextResponse.json<ApiResponse<null>>(
-      {
-        success: false,
-        message: err instanceof Error ? err.message : "Server error",
-      },
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Error fetching recipe" },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/recipes/:id - update recipe (owner-only)
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+/**
+ * PUT /api/recipes/:id
+ * - Only user recipes can be updated
+ */
+export async function PUT(req: NextRequest, { params }: Params) {
   try {
     await connectToDatabase();
-
     const userId = requireAuth(req);
 
-    const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Invalid recipe ID" },
-        { status: 400 }
-      );
-    }
-
-    const recipe = await Recipe.findById(id);
+    const recipe = await Recipe.findById(params.id);
     if (!recipe) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Recipe not found" },
+      return NextResponse.json(
+        { message: "Recipe not found" },
         { status: 404 }
       );
     }
 
-    // Only owner can update
-    if (recipe.createdByUserId?.toString() !== userId) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Forbidden: You do not own this recipe" },
+    // ✅ Block editing of Spoonacular recipes
+    if (recipe.source === "spoonacular") {
+      return NextResponse.json(
+        { message: "Spoonacular recipes are read-only" },
         { status: 403 }
       );
     }
 
-    const updates: RecipeBody = await req.json();
-    Object.assign(recipe, updates);
+    // ✅ Allow editing only if user owns the recipe
+    if (recipe.createdByUserId?.toString() !== userId) {
+      return NextResponse.json(
+        { message: "Not authorized to update this recipe" },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const { name, description, instructions, cuisine, ingredients } = body;
+
+    recipe.name = name ?? recipe.name;
+    recipe.description = description ?? recipe.description;
+    recipe.instructions = instructions ?? recipe.instructions;
+    recipe.cuisine = cuisine ?? recipe.cuisine;
+    recipe.ingredients = ingredients ?? recipe.ingredients;
+
     await recipe.save();
 
-    return NextResponse.json<ApiResponse<typeof recipe>>({
-      success: true,
-      data: recipe,
-      message: "Recipe updated successfully",
-    });
+    return NextResponse.json({ recipe });
   } catch (err) {
     console.error("PUT /api/recipes/:id error:", err);
-    return NextResponse.json<ApiResponse<null>>(
-      {
-        success: false,
-        message: err instanceof Error ? err.message : "Server error",
-      },
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Error updating recipe" },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/recipes/:id - delete recipe (owner-only)
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+/**
+ * DELETE /api/recipes/:id
+ * - Only user recipes can be deleted
+ */
+export async function DELETE(req: NextRequest, { params }: Params) {
   try {
     await connectToDatabase();
-
     const userId = requireAuth(req);
 
-    const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Invalid recipe ID" },
-        { status: 400 }
-      );
-    }
-
-    const recipe = await Recipe.findById(id);
+    const recipe = await Recipe.findById(params.id);
     if (!recipe) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Recipe not found" },
+      return NextResponse.json(
+        { message: "Recipe not found" },
         { status: 404 }
       );
     }
 
-    // Only owner can delete
-    if (recipe.createdByUserId?.toString() !== userId) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Forbidden: You do not own this recipe" },
+    // ✅ Block deletion of Spoonacular recipes
+    if (recipe.source === "spoonacular") {
+      return NextResponse.json(
+        { message: "Spoonacular recipes cannot be deleted" },
         { status: 403 }
       );
     }
 
-    await recipe.deleteOne();
+    // ✅ Allow deletion only if user owns the recipe
+    if (recipe.createdByUserId?.toString() !== userId) {
+      return NextResponse.json(
+        { message: "Not authorized to delete this recipe" },
+        { status: 403 }
+      );
+    }
 
-    return NextResponse.json<ApiResponse<null>>({
-      success: true,
-      message: "Recipe deleted successfully",
-    });
+    await Recipe.findByIdAndDelete(params.id);
+    return NextResponse.json({ message: "Recipe deleted successfully" });
   } catch (err) {
     console.error("DELETE /api/recipes/:id error:", err);
-    return NextResponse.json<ApiResponse<null>>(
-      {
-        success: false,
-        message: err instanceof Error ? err.message : "Server error",
-      },
+    return NextResponse.json(
+      { message: err instanceof Error ? err.message : "Error deleting recipe" },
       { status: 500 }
     );
   }

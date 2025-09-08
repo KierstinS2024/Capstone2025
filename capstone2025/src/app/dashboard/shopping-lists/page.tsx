@@ -1,48 +1,57 @@
-// src/app/dashboard/shopping-lists/page.tsx
+// Path: src/app/dashboard/shopping-lists/page.tsx
 "use client";
 
 /**
- * Dashboard Shopping Lists Page
- * -----------------------------
- * Shows all shopping lists for the logged-in user.
+ * Shopping Lists Page
+ * ------------------
+ * Path: /dashboard/shopping-lists
  * Features:
- * - ProtectedRoute (JWT + AuthContext)
- * - Fetch shopping lists from /api/shopping-lists
- * - Show "Create New" button
+ * - Protected route (requires login)
+ * - Fetches all shopping lists for the current user
+ * - Displays list with links to view/edit
+ * - Loading & error handling
  */
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
 import { ShoppingList } from "@/types/shoppingList";
-import styles from "./ShoppingListsPage.module.css";
 
+// -----------------------------
+// Main page wrapper with protection
+// -----------------------------
 export default function ShoppingListsPage() {
   return (
     <ProtectedRoute>
-      <ShoppingListsContent />
+      <ShoppingLists />
     </ProtectedRoute>
   );
 }
 
-function ShoppingListsContent() {
-  const router = useRouter();
+// -----------------------------
+// Shopping lists component
+// -----------------------------
+function ShoppingLists() {
   const { user } = useAuth();
 
   const [lists, setLists] = useState<ShoppingList[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch shopping lists on mount once user is available
   useEffect(() => {
-    async function fetchLists() {
-      if (!user) return;
+    if (!user) return;
 
+    const fetchLists = async () => {
       setLoading(true);
+      setError(null);
+
       try {
+        // Fetch lists from API, send credentials to include HttpOnly cookie
         const res = await fetch("/api/shopping-lists", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch shopping lists");
 
@@ -54,48 +63,40 @@ function ShoppingListsContent() {
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchLists();
   }, [user]);
 
-  if (loading)
-    return <p className={styles.message}>Loading shopping lists...</p>;
-  if (error) return <p className={styles.error}>{error}</p>;
+  // Loading or error states
+  if (loading) return <p>Loading shopping lists...</p>;
+  if (error) return <p className="error">{error}</p>;
 
+  // -----------------------------
+  // JSX
+  // -----------------------------
   return (
-    <main className={styles.container}>
-      <h1 className={styles.title}>Your Shopping Lists</h1>
+    <main>
+      <h1>Shopping Lists</h1>
 
-      <button
-        className={styles.addButton}
-        onClick={() => router.push("/dashboard/shopping-lists/new")}
-      >
-        + Create New Shopping List
-      </button>
+      {/* Button to create a new list */}
+      <Link href="/dashboard/shopping-lists/new">+ New Shopping List</Link>
 
+      {/* Empty state */}
       {lists.length === 0 ? (
-        <p className={styles.emptyMessage}>You have no shopping lists yet.</p>
+        <p>No shopping lists found.</p>
       ) : (
-        <div className={styles.cardsGrid}>
+        // Display lists
+        <ul>
           {lists.map((list) => (
-            <div
-              key={list._id}
-              className={styles.card}
-              onClick={() =>
-                router.push(`/dashboard/shopping-lists/${list._id}`)
-              }
-            >
-              <h2>{list.title}</h2>
-              <p>{list.items.length} items</p>
-              <small>
-                {list.createdAt
-                  ? new Date(list.createdAt).toLocaleDateString()
-                  : ""}
-              </small>
-            </div>
+            <li key={list._id}>
+              {/* Link to view/edit the list */}
+              <Link href={`/dashboard/shopping-lists/${list._id}`}>
+                {list.title}
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </main>
   );

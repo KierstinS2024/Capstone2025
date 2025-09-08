@@ -4,9 +4,9 @@
 /**
  * NewIngredientPage
  * -----------------
- * Allows users to add a new ingredient.
+ * Path: /dashboard/ingredients/new
  * Features:
- * - Protected route
+ * - Protected route (AuthContext + HttpOnly cookie)
  * - React Hook Form for state + validation
  * - Type-safe using IngredientBody
  * - API POST to /api/ingredients
@@ -50,13 +50,10 @@ function IngredientForm() {
     setServerError(null);
 
     try {
-      const token = localStorage.getItem("token");
       const res = await fetch("/api/ingredients", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       });
 
@@ -66,9 +63,9 @@ function IngredientForm() {
       }
 
       router.push("/dashboard/ingredients"); // Redirect to ingredients list
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setServerError(err instanceof Error ? err.message : "Unexpected error");
+      setServerError(err.message || "Unexpected error");
     } finally {
       setLoading(false);
     }

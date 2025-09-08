@@ -1,0 +1,93 @@
+/* src/app/Layout.module.css */
+
+/* -----------------------------
+   Body & Main
+----------------------------- */
+.body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.main {
+  flex: 1;
+  padding: var(--space-lg);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* -----------------------------
+   Header
+----------------------------- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+  background-color: var(--bg-card);
+  box-shadow: var(--shadow-md);
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-size: var(--font-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--accent-primary);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.navLink {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.navLink:hover {
+  background-color: var(--bg-hover);
+}
+
+.welcome {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.logoutBtn,
+.darkModeBtn {
+  background-color: var(--accent-light);
+  color: var(--accent-primary);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s, transform 0.1s;
+  cursor: pointer;
+  border: none;
+}
+
+.logoutBtn:hover,
+.darkModeBtn:hover {
+  background-color: var(--accent-primary);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.logoutBtn:disabled,
+.darkModeBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
