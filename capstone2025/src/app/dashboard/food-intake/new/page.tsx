@@ -4,12 +4,11 @@
 /**
  * NewFoodIntakePage
  * -----------------
- * Path: /dashboard/food-intake/new
+ * Page to log a new food intake entry.
  * Features:
  * - Protected route (requires login)
- * - Form to log a new food intake entry
- * - Fetches recipes & ingredients for dropdowns
  * - Uses reusable FoodIntakeForm component
+ * - Fetches recipes & ingredients for dropdowns
  */
 
 import { useEffect, useState } from "react";
@@ -17,10 +16,13 @@ import { useRouter } from "next/navigation";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
-import { FoodIntakeForm as FoodIntakeFormType } from "@/types/foodIntakeForm";
+import FoodIntakeForm from "@/components/FoodIntakeForm";
 import { Recipe } from "@/types/recipe";
 import { IngredientBody } from "@/types/ingredient";
-import FoodIntakeForm from "@/components/FoodIntakeForm";
+import {
+  type FoodIntakeFormType,
+  foodIntakeFormSchema,
+} from "@/schemas/food-intake/foodIntakeForm";
 
 export default function NewFoodIntakePage() {
   return (
@@ -59,6 +61,7 @@ function FoodIntakeFormWrapper() {
         setIngredients(ingredientsData.data || []);
       } catch (err) {
         console.error(err);
+        alert(err instanceof Error ? err.message : "Unexpected error");
       }
     };
 
@@ -81,10 +84,10 @@ function FoodIntakeFormWrapper() {
         throw new Error(errorData.message || "Failed to log food intake");
       }
 
-      router.push("/dashboard/food-intake");
-    } catch (err: any) {
-      console.error(err.message || err);
-      alert(err.message || "Unexpected error");
+      router.push("/dashboard/food-intake"); // redirect after success
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Unexpected error");
     } finally {
       setLoading(false);
     }

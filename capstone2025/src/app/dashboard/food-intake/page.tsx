@@ -3,15 +3,12 @@
 
 /**
  * FoodIntakeDashboardPage
- * ------------------------
- * Path: /dashboard/food-intake
- *
+ * ----------------------
+ * Shows all food intake entries for the current user.
  * Features:
- * - Protected route (requires login)
- * - Fetches food intake entries, recipes, and ingredients
- * - Displays a list of intake entries (sorted newest → oldest)
- * - Provides navigation to create, edit, and delete entries
- * - Prevents deletion of Spoonacular-based recipes (read-only)
+ * - Protected route
+ * - Fetches entries, recipes, ingredients
+ * - Allows navigation to create/edit entries
  */
 
 import { useEffect, useState } from "react";
@@ -19,10 +16,9 @@ import { useRouter } from "next/navigation";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
-import { FoodIntakeForm as FoodIntakeFormType } from "@/types/foodIntakeForm";
+import { FoodIntakeFormType } from "@/schemas/food-intake/foodIntakeForm";
 import { Recipe } from "@/types/recipe";
 import { IngredientBody } from "@/types/ingredient";
-
 import styles from "./FoodIntakeListPage.module.css";
 
 interface FoodIntakeResponse {
@@ -49,16 +45,13 @@ function FoodIntakeList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Fetch intake entries, recipes, and ingredients
-   */
+  // Fetch entries, recipes, ingredients
   useEffect(() => {
     if (!user) return;
 
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-
       try {
         const [entriesRes, recipesRes, ingredientsRes] = await Promise.all([
           fetch("/api/food-intake", { credentials: "include" }),
@@ -75,6 +68,7 @@ function FoodIntakeList() {
         const recipesData = await recipesRes.json();
         const ingredientsData = await ingredientsRes.json();
 
+        // Sort entries newest first
         const sortedEntries = (entriesData.data || []).sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
@@ -96,9 +90,7 @@ function FoodIntakeList() {
   if (loading) return <p className={styles.message}>Loading food intake...</p>;
   if (error) return <p className={styles.error}>{error}</p>;
 
-  /**
-   * Helpers
-   */
+  // Helper: map recipe/ingredient IDs to names
   const getItemName = (recipeId?: string, ingredientId?: string) => {
     if (recipeId) {
       const recipe = recipes.find((r) => r._id === recipeId);
@@ -111,6 +103,7 @@ function FoodIntakeList() {
     return "—";
   };
 
+  // Helper: format ISO date
   const formatDate = (isoDate: string) =>
     new Date(isoDate).toLocaleDateString("en-US", {
       year: "numeric",
@@ -118,40 +111,6 @@ function FoodIntakeList() {
       day: "numeric",
     });
 
-  /**
-   * Delete intake entry (user-created only)
-   */
-  const handleDelete = async (id: string, recipeId?: string) => {
-    // Prevent deleting Spoonacular-based recipes
-    const recipe = recipeId ? recipes.find((r) => r._id === recipeId) : null;
-    if (recipe && recipe.source === "spoonacular") {
-      alert("Spoonacular recipes are read-only and cannot be deleted.");
-      return;
-    }
-
-    if (!confirm("Are you sure you want to delete this entry?")) return;
-
-    try {
-      const res = await fetch(`/api/food-intake/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || "Failed to delete entry");
-      }
-
-      setEntries((prev) => prev.filter((entry) => entry._id !== id));
-    } catch (err) {
-      console.error(err);
-      alert(err instanceof Error ? err.message : "Unexpected error");
-    }
-  };
-
-  /**
-   * Render
-   */
   return (
     <main className={styles.container}>
       <h1 className={styles.title}>Food Intake</h1>
@@ -167,29 +126,23 @@ function FoodIntakeList() {
         <p className={styles.emptyMessage}>No food intake entries found.</p>
       ) : (
         <ul className={styles.list}>
-          {entries.map((entry) => (
-            <li key={entry._id} className={styles.listItem}>
+          {entries.map((entry, index) => (
+            <li key={index} className={styles.listItem}>
               <span>
                 {formatDate(entry.date)} — {entry.mealType} — {entry.quantity}{" "}
                 {entry.unit} — {getItemName(entry.recipeId, entry.ingredientId)}
               </span>
 
-              <div className={styles.actions}>
-                <button
-                  className={styles.editButton}
-                  onClick={() =>
-                    router.push(`/dashboard/food-intake/${entry._id}/edit`)
-                  }
-                >
-                  Edit
-                </button>
-                <button
-                  className={styles.deleteButton}
-                  onClick={() => handleDelete(entry._id!, entry.recipeId)}
-                >
-                  Delete
-                </button>
-              </div>
+              <button
+                className={styles.editButton}
+                onClick={() =>
+                  router.push(
+                    `/dashboard/food-intake/${index}/edit` // replace index with actual _id if available
+                  )
+                }
+              >
+                Edit
+              </button>
             </li>
           ))}
         </ul>

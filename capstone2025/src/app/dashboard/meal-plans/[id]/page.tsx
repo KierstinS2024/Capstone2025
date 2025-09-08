@@ -1,153 +1,93 @@
+// Path: src/app/dashboard/meal-plans/[id]/page.tsx
 "use client";
 
 /**
- * MealPlanPage
- * -------------------------
- * Individual Meal Plan view page
+ * ViewMealPlanPage
+ * ----------------
+ * Displays a single meal plan.
  * Features:
- * - ProtectedRoute wrapper
- * - Displays meal plan title, week start, notes, and all entries
- * - Handles `recipeId` being either string or populated Recipe object
- * - Edit and delete actions
+ * - Protected route
+ * - Fetches meal plan by ID
+ * - Lists all entries (recipes) for the week
  */
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-
+import { useParams, useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { useAuth } from "@/context/AuthContext";
-import { MealPlan, MealPlanEntry } from "@/types/mealPlan";
-import styles from "./MealPlanPage.module.css";
+import { MealPlanFormSchema } from "@/components/MealPlanForm";
 
-export default function MealPlanPage() {
+export default function ViewMealPlanPage() {
   return (
     <ProtectedRoute>
-      <MealPlanContent />
+      <MealPlanViewWrapper />
     </ProtectedRoute>
   );
 }
 
-function MealPlanContent() {
+function MealPlanViewWrapper() {
+  const { id } = useParams();
   const router = useRouter();
-  const { user } = useAuth();
-  const params = useParams();
-  const planId = params.id;
-
-  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [mealPlan, setMealPlan] = useState<MealPlanFormSchema | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // -----------------------------
-  // Fetch meal plan by ID
-  // -----------------------------
+  // Fetch meal plan data on mount
   useEffect(() => {
-    async function fetchMealPlan() {
-      if (!user || !planId) return;
+    if (!id) return;
 
-      setLoading(true);
+    const fetchMealPlan = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`/api/meal-plans/${planId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const res = await fetch(`/api/meal-plans/${id}`, {
+          credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch meal plan");
 
         const data = await res.json();
-        setMealPlan(data.data || null);
-      } catch (err) {
+        setMealPlan(data.data);
+      } catch (err: any) {
         console.error(err);
-        setError(err instanceof Error ? err.message : "Unexpected error");
+        alert(err.message || "Unexpected error");
+        router.push("/dashboard/meal-plans"); // redirect if fetch fails
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchMealPlan();
-  }, [user, planId]);
+  }, [id, router]);
 
-  // -----------------------------
-  // Delete meal plan handler
-  // -----------------------------
-  const handleDelete = async () => {
-    if (!mealPlan) return;
-    if (!confirm("Are you sure you want to delete this meal plan?")) return;
+  if (loading) return <p>Loading meal plan...</p>;
+  if (!mealPlan) return <p>Meal plan not found.</p>;
 
-    try {
-      const res = await fetch(`/api/meal-plans/${mealPlan._id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (!res.ok) throw new Error("Failed to delete meal plan");
-      router.push("/dashboard/meal-plans");
-    } catch (err) {
-      console.error(err);
-      alert(err instanceof Error ? err.message : "Unexpected error");
-    }
-  };
-
-  // -----------------------------
-  // Loading / Error states
-  // -----------------------------
-  if (loading) return <p className={styles.message}>Loading meal plan...</p>;
-  if (error) return <p className={styles.error}>{error}</p>;
-  if (!mealPlan) return <p className={styles.error}>Meal plan not found.</p>;
-
-  // -----------------------------
-  // JSX
-  // -----------------------------
   return (
-    <main className={styles.container}>
-      <h1 className={styles.title}>{mealPlan.title}</h1>
-
-      {mealPlan.weekStartDate && (
-        <p>
-          Week starting: {new Date(mealPlan.weekStartDate).toLocaleDateString()}
-        </p>
-      )}
-
-      {mealPlan.notes && (
-        <p className={styles.notes}>Notes: {mealPlan.notes}</p>
-      )}
-
-      <section className={styles.section}>
-        <h2>Entries</h2>
-        {mealPlan.entries.length === 0 ? (
-          <p>No entries yet.</p>
-        ) : (
-          <ul>
-            {mealPlan.entries.map((entry: MealPlanEntry) => {
-              // Handle recipeId as string or populated Recipe object
-              const recipe =
-                typeof entry.recipeId === "string" ? null : entry.recipeId;
-              const recipeTitle = recipe?.title || "Recipe not loaded";
-
-              return (
-                <li key={entry._id}>
-                  {recipeTitle} - {entry.servings} servings
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <button
-        className={styles.editButton}
-        onClick={() =>
-          router.push(`/dashboard/meal-plans/${mealPlan._id}/edit`)
-        }
-      >
-        Edit
+    <div>
+      <h1>
+        Meal Plan for Week Starting{" "}
+        {new Date(mealPlan.weekStartDate).toLocaleDateString()}
+      </h1>
+      {mealPlan.notes && <p>Notes: {mealPlan.notes}</p>}
+      <table>
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Meal Type</th>
+            <th>Recipe</th>
+            <th>Servings</th>
+          </tr>
+        </thead>
+        <tbody>
+          {mealPlan.entries.map((entry, idx) => (
+            <tr key={idx}>
+              <td>{entry.dayOfWeek}</td>
+              <td>{entry.mealType}</td>
+              <td>{entry.recipeId || "Custom / Unknown"}</td>
+              <td>{entry.servings}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button onClick={() => router.push(`/dashboard/meal-plans/${id}/edit`)}>
+        Edit Meal Plan
       </button>
-      <button className={styles.deleteButton} onClick={handleDelete}>
-        Delete
-      </button>
-      <button
-        className={styles.backButton}
-        onClick={() => router.push("/dashboard/meal-plans")}
-      >
-        ← Back to Meal Plans
-      </button>
-    </main>
+    </div>
   );
 }

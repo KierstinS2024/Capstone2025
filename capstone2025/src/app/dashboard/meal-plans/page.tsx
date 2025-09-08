@@ -1,33 +1,38 @@
-// src/app/dashboard/meal-plans/page.tsx
+// Path: src/app/dashboard/meal-plans/page.tsx
 "use client";
 
 /**
- * Dashboard Meal Plans Page
- * -------------------------
- * Lists all meal plans for the logged-in user.
+ * MealPlansDashboardPage
+ * ----------------------
+ * Dashboard listing all meal plans.
  * Features:
- * - ProtectedRoute
- * - Fetch user-specific meal plans from `/api/meal-plans`
- * - "Create New Meal Plan" button
+ * - Protected route
+ * - Fetches meal plans from API
+ * - Links to create new or edit existing meal plans
  */
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
-import { MealPlan } from "@/types/mealPlan";
-import styles from "./MealPlansPage.module.css";
 
-export default function MealPlansPage() {
+export default function MealPlansDashboardPage() {
   return (
     <ProtectedRoute>
-      <MealPlansContent />
+      <MealPlansList />
     </ProtectedRoute>
   );
 }
 
-function MealPlansContent() {
+interface MealPlan {
+  _id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  description?: string;
+}
+
+function MealPlansList() {
   const router = useRouter();
   const { user } = useAuth();
 
@@ -35,15 +40,16 @@ function MealPlansContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch all meal plans
   useEffect(() => {
-    async function fetchMealPlans() {
-      if (!user) return;
+    if (!user) return;
 
+    const fetchMealPlans = async () => {
       setLoading(true);
+      setError(null);
+
       try {
-        const res = await fetch("/api/meal-plans", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
+        const res = await fetch("/api/meal-plans", { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch meal plans");
 
         const data = await res.json();
@@ -54,45 +60,42 @@ function MealPlansContent() {
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchMealPlans();
   }, [user]);
 
-  if (loading) return <p className={styles.message}>Loading meal plans...</p>;
-  if (error) return <p className={styles.error}>{error}</p>;
+  if (loading) return <p>Loading meal plans...</p>;
+  if (error) return <p className="error">{error}</p>;
 
   return (
-    <main className={styles.container}>
-      <h1 className={styles.title}>Your Meal Plans</h1>
+    <main>
+      <h1>Meal Plans</h1>
 
-      <button
-        className={styles.addButton}
-        onClick={() => router.push("/dashboard/meal-plans/new")}
-      >
+      <button onClick={() => router.push("/dashboard/meal-plans/new")}>
         + Create New Meal Plan
       </button>
 
       {mealPlans.length === 0 ? (
-        <p className={styles.emptyMessage}>No meal plans created yet.</p>
+        <p>No meal plans found.</p>
       ) : (
-        <div className={styles.cardsGrid}>
+        <ul>
           {mealPlans.map((plan) => (
-            <div
-              key={plan._id}
-              className={styles.card}
-              onClick={() => router.push(`/dashboard/meal-plans/${plan._id}`)}
-            >
-              <h2>{plan.title}</h2>
-              <p>{plan.entries.length} entries</p>
-              {plan.weekStartDate && (
-                <small>
-                  Week of {new Date(plan.weekStartDate).toLocaleDateString()}
-                </small>
-              )}
-            </div>
+            <li key={plan._id}>
+              <span>
+                {plan.title} — {new Date(plan.startDate).toLocaleDateString()}{" "}
+                to {new Date(plan.endDate).toLocaleDateString()}
+              </span>
+              <button
+                onClick={() =>
+                  router.push(`/dashboard/meal-plans/${plan._id}/edit`)
+                }
+              >
+                Edit
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </main>
   );

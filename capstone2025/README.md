@@ -1,7 +1,7 @@
 🍽️ Recipe & Meal Planner App (Capstone Project)
 ================================================
 
-A **full-stack web application** built with **Next.js** and **MongoDB**, designed to simplify meal planning, manage grocery lists, and track nutrition through personalized recipes and intuitive weekly planners.
+**A full-stack web application built with Next.js and MongoDB, designed to simplify meal planning, manage grocery lists, and track nutrition through personalized recipes and weekly planners.**
 
 * * * * *
 
@@ -10,15 +10,15 @@ Project Overview
 
 This web app allows users to:
 
--   Discover and save recipes tailored to dietary needs or available ingredients
+-   Discover and save recipes tailored to dietary needs or available ingredients.
 
--   Create, customize, and save weekly meal plans
+-   Create, customize, and save weekly meal plans.
 
--   Automatically generate categorized shopping lists
+-   Automatically generate categorized shopping lists.
 
--   Log daily food intake to track nutrition
+-   Log daily food intake to track nutrition.
 
--   Receive personalized suggestions and motivational nudges via the dashboard
+-   Receive personalized suggestions and motivational nudges via the dashboard.
 
 The application uses **Next.js API routes**, **React components**, and **MongoDB** for scalable, flexible data storage.
 
@@ -33,13 +33,13 @@ Tech Stack
 
 -   Context API for state management
 
--   CSS Modules for styling (ready for dark mode)
+-   CSS Modules (with dark mode support)
 
 -   Axios for backend communication
 
 **Backend**
 
--   Next.js API Routes for server-side endpoints
+-   Next.js API Routes (server-side endpoints)
 
 -   MongoDB with Mongoose ORM
 
@@ -49,11 +49,15 @@ Tech Stack
 
 -   bcrypt for password hashing
 
+**Validation**
+
+-   Zod schemas for form validation (stored in `src/schemas/`)
+
 **External API**
 
 -   [Spoonacular](https://spoonacular.com/food-api?utm_source=chatgpt.com) for recipes, ingredients, and nutritional data
 
-> ⚠️ External API risks: usage limits, incomplete data, commercial restrictions. Fallbacks implemented with static datasets or custom endpoints.
+> ⚠️ External API risks: usage limits, incomplete data, commercial restrictions. Fallbacks implemented via static datasets or custom endpoints.
 
 **Deployment**
 
@@ -66,88 +70,90 @@ Tech Stack
 Platform
 --------
 
-Fully responsive **web application**, optimized for **desktop and mobile browsers**. No native app included at this stage.
+-   Fully responsive **web application**, optimized for **desktop and mobile browsers**.
+
+-   No native app included at this stage.
 
 * * * * *
 
 Project Goals
 -------------
 
--   Accommodate dietary restrictions
+-   Accommodate dietary restrictions.
 
--   Minimize food waste
+-   Minimize food waste.
 
--   Save time on shopping and meal prep
+-   Save time on shopping and meal prep.
 
--   Track nutrition goals (calories, macros, etc.)
+-   Track nutrition goals (calories, macros, etc.).
 
 * * * * *
 
 Target Users
 ------------
 
--   Busy professionals and parents
+-   Busy professionals and parents.
 
--   Health-conscious individuals
+-   Health-conscious individuals.
 
--   People with dietary restrictions (gluten-free, keto, vegetarian, etc.)
+-   People with dietary restrictions (gluten-free, keto, vegetarian, etc.).
 
--   Fitness enthusiasts tracking macros
+-   Fitness enthusiasts tracking macros.
 
--   Beginners in meal prep
-
-* * * * *
+-   Beginners in meal prep.
 
 Key Features
 ------------
 
 **Core Features**
 
--   🔍 Recipe search & filtering by diet, ingredient, cuisine
+-   🔍 **Recipe search & filtering** by diet, ingredient, cuisine.
 
--   🧠 Personalized suggestions based on user preferences
+-   🧠 **Personalized suggestions** based on user preferences.
 
--   🗓️ Drag-and-drop weekly meal planner
+-   🗓️ **Drag-and-drop weekly meal planner**.
 
--   🛒 Auto-generated shopping lists, grouped by category
+-   🛒 **Auto-generated shopping lists**, grouped by category.
 
--   🥑 Pantry-aware recipe recommendations
+-   🥑 **Pantry-aware recipe recommendations**.
 
--   📊 Nutrition tracking by meal and day
+-   📊 **Nutrition tracking** by meal and day.
 
--   👤 User profile management, dietary settings, dark mode toggle
+-   👤 **User profile management**, dietary settings, dark mode toggle.
 
 **Stretch Goals**
 
--   🗞 Export lists (PDF/CSV)
+-   🗞 Export lists (PDF/CSV).
 
--   🔁 Recurring meal planning & calendar sync
+-   🔁 Recurring meal planning & calendar sync.
 
--   🔔 Notifications & reminders
+-   🔔 Notifications & reminders.
 
--   🧪 Guided onboarding quizzes
+-   🧪 Guided onboarding quizzes.
 
--   🌍 Multi-language support
+-   🌍 Multi-language support.
 
 * * * * *
 
 Security & Data Handling
 ------------------------
 
--   Passwords hashed using bcrypt
+-   Passwords hashed using **bcrypt**.
 
--   JWT for session security
+-   **JWT** for session security.
 
--   Protected API routes
+-   **Protected API routes** for authenticated operations.
 
--   Only non-sensitive user data stored
+-   Only non-sensitive user data stored.
 
 * * * * *
 
 Database Models (MongoDB / Mongoose)
 ------------------------------------
 
-**User**
+Updated to reflect **Zod schemas** and new structure:
+
+**User (`src/models/User.ts`)**
 
 `{
   email: String,
@@ -156,19 +162,20 @@ Database Models (MongoDB / Mongoose)
   avatarUrl: String
 }`
 
-**Recipe**
+**Recipe (`src/models/Recipe.ts`)**
 
 `{
-  name: String,
+  title: String,
   description: String,
-  instructions: [String],
-  nutritionInfo: Object,
+  instructions: String[],
+  servings: Number,
   cuisine: String,
-  userSubmitted: Boolean,
-  createdByUserId: ObjectId
+  source: "user" | "spoonacular",
+  ingredients: [{ ingredientId: String, quantity: Number, unit?: String }],
+  userId: String
 }`
 
-**Ingredient**
+**Ingredient (`src/models/Ingredient.ts`)**
 
 `{
   name: String,
@@ -177,89 +184,63 @@ Database Models (MongoDB / Mongoose)
   nutritionInfo: Object
 }`
 
-**MealPlan**
+**MealPlan (`src/models/MealPlan.ts`)**
 
 `{
-  userId: ObjectId,
+  userId: String,
   weekStartDate: Date,
   notes: String,
   entries: [
     {
-      recipeId: ObjectId,
-      dayOfWeek: String,
-      mealType: String,
+      recipeId: String,
+      dayOfWeek: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday",
+      mealType: "breakfast" | "lunch" | "dinner" | "snack",
       servings: Number
     }
   ]
 }`
 
-**ShoppingList**
+**ShoppingList (`src/models/ShoppingList.ts`)**
 
 `{
-  userId: ObjectId,
-  mealPlanId: ObjectId,
+  userId: String,
+  mealPlanId: String,
   createdAt: Date,
-  items: [
-    { ingredientId: ObjectId, quantity: Number, unit: String, purchased: Boolean }
-  ]
+  items: [{ ingredientId: String, quantity: Number, unit: String, purchased: Boolean }]
 }`
 
-**FoodIntake**
+**FoodIntake (`src/models/FoodIntake.ts`)**
 
 `{
-  userId: ObjectId,
-  recipeId: ObjectId,
-  ingredientId: ObjectId,
+  userId: String,
   date: Date,
+  mealType: "breakfast" | "lunch" | "dinner" | "snack",
   quantity: Number,
   unit: String,
-  nutritionSnapshot: Object
+  recipeId?: String,
+  ingredientId?: String
 }`
-
-* * * * *
 
 User Flow
 ---------
 
-1.  Guests browse recipes as read-only
+1.  User **signs up or logs in** → redirected to **Dashboard**.
 
-2.  Signup/Login → redirected to **Dashboard**
+2.  **Dashboard** allows users to:
 
-3.  Dashboard allows users to:
+    -   Plan meals via wizard or drag/drop interface.
 
-    -   Plan meals via wizard and drag/drop interface
+    -   View/edit saved meal plans.
 
-    -   View/edit meal plans
+    -   Generate shopping lists automatically.
 
-    -   Generate shopping lists
+    -   Search/add recipes (user-submitted or from Spoonacular).
 
-    -   Search/add recipes
+    -   Track daily food intake & nutrition.
 
-    -   Track meals & nutrition
-
-    -   Update profile & preferences
+    -   Update profile preferences (dietary settings, dark mode).
 
 📍 [Full User Flow Diagram](https://github.com/KierstinS2024/Capstone2025/blob/main/UserFlowDiagram.md?utm_source=chatgpt.com)
-
-* * * * *
-
-Implementation Checklist
-------------------------
-
-| Task | Status |
-| --- | --- |
-| Project Setup | ✅ Completed |
-| Auth System (JWT + bcrypt) | ✅ Completed |
-| Database Models (Mongoose) | ✅ Completed |
-| API Routes (CRUD) | ✅ Completed |
-| Frontend Pages (Recipes, Meal Plans, Shopping Lists, Food Intake, Dashboard, Login/Signup) | ✅ Completed |
-| State Management (Context API) | ✅ Completed |
-| ProtectedRoute + NavBar wrapping | ✅ Completed |
-| Redirect after login/signup | ✅ Completed |
-| Styling (CSS Modules / Dark Mode) | ⬜ Pending |
-| Testing (unit + integration) | ⬜ Pending |
-| Deployment | ⬜ Pending |
-| Documentation | ✅ Completed |
 
 * * * * *
 
@@ -268,9 +249,9 @@ API Overview (Next.js API Routes)
 
 **Authentication**
 
--   `POST /api/auth/register` → Register user
+-   `POST /api/auth/signup` → Register user
 
--   `POST /api/auth/login` → Login user & receive JWT
+-   `POST /api/auth/login` → Login & receive JWT
 
 -   `GET /api/auth/me` → Get current user profile (JWT required)
 
@@ -280,7 +261,7 @@ API Overview (Next.js API Routes)
 
 -   `GET /api/recipes` → List/search recipes
 
--   `GET /api/recipes/:id` → Get recipe by ID
+-   `GET /api/recipes/:id` → Retrieve recipe by ID
 
 -   `POST /api/recipes` → Create recipe (JWT required)
 
@@ -296,19 +277,19 @@ API Overview (Next.js API Routes)
 
 -   `GET /api/meal-plans/:id` → Retrieve plan by ID
 
--   `POST /api/meal-plans/:id/entries` → Add recipe
+-   `POST /api/meal-plans/:id/entries` → Add recipe entry
 
 -   `PUT /api/meal-plans/entries/:entryId` → Update entry
 
--   `DELETE /api/meal-plans/entries/:entryId` → Remove recipe
+-   `DELETE /api/meal-plans/entries/:entryId` → Remove recipe entry
 
 **Shopping Lists**
 
--   `POST /api/shopping-lists` → Generate list
+-   `POST /api/shopping-lists` → Generate new list
 
 -   `GET /api/shopping-lists` → List user lists
 
--   `GET /api/shopping-lists/:id` → Get list by ID
+-   `GET /api/shopping-lists/:id` → Retrieve list by ID
 
 -   `POST /api/shopping-lists/:id/items` → Add item
 
@@ -318,7 +299,7 @@ API Overview (Next.js API Routes)
 
 **Food Intake**
 
--   `POST /api/food-intake` → Log consumption
+-   `POST /api/food-intake` → Log food consumption
 
 -   `GET /api/food-intake` → List intake logs
 
@@ -335,31 +316,46 @@ Example Requests
 
 **Register User**
 
-`POST /api/auth/register
-{ "email": "sarah@example.com", "password": "myStrongPassword" }`
+`POST /api/auth/signup
+{
+  "email": "sarah@example.com",
+  "password": "myStrongPassword"
+}`
 
 **Login User**
 
 `POST /api/auth/login
-{ "email": "sarah@example.com", "password": "myStrongPassword" }`
+{
+  "email": "sarah@example.com",
+  "password": "myStrongPassword"
+}`
 
 **Create Recipe**
 
 `POST /api/recipes
 Authorization: Bearer <JWT>
-{ "name": "Chicken Stir Fry", "description": "Quick dinner", "cuisine": "Asian", "ingredients":[{ "id":"123","quantity":200,"unit":"grams" }] }`
+{
+  "title": "Chicken Stir Fry",
+  "description": "Quick dinner",
+  "cuisine": "Asian",
+  "instructions": ["Cook chicken", "Add vegetables", "Stir fry"],
+  "servings": 2,
+  "ingredients":[{ "ingredientId":"123","quantity":200,"unit":"grams" }]
+}`
 
 **Generate Shopping List**
 
 `POST /api/shopping-lists
-{ "mealPlanId": "456" }`
+{
+  "mealPlanId": "456"
+}`
 
 * * * * *
 
 Deployment
 ----------
 
-1.  Push repo to GitHub
+1.  Push repo to **GitHub**.
 
 2.  Configure environment variables on **Render** or **Vercel**:
 
@@ -369,7 +365,7 @@ Deployment
 
     -   Spoonacular API key
 
-3.  Deploy frontend + backend (Next.js handles both)
+3.  Deploy frontend + backend (Next.js handles both).
 
 * * * * *
 
@@ -378,13 +374,13 @@ Story-Driven UX Walkthrough
 
 Sarah signs up, plans meals, generates shopping lists, logs nutrition, and personalizes preferences:
 
--   Guest → Signup/Login → Dashboard
+-   Signup/Login → redirected to **Dashboard**
 
--   Dashboard → Meal Plan Wizard → Save plan
+-   **Dashboard** → Meal Plan Wizard → Save plan
 
--   Dashboard → Generate Shopping List → Print/Export
+-   **Dashboard** → Generate Shopping List → Print/Export
 
--   Dashboard → Recipe Search → Add Your Own → Save
+-   **Dashboard** → Recipe Search → Add Your Own → Save
 
 -   Recipe Details → Track Nutrition
 

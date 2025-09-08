@@ -4,10 +4,10 @@
 /**
  * EditFoodIntakePage
  * ------------------
- * Path: /dashboard/food-intake/[id]/edit
+ * Page to edit an existing food intake entry.
  * Features:
  * - Protected route (requires login)
- * - Loads existing food intake entry by ID
+ * - Loads existing entry by ID
  * - Uses reusable FoodIntakeForm component
  * - Handles update submission
  */
@@ -17,10 +17,13 @@ import { useRouter, useParams } from "next/navigation";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
-import { FoodIntakeForm as FoodIntakeFormType } from "@/types/foodIntakeForm";
+import FoodIntakeForm from "@/components/FoodIntakeForm";
 import { Recipe } from "@/types/recipe";
 import { IngredientBody } from "@/types/ingredient";
-import FoodIntakeForm from "@/components/FoodIntakeForm";
+import {
+  type FoodIntakeFormType,
+  foodIntakeFormSchema,
+} from "@/schemas/food-intake/foodIntakeForm";
 
 export default function EditFoodIntakePage() {
   return (
@@ -43,7 +46,7 @@ function EditFoodIntakeWrapper() {
   );
   const [loading, setLoading] = useState(false);
 
-  // Fetch recipes & ingredients
+  // Fetch recipes & ingredients for dropdowns
   useEffect(() => {
     if (!user) return;
 
@@ -64,13 +67,14 @@ function EditFoodIntakeWrapper() {
         setIngredients(ingredientsData.data || []);
       } catch (err) {
         console.error(err);
+        alert(err instanceof Error ? err.message : "Unexpected error");
       }
     };
 
     fetchData();
   }, [user]);
 
-  // Fetch existing entry for editing
+  // Fetch existing food intake entry for editing
   useEffect(() => {
     if (!user || !id) return;
 
@@ -82,7 +86,7 @@ function EditFoodIntakeWrapper() {
         if (!res.ok) throw new Error("Failed to fetch food intake entry");
 
         const data = await res.json();
-        setInitialValues(data.data); // data.data must match FoodIntakeFormType
+        setInitialValues(data.data); // must match FoodIntakeFormType
       } catch (err) {
         console.error(err);
         alert(err instanceof Error ? err.message : "Unexpected error");
@@ -110,10 +114,10 @@ function EditFoodIntakeWrapper() {
         throw new Error(errorData.message || "Failed to update entry");
       }
 
-      router.push("/dashboard/food-intake");
-    } catch (err: any) {
-      console.error(err.message || err);
-      alert(err.message || "Unexpected error");
+      router.push("/dashboard/food-intake"); // redirect after success
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Unexpected error");
     } finally {
       setLoading(false);
     }

@@ -4,85 +4,71 @@
 /**
  * EditIngredientPage
  * -----------------
- * Path: /dashboard/ingredients/[id]/edit
+ * Page for editing an existing ingredient.
  * Features:
- * - Protected route (AuthContext + HttpOnly cookie)
- * - Fetch ingredient data by ID and pre-fill form
- * - React Hook Form for state + validation
- * - Type-safe using IngredientBody
- * - API PUT to /api/ingredients/[id]
+ * - Protected route
+ * - Loads ingredient by ID
+ * - Uses IngredientForm
  */
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useForm, SubmitHandler } from "react-hook-form";
-
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { IngredientBody } from "@/types/ingredient";
-import styles from "./IngredientFormPage.module.css";
+import IngredientForm, {
+  IngredientFormSchema,
+} from "@/components/IngredientForm";
 
 export default function EditIngredientPage() {
   return (
     <ProtectedRoute>
-      <IngredientEditForm />
+      <EditIngredientFormWrapper />
     </ProtectedRoute>
   );
 }
 
-function IngredientEditForm() {
+function EditIngredientFormWrapper() {
   const router = useRouter();
   const params = useParams();
-  const ingredientId = params.id;
+  const { id } = params;
 
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [initialValues, setInitialValues] =
+    useState<IngredientFormSchema | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<IngredientBody>();
-
-  // -----------------------------
-  // Fetch existing ingredient
-  // -----------------------------
+  // Fetch ingredient by ID when page loads
   useEffect(() => {
-    if (!ingredientId) return;
+    if (!id) return;
 
-    async function fetchIngredient() {
+    const fetchIngredient = async () => {
       try {
-        const res = await fetch(`/api/ingredients/${ingredientId}`, {
-          method: "GET",
+        const res = await fetch(`/api/ingredients/${id}`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch ingredient");
 
         const data = await res.json();
-        const ingredient: IngredientBody = data.data;
-
-        setValue("name", ingredient.name);
-        setValue("unit", ingredient.unit);
-        setValue("defaultQuantity", ingredient.defaultQuantity);
-        setValue("nutritionInfo", ingredient.nutritionInfo || {});
-      } catch (err: any) {
+        // Map API response to form schema
+        setInitialValues({
+          name: data.data.name,
+          unit: data.data.unit,
+          calories: data.data.calories || 0,
+        });
+      } catch (err) {
         console.error(err);
-        setServerError(err.message || "Unexpected error");
+        alert(err instanceof Error ? err.message : "Unexpected error");
       }
-    }
+    };
 
     fetchIngredient();
-  }, [ingredientId, setValue]);
+  }, [id]);
 
-  // -----------------------------
-  // Form submission handler
-  // -----------------------------
-  const onSubmit: SubmitHandler<IngredientBody> = async (data) => {
+  // Handle form submission for updating ingredient
+  const handleSubmit = async (data: IngredientFormSchema) => {
+    if (!id) return;
     setLoading(true);
-    setServerError(null);
 
     try {
-      const res = await fetch(`/api/ingredients/${ingredientId}`, {
+      const res = await fetch(`/api/ingredients/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -94,77 +80,24 @@ function IngredientEditForm() {
         throw new Error(errorData.message || "Failed to update ingredient");
       }
 
-      router.push("/dashboard/ingredients"); // Redirect after edit
+      // Navigate back to ingredient list after successful update
+      router.push("/dashboard/ingredients");
     } catch (err: any) {
-      console.error(err);
-      setServerError(err.message || "Unexpected error");
+      console.error(err.message || err);
+      alert(err.message || "Unexpected error");
     } finally {
       setLoading(false);
     }
   };
 
-  // -----------------------------
-  // JSX
-  // -----------------------------
+  // Show loading state until initialValues are loaded
+  if (!initialValues) return <p>Loading ingredient...</p>;
+
   return (
-    <main className={styles.container}>
-      <h1 className={styles.title}>Edit Ingredient</h1>
-
-      {serverError && <p className={styles.error}>{serverError}</p>}
-
-      <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
-        <label>
-          Name *
-          <input
-            type="text"
-            {...register("name", { required: "Name is required" })}
-          />
-          {errors.name && (
-            <span className={styles.error}>{errors.name.message}</span>
-          )}
-        </label>
-
-        <label>
-          Unit *
-          <input
-            type="text"
-            {...register("unit", { required: "Unit is required" })}
-          />
-          {errors.unit && (
-            <span className={styles.error}>{errors.unit.message}</span>
-          )}
-        </label>
-
-        <label>
-          Default Quantity *
-          <input
-            type="number"
-            step="0.01"
-            {...register("defaultQuantity", {
-              required: "Default quantity is required",
-              min: { value: 0.01, message: "Must be greater than 0" },
-            })}
-          />
-          {errors.defaultQuantity && (
-            <span className={styles.error}>
-              {errors.defaultQuantity.message}
-            </span>
-          )}
-        </label>
-
-        <label>
-          Nutrition Info (JSON, optional)
-          <textarea {...register("nutritionInfo")}></textarea>
-        </label>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={styles.submitButton}
-        >
-          {loading ? "Saving..." : "Update Ingredient"}
-        </button>
-      </form>
-    </main>
+    <IngredientForm
+      initialValues={initialValues}
+      onSubmit={handleSubmit}
+      loading={loading}
+    />
   );
 }

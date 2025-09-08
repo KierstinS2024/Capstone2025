@@ -1,180 +1,136 @@
-// path: src/app/api/meal-plans/[id]/route.ts
+// Path: src/app/api/meal-plans/[id]/route.ts
+"use server";
+
 /**
- * Meal Plan API
- * - GET: fetch a single meal plan
- * - PUT: update a meal plan (JWT-protected, owner-only)
- * - DELETE: delete a meal plan (JWT-protected, owner-only)
+ * Meal Plans Single API
+ * --------------------
+ * GET    → Retrieve a meal plan by ID
+ * PUT    → Update a meal plan (JWT required)
+ * DELETE → Delete a meal plan (JWT required)
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import MealPlan from "@/models/MealPlan";
 import { requireAuth } from "@/lib/authHelpers";
+import { z, ZodError } from "zod";
+import { MealPlanFormSchema } from "@/schemas/mealPlanForm";
 
-export interface MealPlanEntry {
-  recipeId: string;
-  servings: number;
-  [key: string]: any;
-}
-
-export interface MealPlanBody {
-  title?: string;
-  weekStartDate?: Date;
-  entries?: MealPlanEntry[];
-  notes?: string;
-  [key: string]: any;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-}
-
-// GET /api/meal-plans/:id - fetch single meal plan
+/**
+ * GET /api/meal-plans/[id]
+ * Fetch a single meal plan belonging to the authenticated user
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     await connectToDatabase();
-
+    const userId = requireAuth(req);
     const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Invalid meal plan ID" },
-        { status: 400 }
-      );
-    }
 
-    const mealPlan = await MealPlan.findById(id)
-      .populate("entries.recipeId")
-      .lean();
+    const mealPlan = await MealPlan.findOne({ _id: id, userId }).lean();
     if (!mealPlan) {
-      return NextResponse.json<ApiResponse<null>>(
+      return NextResponse.json(
         { success: false, message: "Meal plan not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json<ApiResponse<typeof mealPlan>>({
-      success: true,
-      data: mealPlan,
-    });
+    return NextResponse.json({ success: true, data: mealPlan });
   } catch (err) {
-    console.error("GET /api/meal-plans/:id error:", err);
-    return NextResponse.json<ApiResponse<null>>(
+    console.error("GET /api/meal-plans/[id] error:", err);
+    return NextResponse.json(
       {
         success: false,
-        message: err instanceof Error ? err.message : "Server error",
+        message:
+          err instanceof Error ? err.message : "Failed to fetch meal plan",
       },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/meal-plans/:id - update meal plan (owner-only)
+/**
+ * PUT /api/meal-plans/[id]
+ * Update a meal plan by ID
+ */
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     await connectToDatabase();
-
     const userId = requireAuth(req);
-
     const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Invalid meal plan ID" },
-        { status: 400 }
-      );
-    }
 
-    const mealPlan = await MealPlan.findById(id);
-    if (!mealPlan) {
-      return NextResponse.json<ApiResponse<null>>(
+    const body = await req.json();
+    const parsed = MealPlanFormSchema.parse(body); // Zod validation
+
+    const updatedPlan = await MealPlan.findOneAndUpdate(
+      { _id: id, userId },
+      parsed,
+      { new: true }
+    );
+
+    if (!updatedPlan) {
+      return NextResponse.json(
         { success: false, message: "Meal plan not found" },
         { status: 404 }
       );
     }
 
-    // Only owner can update
-    if (mealPlan.userId?.toString() !== userId) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Forbidden: You do not own this meal plan" },
-        { status: 403 }
-      );
+    return NextResponse.json({ success: true, data: updatedPlan });
+  } catch (err) {
+    console.error("PUT /api/meal-plans/[id] error:", err);
+
+    if (err instanceof ZodError) {
+      const message = err.issues.map((issue) => issue.message).join(", ");
+      return NextResponse.json({ success: false, message }, { status: 400 });
     }
 
-    const updates: MealPlanBody = await req.json();
-    Object.assign(mealPlan, updates);
-    await mealPlan.save();
-
-    return NextResponse.json<ApiResponse<typeof mealPlan>>({
-      success: true,
-      data: mealPlan,
-      message: "Meal plan updated successfully",
-    });
-  } catch (err) {
-    console.error("PUT /api/meal-plans/:id error:", err);
-    return NextResponse.json<ApiResponse<null>>(
+    return NextResponse.json(
       {
         success: false,
-        message: err instanceof Error ? err.message : "Server error",
+        message:
+          err instanceof Error ? err.message : "Failed to update meal plan",
       },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/meal-plans/:id - delete meal plan (owner-only)
+/**
+ * DELETE /api/meal-plans/[id]
+ * Remove a meal plan by ID
+ */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     await connectToDatabase();
-
     const userId = requireAuth(req);
-
     const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Invalid meal plan ID" },
-        { status: 400 }
-      );
-    }
 
-    const mealPlan = await MealPlan.findById(id);
-    if (!mealPlan) {
-      return NextResponse.json<ApiResponse<null>>(
+    const deletedPlan = await MealPlan.findOneAndDelete({ _id: id, userId });
+
+    if (!deletedPlan) {
+      return NextResponse.json(
         { success: false, message: "Meal plan not found" },
+
         { status: 404 }
       );
     }
 
-    // Only owner can delete
-    if (mealPlan.userId?.toString() !== userId) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Forbidden: You do not own this meal plan" },
-        { status: 403 }
-      );
-    }
-
-    await mealPlan.deleteOne();
-
-    return NextResponse.json<ApiResponse<null>>({
-      success: true,
-      message: "Meal plan deleted successfully",
-    });
+    return NextResponse.json({ success: true, data: deletedPlan });
   } catch (err) {
-    console.error("DELETE /api/meal-plans/:id error:", err);
-    return NextResponse.json<ApiResponse<null>>(
+    console.error("DELETE /api/meal-plans/[id] error:", err);
+    return NextResponse.json(
       {
         success: false,
-        message: err instanceof Error ? err.message : "Server error",
+        message:
+          err instanceof Error ? err.message : "Failed to delete meal plan",
       },
       { status: 500 }
     );
