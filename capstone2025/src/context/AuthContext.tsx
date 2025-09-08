@@ -1,3 +1,4 @@
+// src/context/AuthContext.tsx
 "use client";
 
 import {
@@ -10,16 +11,17 @@ import {
 import { useRouter } from "next/navigation";
 import { User } from "@/types/auth";
 
+// Interface for Auth context
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
+// Create the context
 export const AuthContext = createContext<AuthContextType | undefined>(
   undefined
 );
@@ -28,72 +30,70 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// API endpoints
 const API_PATHS = {
   login: "/api/auth/login",
   signup: "/api/auth/signup",
   me: "/api/auth/me",
+  logout: "/api/auth/logout", // optional: could implement server-side cookie clearing
 };
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // Load user & token from localStorage and validate
+  // On mount, fetch the current user using the HttpOnly cookie
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (!storedToken) {
-      setLoading(false);
-      return;
-    }
+    const fetchCurrentUser = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(API_PATHS.me, {
+          method: "GET",
+          credentials: "include", // ensures cookies are sent
+        });
 
-    fetch(API_PATHS.me, {
-      headers: { Authorization: `Bearer ${storedToken}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.user) {
+        const data: { user?: User; message?: string } = await res.json();
+
+        if (res.ok && data.user) {
           setUser(data.user);
-          setToken(storedToken);
         } else {
-          localStorage.removeItem("token");
           setUser(null);
-          setToken(null);
         }
-      })
-      .catch(() => {
-        localStorage.removeItem("token");
+      } catch (err) {
+        console.error("Failed to fetch current user:", err);
         setUser(null);
-        setToken(null);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCurrentUser();
   }, []);
 
   // -----------------------------
   // Login
   // -----------------------------
   const login = async (email: string, password: string) => {
-    setLoading(true);
-    setError(null);
     try {
+      setLoading(true);
+      setError(null);
+
       const res = await fetch(API_PATHS.login, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include", // sends and receives HttpOnly cookie
       });
 
-      const data: { token?: string; user?: User; message?: string } =
-        await res.json();
+      const data: { user?: User; message?: string } = await res.json();
 
-      if (!res.ok || !data.token || !data.user) {
+      if (!res.ok || !data.user) {
         throw new Error(data.message || "Login failed");
       }
 
       setUser(data.user);
-      setToken(data.token);
-      localStorage.setItem("token", data.token);
       router.push("/dashboard/recipes");
     } catch (err: any) {
       setError(err.message || "Unable to login");
@@ -107,25 +107,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Signup
   // -----------------------------
   const signup = async (email: string, password: string) => {
-    setLoading(true);
-    setError(null);
     try {
+      setLoading(true);
+      setError(null);
+
       const res = await fetch(API_PATHS.signup, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include", // sends and receives HttpOnly cookie
       });
 
-      const data: { token?: string; user?: User; message?: string } =
-        await res.json();
+      const data: { user?: User; message?: string } = await res.json();
 
-      if (!res.ok || !data.token || !data.user) {
+      if (!res.ok || !data.user) {
         throw new Error(data.message || "Signup failed");
       }
 
       setUser(data.user);
-      setToken(data.token);
-      localStorage.setItem("token", data.token);
       router.push("/dashboard/recipes");
     } catch (err: any) {
       setError(err.message || "Unable to signup");
@@ -138,22 +137,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // -----------------------------
   // Logout
   // -----------------------------
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem("token");
-    router.push("/auth/login");
+  const logout = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Optionally call a logout endpoint to clear the cookie server-side
+      await fetch(API_PATHS.me, {
+        method: "POST", // could create /api/auth/logout
+        credentials: "include",
+      });
+
+      setUser(null);
+      router.push("/auth/login");
+    } catch (err: any) {
+      console.error("Logout error:", err);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, error, login, signup, logout }}
+      value={{ user, loading, error, login, signup, logout }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
 
+// Custom hook for easy use in components
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within AuthProvider");

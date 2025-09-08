@@ -14,14 +14,17 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
 
   useEffect(() => {
+    // If the user is not logged in and loading is complete, redirect to login
     if (!loading && !user) {
-      router.push("/auth/login"); // redirect if not logged in
+      router.push("/auth/login");
     }
   }, [user, loading, router]);
 
+  // While loading or if user is not available yet, show a loading state
   if (loading || !user) {
-    return <p>Loading...</p>; // or a fancy spinner
+    return <p>Loading...</p>; // could replace with a spinner for better UX
   }
 
+  // Render the protected content once the user is authenticated
   return <>{children}</>;
 }
