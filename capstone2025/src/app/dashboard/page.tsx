@@ -1,143 +1,107 @@
 // src/app/dashboard/page.tsx
 "use client";
 
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import DashboardCard from "./DashboardCard";
+import QuickLinks from "./QuickLinks";
+
+// --------------------
+// Type definition for dashboard data returned from API
+// --------------------
+interface DashboardData {
+  nextMeal: string | null;
+  shoppingListCount: number;
+  recentIntake: string | null;
+  favoritesCount: number;
+}
+
 /**
  * DashboardPage
- * -------------------------
- * Main landing page for logged-in users
- * Features:
- * - ProtectedRoute wrapper
- * - Shows static navigation cards (Ingredients, Recipes, Meal Plans)
- * - Displays user-specific meal plans
- * - Quick actions for creating meal plans or generating shopping lists
+ * Main landing page after login.
+ * Fetches and displays summary of user's meals, shopping lists, food intake, and favorites.
  */
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-
-import { useMealPlanContext } from "@/context/MealPlanContext";
-import MealPlanCard from "@/components/MealPlanCard";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import styles from "./DashboardPage.module.css";
-
-interface User {
-  _id: string;
-  email: string;
-}
-
 export default function DashboardPage() {
-  return (
-    <ProtectedRoute>
-      <DashboardContent />
-    </ProtectedRoute>
-  );
-}
-
-function DashboardContent() {
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
-  const { mealPlans, setMealPlans } = useMealPlanContext();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
+  const [fetching, setFetching] = useState<boolean>(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return router.push("/auth/login");
-
-    async function fetchData() {
-      try {
-        // Fetch user
-        const userRes = await fetch("/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const userData = await userRes.json();
-        if (!userData.user) return router.push("/auth/login");
-        setUser(userData.user);
-
-        // Fetch meal plans
-        const plansRes = await fetch("/api/meal-plans", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const plansData = await plansRes.json();
-        setMealPlans(plansData.data || []);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load dashboard data.");
-      } finally {
-        setLoading(false);
-      }
+    // Redirect to login if not authenticated
+    if (!loading && !user) {
+      router.push("/auth/login");
+      return;
     }
 
-    fetchData();
-  }, [router, setMealPlans]);
+    const fetchDashboard = async () => {
+      setFetching(true);
+      setError(null);
 
-  if (loading) return <p className={styles.message}>Loading dashboard...</p>;
-  if (error) return <p className={styles.error}>{error}</p>;
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No authentication token found");
+
+        const res = await fetch("/api/dashboard", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data: DashboardData & { message?: string } = await res.json();
+
+        if (!res.ok)
+          throw new Error(data.message || "Failed to load dashboard");
+
+        setDashboardData(data);
+      } catch (err: any) {
+        setError(err.message || "Error fetching dashboard");
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchDashboard();
+  }, [user, loading, router]);
+
+  if (loading || fetching) return <p>Loading dashboard...</p>;
+  if (error) return <p>Error: {error}</p>;
+  if (!dashboardData) return <p>No dashboard data available.</p>;
 
   return (
-    <main className={styles.container}>
-      <h1 className={styles.title}>Welcome, {user?.email}</h1>
+    <div className="dashboard-page">
+      <header>
+        <h1>Welcome, {user?.email}</h1>
+        <button onClick={logout}>Logout</button>
+      </header>
 
-      {/* Navigation Cards */}
-      <section className={styles.cards}>
-        <Link href="/dashboard/ingredients" className={styles.card}>
-          <h2>🧂 Ingredients</h2>
-          <p>Manage your ingredients</p>
-        </Link>
-        <Link href="/dashboard/recipes" className={styles.card}>
-          <h2>🍲 Recipes</h2>
-          <p>Create, edit, and view recipes</p>
-        </Link>
-        <Link href="/dashboard/meal-plans" className={styles.card}>
-          <h2>📅 Meal Plans</h2>
-          <p>Plan your weekly meals</p>
-        </Link>
-      </section>
+      {/* Quick action buttons */}
+      <QuickLinks />
 
-      {/* Quick Actions */}
-      <section className={styles.quickActions}>
-        <button
-          className={styles.actionButton}
-          onClick={() => router.push("/dashboard/meal-plans/new")}
+      {/* Dashboard overview cards */}
+      <section className="dashboard-overview" style={{ marginTop: "2rem" }}>
+        <h2>Dashboard Overview</h2>
+        <div
+          className="dashboard-cards"
+          style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}
         >
-          + Create New Meal Plan
-        </button>
-        <button
-          className={styles.actionButton}
-          onClick={() => {
-            if (!mealPlans[0]) return alert("No meal plans available");
-            router.push(
-              `/dashboard/shopping-lists/from-meal-plan/${mealPlans[0]._id}`
-            );
-          }}
-        >
-          Generate Shopping List
-        </button>
+          <DashboardCard title="Next Meal">
+            {dashboardData.nextMeal || "N/A"}
+          </DashboardCard>
+          <DashboardCard title="Shopping List Items">
+            {dashboardData.shoppingListCount}
+          </DashboardCard>
+          <DashboardCard title="Recent Food Intake">
+            {dashboardData.recentIntake || "N/A"}
+          </DashboardCard>
+          <DashboardCard title="Favorites">
+            {dashboardData.favoritesCount}
+          </DashboardCard>
+        </div>
       </section>
-
-      {/* Meal Plans */}
-      <section className={styles.section}>
-        <h2>Your Meal Plans</h2>
-        {mealPlans.length === 0 ? (
-          <p className={styles.emptyMessage}>
-            You haven’t created any meal plans yet.
-          </p>
-        ) : (
-          <div className={styles.cardsGrid}>
-            {mealPlans.map((plan) => (
-              <MealPlanCard
-                key={plan._id}
-                id={plan._id}
-                weekStartDate={plan.weekStartDate}
-                notes={plan.notes}
-                entriesCount={plan.entries?.length}
-                onClick={() => router.push(`/dashboard/meal-plans/${plan._id}`)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
+    </div>
   );
 }

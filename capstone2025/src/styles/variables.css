@@ -1,0 +1,113 @@
+:root {
+  /* ------------------ Colors ------------------ */
+  /* Neutrals */
+  --bg: #f6f7fb;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f1f5;
+  --bg-muted: #e5e7eb;
+
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+
+  /* Accents */
+  --accent-primary: #0f766e;
+  --accent-hover: #115e56;
+  --accent-light: #d1f2ef;
+  --accent-dark: #0b5951;
+
+  /* Semantic */
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --info: #0ea5e9;
+  --danger: #dc2626;
+
+  /* ------------------ Shadows ------------------ */
+  --shadow-sm: 0 1px 3px rgba(16,24,40,0.05);
+  --shadow-md: 0 8px 20px rgba(16,24,40,0.08);
+  --shadow-lg: 0 15px 35px rgba(16,24,40,0.12);
+  --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.06);
+
+  /* ------------------ Border Radius ------------------ */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* ------------------ Spacing ------------------ */
+  --space-xxs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+
+  /* ------------------ Typography ------------------ */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+
+  --font-xxs: 0.625rem; /* 10px */
+  --font-xs: 0.75rem;   /* 12px */
+  --font-sm: 0.875rem;  /* 14px */
+  --font-md: 1rem;      /* 16px */
+  --font-lg: 1.125rem;  /* 18px */
+  --font-xl: 1.25rem;   /* 20px */
+  --font-2xl: 1.5rem;   /* 24px */
+  --font-3xl: 1.875rem; /* 30px */
+  --font-4xl: 2.25rem;  /* 36px */
+  --font-5xl: 3rem;     /* 48px */
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* ------------------ Transitions ------------------ */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-medium: 0.3s ease-in-out;
+  --transition-slow: 0.5s ease-in-out;
+
+  /* ------------------ Buttons & Forms ------------------ */
+  --btn-padding-y: var(--space-sm);
+  --btn-padding-x: var(--space-md);
+  --btn-border-radius: var(--radius-md);
+
+  --input-padding-y: var(--space-sm);
+  --input-padding-x: var(--space-md);
+  --input-border-radius: var(--radius-sm);
+  --input-border-color: var(--bg-muted);
+  --input-focus-border-color: var(--accent-primary);
+  --input-focus-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
+}
+
+/* ------------------ Dark Theme ------------------ */
+html[data-theme="dark"] {
+  --bg: #0b1220;
+  --bg-card: #0f1724;
+  --bg-hover: #161d2b;
+  --bg-muted: #1c2332;
+
+  --text-primary: #e6eef8;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --accent-primary: #0fb4a3;
+  --accent-hover: #0c8c7e;
+  --accent-light: #1e3a37;
+  --accent-dark: #0a5e51;
+
+  --success: #22c55e;
+  --warning: #facc15;
+  --info: #38bdf8;
+  --danger: #fb7185;
+
+  --shadow-sm: 0 1px 3px rgba(2,6,23,0.5);
+  --shadow-md: 0 10px 30px rgba(2,6,23,0.6);
+  --shadow-lg: 0 15px 35px rgba(2,6,23,0.7);
+  --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.2);
+
+  --input-border-color: #334155;
+  --input-focus-border-color: var(--accent-primary);
+  --input-focus-shadow: 0 0 0 3px rgba(15, 180, 163, 0.2);
+}
