@@ -4,24 +4,26 @@
 import { z } from "zod";
 
 /**
- * ShoppingList form validation schema
- * - name: required string
- * - items: array of items with name, quantity, unit
+ * Single shopping list item schema
  */
-export const shoppingListFormSchema = z.object({
-  name: z.string().nonempty("Shopping list name is required"),
-  items: z
-    .array(
-      z.object({
-        name: z.string().nonempty("Item name is required"),
-        quantity: z.number().min(0.01, "Quantity must be greater than 0"),
-        unit: z.string().optional(),
-      })
-    )
-    .min(1, "At least one item is required"),
+export const shoppingListItemSchema = z.object({
+  ingredientId: z.string().min(1, "Ingredient ID is required"),
+  name: z.string().optional(), // optional if you want to allow just the ID
+  quantity: z.number().positive("Quantity must be greater than 0"),
+  unit: z.string().nonempty("Unit is required"),
+  purchased: z.boolean().optional(),
 });
 
 /**
- * TypeScript type inferred from schema
+ * ShoppingList form schema
  */
-export type ShoppingListFormSchema = z.infer<typeof shoppingListFormSchema>;
+export const shoppingListFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  items: z.array(shoppingListItemSchema).optional(),
+});
+
+/**
+ * TypeScript types inferred from schemas
+ */
+export type ShoppingListItemType = z.infer<typeof shoppingListItemSchema>;
+export type ShoppingListFormType = z.infer<typeof shoppingListFormSchema>;

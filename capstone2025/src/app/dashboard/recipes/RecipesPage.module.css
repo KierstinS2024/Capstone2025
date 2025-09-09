@@ -1,0 +1,79 @@
+/* src/app/dashboard/recipes/RecipesPafe.module.css */
+/* src/app/dashboard/recipes/RecipesPage.module.css */
+
+/* Container for the recipes page */
+.recipesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  background-color: var(--background-color, #f9f9f9);
+  min-height: 100vh;
+}
+
+/* Header section */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--text-primary, #333);
+}
+
+/* Add Recipe button */
+.addButton {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color, #4caf50);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.addButton:hover {
+  background-color: var(--primary-hover-color, #45a049);
+}
+
+/* Recipes grid/list */
+.recipesList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Individual recipe card */
+.recipeCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out;
+}
+
+.recipeCard:hover {
+  transform: translateY(-3px);
+}
+
+.recipeTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.recipeDescription {
+  font-size: 0.95rem;
+  color: var(--text-secondary, #666);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .recipesList {
+    grid-template-columns: 1fr;
+  }
+}

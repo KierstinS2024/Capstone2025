@@ -1,53 +1,32 @@
-// src/app/dashboard/QuickLinks.tsx
+// Path: src/components/QuickLinks.tsx
 "use client";
 
 /**
  * QuickLinks
- * Displays shortcut buttons for common dashboard actions.
- * Each button navigates to a specific page (e.g., new recipe, meal plan, etc.).
+ * ----------
+ * Dashboard shortcuts to key actions: Add Meal, Create Plan, Search Recipes.
  */
 
-import Link from "next/link";
-import Button from "@/components/Button";
+import { FC } from "react";
+import styles from "./QuickLinks.module.css";
 
-// Type for each quick link
-interface QuickLink {
-  label: string;
-  href: string;
-  variant?: "primary" | "secondary";
-}
-
-// Dashboard shortcuts
-const quickLinks: QuickLink[] = [
-  { label: "New Recipe", href: "/dashboard/recipes/new", variant: "primary" },
-  {
-    label: "New Meal Plan",
-    href: "/dashboard/meal-plans/new",
-    variant: "primary",
-  },
-  {
-    label: "Add Food Intake",
-    href: "/dashboard/food-intake/new",
-    variant: "secondary",
-  },
-  {
-    label: "New Shopping List",
-    href: "/dashboard/shopping-lists/new",
-    variant: "secondary",
-  },
+const links = [
+  { label: "Add Meal", href: "/dashboard/food-intake/new" },
+  { label: "Create Meal Plan", href: "/dashboard/meal-plans/new" },
+  { label: "Search Recipes", href: "/dashboard/recipes" },
+  { label: "Generate Shopping List", href: "/dashboard/shopping-lists/new" },
 ];
 
-export default function QuickLinks() {
+const QuickLinks: FC = () => {
   return (
-    <section className="quick-links">
-      <h2 className="quick-links__title">Quick Actions</h2>
-      <div className="quick-links__grid">
-        {quickLinks.map((link) => (
-          <Link key={link.href} href={link.href}>
-            <Button variant={link.variant}>{link.label}</Button>
-          </Link>
-        ))}
-      </div>
-    </section>
+    <div className={styles.container}>
+      {links.map((link) => (
+        <a key={link.href} href={link.href} className={styles.link}>
+          {link.label}
+        </a>
+      ))}
+    </div>
   );
-}
+};
+
+export default QuickLinks;

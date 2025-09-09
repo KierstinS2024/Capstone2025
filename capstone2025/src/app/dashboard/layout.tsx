@@ -1,38 +1,49 @@
-// src/app/dashboard/layout.tsx
 "use client";
-
-import { ReactNode, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { ReactNode } from "react";
+import HamburgerMenu from "@/components/HamburgerMenu";
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { user, loading, logout } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) router.push("/auth/login");
-  }, [loading, user, router]);
-
-  if (loading || !user) return <p>Loading dashboard...</p>;
-
   return (
-    <div>
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          padding: "1rem",
-          borderBottom: "1px solid #ccc",
-        }}
-      >
-        <h1>Dashboard</h1>
-        <button onClick={logout}>Logout</button>
-      </header>
-      <main style={{ padding: "1rem" }}>{children}</main>
+    <div className="dashboard-layout">
+      {/* Sidebar / Hamburger for mobile */}
+      <HamburgerMenu>
+        <nav className="dashboard-nav">
+          <a href="/dashboard">Overview</a>
+          <a href="/dashboard/recipes">Recipes</a>
+          <a href="/dashboard/meal-plans">Meal Plans</a>
+          <a href="/dashboard/shopping-lists">Shopping Lists</a>
+          <a href="/dashboard/food-intake">Food Intake</a>
+        </nav>
+      </HamburgerMenu>
+
+      {/* Main content */}
+      <main className="dashboard-main">{children}</main>
+
+      <style jsx>{`
+        .dashboard-layout {
+          display: flex;
+          gap: 1rem;
+        }
+        .dashboard-main {
+          flex: 1;
+          padding: var(--space-lg);
+        }
+        .dashboard-nav a {
+          display: block;
+          padding: var(--space-sm) var(--space-md);
+          margin-bottom: var(--space-sm);
+          border-radius: var(--radius-sm);
+          color: var(--text-primary);
+          transition: background-color 0.2s;
+        }
+        .dashboard-nav a:hover {
+          background-color: var(--bg-hover);
+        }
+      `}</style>
     </div>
   );
 }

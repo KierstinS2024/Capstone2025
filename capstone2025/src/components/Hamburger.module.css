@@ -1,0 +1,25 @@
+/* Path: src/components/HamburgerMenu.module.css */
+
+.wrapper {
+  position: relative;
+}
+
+.button {
+  font-size: var(--font-2xl);
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  min-width: 200px;
+  z-index: 1000;
+}

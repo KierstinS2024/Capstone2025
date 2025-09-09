@@ -1,69 +1,87 @@
-// path: src/app/api/food-intake/route.ts
+// Path: src/app/api/food-intake/route.ts
+"use server";
+
 /**
- * Food Intake collection endpoints
- * - POST: log a new food intake (recipe or ingredient)
- * - GET: list all food intake logs for the authenticated user
- * JWT-protected
+ * Food Intake Collection API
+ * -------------------------
+ * GET  → List all food intake logs for current user
+ * POST → Log a new food intake entry (JWT required)
+ * Features:
+ * - Lean queries for GET
+ * - Zod validation for POST
+ * - Cookie-based JWT auth
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import FoodIntake from "@/models/FoodIntake";
-import { verifyToken } from "@/lib/auth";
+import { requireAuth } from "@/lib/authHelpers";
+import { z, ZodError } from "zod";
+import { foodIntakeFormSchema } from "@/schemas/food-intake/foodIntakeForm";
 
-export async function POST(req: NextRequest) {
-  try {
-    await connectToDatabase();
-
-    // --- AUTH ---
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return NextResponse.json({ message: "Authorization required" }, { status: 401 });
-    const token = authHeader.replace("Bearer ", "");
-    const userId = verifyToken(token);
-    if (!userId) return NextResponse.json({ message: "Invalid token" }, { status: 401 });
-
-    // --- BODY VALIDATION ---
-    const body = await req.json();
-    const { recipeId, ingredientId, date, quantity, unit, nutritionSnapshot } = body;
-
-    if (!date || !quantity || !unit || (!recipeId && !ingredientId)) {
-      return NextResponse.json({ message: "date, quantity, unit, and either recipeId or ingredientId required" }, { status: 400 });
-    }
-
-    // --- CREATE FOOD INTAKE LOG ---
-    const foodIntake = await FoodIntake.create({
-      userId,
-      recipeId,
-      ingredientId,
-      date,
-      quantity,
-      unit,
-      nutritionSnapshot: nutritionSnapshot || {},
-    });
-
-    return NextResponse.json({ data: foodIntake });
-  } catch (err) {
-    console.error("Creating food intake error:", err);
-    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
-  }
-}
-
+/**
+ * GET /api/food-intake
+ * - Fetch all food intake logs for authenticated user
+ * - Sorted by date descending
+ * - Lean query for performance
+ */
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
+    const userId = requireAuth(req);
 
-    // --- AUTH ---
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return NextResponse.json({ message: "Authorization required" }, { status: 401 });
-    const token = authHeader.replace("Bearer ", "");
-    const userId = verifyToken(token);
-    if (!userId) return NextResponse.json({ message: "Invalid token" }, { status: 401 });
-
-    // --- FETCH USER FOOD INTAKE LOGS ---
-    const foodIntakes = await FoodIntake.find({ userId }).sort({ date: -1 });
-    return NextResponse.json({ data: foodIntakes });
+    const entries = await FoodIntake.find({ userId }).sort({ date: -1 }).lean();
+    return NextResponse.json({ success: true, data: entries });
   } catch (err) {
-    console.error("Fetching food intake logs error:", err);
-    return NextResponse.json({ message: err instanceof Error ? err.message : "Server error" }, { status: 500 });
+    console.error("GET /api/food-intake error:", err);
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch food intake logs",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/food-intake
+ * - Logs a new food intake entry for current user
+ * - Validates input with Zod
+ */
+export async function POST(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const userId = requireAuth(req);
+
+    const body = await req.json();
+    const parsed = foodIntakeFormSchema.parse(body);
+
+    const newEntry = await FoodIntake.create({ ...parsed, userId });
+    return NextResponse.json(
+      { success: true, data: newEntry },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error("POST /api/food-intake error:", err);
+
+    if (err instanceof ZodError) {
+      const message = err.issues.map((i) => i.message).join(", ");
+      return NextResponse.json({ success: false, message }, { status: 400 });
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to create food intake entry",
+      },
+      { status: 500 }
+    );
   }
 }

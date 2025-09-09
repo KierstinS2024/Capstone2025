@@ -1,15 +1,12 @@
-// src/app/dashboard/DashboardCard.tsx
-"use client";
+// Path: src/components/DashboardCard.tsx
+// Purpose: Reusable card for displaying dashboard sections (title + content)
+// Notes: Fully type-safe, uses ReactNode for children, CSS variables for styling
 
-/**
- * DashboardCard
- * Reusable card component for displaying sections on the dashboard.
- * Accepts a title and any children content.
- */
+"use client";
 
 import { ReactNode } from "react";
 
-interface DashboardCardProps {
+export interface DashboardCardProps {
   /** Title displayed at the top of the card */
   title: string;
   /** Content inside the card */
@@ -18,12 +15,18 @@ interface DashboardCardProps {
 
 export default function DashboardCard({ title, children }: DashboardCardProps) {
   return (
-    <div className="dashboard-card">
-      {/* Card header */}
+    <div className="dashboard-card card">
       <h2 className="dashboard-card-title">{title}</h2>
-
-      {/* Card content */}
       <div className="dashboard-card-content">{children}</div>
+      <style jsx>{`
+        .dashboard-card-title {
+          font-size: var(--font-lg);
+          margin-bottom: var(--space-sm);
+        }
+        .dashboard-card-content {
+          font-size: var(--font-md);
+        }
+      `}</style>
     </div>
   );
 }

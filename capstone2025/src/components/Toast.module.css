@@ -1,0 +1,32 @@
+/* Path: src/components/Toast.module.css */
+
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  color: #fff;
+  font-weight: var(--font-weight-medium);
+  z-index: 9999;
+  opacity: 0.95;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.toast:hover {
+  transform: translateY(-2px);
+}
+
+.success {
+  background-color: var(--success);
+}
+.error {
+  background-color: var(--danger);
+}
+.info {
+  background-color: var(--info);
+}
+.warning {
+  background-color: var(--warning);
+}

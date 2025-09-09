@@ -2,11 +2,15 @@
 "use server";
 
 /**
- * Meal Plans Single API
- * --------------------
- * GET    → Retrieve a meal plan by ID
+ * Meal Plan Single API
+ * -------------------
+ * GET    → Retrieve a single meal plan by ID
  * PUT    → Update a meal plan (JWT required)
  * DELETE → Delete a meal plan (JWT required)
+ * Features:
+ * - Lean query for GET
+ * - Zod validation for PUT
+ * - Cookie-based JWT auth
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -14,11 +18,26 @@ import connectToDatabase from "@/lib/db";
 import MealPlan from "@/models/MealPlan";
 import { requireAuth } from "@/lib/authHelpers";
 import { z, ZodError } from "zod";
-import { MealPlanFormSchema } from "@/schemas/mealPlanForm";
+import mongoose from "mongoose";
+
+// Zod schema for PUT / update meal plan
+const updateMealPlanSchema = z.object({
+  title: z.string().nonempty("Title is required"),
+  date: z.string().optional(),
+  recipes: z
+    .array(
+      z.object({
+        recipeId: z.string().min(1, "Recipe ID is required"),
+        servings: z.number().positive("Servings must be positive").optional(),
+      })
+    )
+    .optional(),
+});
 
 /**
  * GET /api/meal-plans/[id]
- * Fetch a single meal plan belonging to the authenticated user
+ * - Returns a single meal plan
+ * - Lean query for performance
  */
 export async function GET(
   req: NextRequest,
@@ -29,15 +48,22 @@ export async function GET(
     const userId = requireAuth(req);
     const { id } = params;
 
-    const mealPlan = await MealPlan.findOne({ _id: id, userId }).lean();
-    if (!mealPlan) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid meal plan ID" },
+        { status: 400 }
+      );
+    }
+
+    const plan = await MealPlan.findOne({ _id: id, userId }).lean();
+    if (!plan) {
       return NextResponse.json(
         { success: false, message: "Meal plan not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, data: mealPlan });
+    return NextResponse.json({ success: true, data: plan });
   } catch (err) {
     console.error("GET /api/meal-plans/[id] error:", err);
     return NextResponse.json(
@@ -53,7 +79,8 @@ export async function GET(
 
 /**
  * PUT /api/meal-plans/[id]
- * Update a meal plan by ID
+ * - Updates a meal plan
+ * - Validates input with Zod
  */
 export async function PUT(
   req: NextRequest,
@@ -64,8 +91,15 @@ export async function PUT(
     const userId = requireAuth(req);
     const { id } = params;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid meal plan ID" },
+        { status: 400 }
+      );
+    }
+
     const body = await req.json();
-    const parsed = MealPlanFormSchema.parse(body); // Zod validation
+    const parsed = updateMealPlanSchema.parse(body);
 
     const updatedPlan = await MealPlan.findOneAndUpdate(
       { _id: id, userId },
@@ -75,17 +109,21 @@ export async function PUT(
 
     if (!updatedPlan) {
       return NextResponse.json(
-        { success: false, message: "Meal plan not found" },
+        { success: false, message: "Meal plan not found or unauthorized" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, data: updatedPlan });
+    return NextResponse.json({
+      success: true,
+      message: "Meal plan updated",
+      data: updatedPlan,
+    });
   } catch (err) {
     console.error("PUT /api/meal-plans/[id] error:", err);
 
     if (err instanceof ZodError) {
-      const message = err.issues.map((issue) => issue.message).join(", ");
+      const message = err.issues.map((i) => i.message).join(", ");
       return NextResponse.json({ success: false, message }, { status: 400 });
     }
 
@@ -102,7 +140,7 @@ export async function PUT(
 
 /**
  * DELETE /api/meal-plans/[id]
- * Remove a meal plan by ID
+ * - Deletes a meal plan
  */
 export async function DELETE(
   req: NextRequest,
@@ -113,17 +151,25 @@ export async function DELETE(
     const userId = requireAuth(req);
     const { id } = params;
 
-    const deletedPlan = await MealPlan.findOneAndDelete({ _id: id, userId });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid meal plan ID" },
+        { status: 400 }
+      );
+    }
 
+    const deletedPlan = await MealPlan.findOneAndDelete({ _id: id, userId });
     if (!deletedPlan) {
       return NextResponse.json(
-        { success: false, message: "Meal plan not found" },
-
+        { success: false, message: "Meal plan not found or unauthorized" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, data: deletedPlan });
+    return NextResponse.json({
+      success: true,
+      message: "Meal plan deleted successfully",
+    });
   } catch (err) {
     console.error("DELETE /api/meal-plans/[id] error:", err);
     return NextResponse.json(

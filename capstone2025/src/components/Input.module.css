@@ -1,0 +1,32 @@
+/* Path: src/components/Input.module.css */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-weight: var(--font-weight-medium);
+  margin-bottom: 0.25rem;
+}
+
+.input {
+  padding: 0.5rem var(--space-md);
+  border-radius: var(--input-border-radius);
+  border: 1px solid var(--input-border-color);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--input-focus-border-color);
+  box-shadow: var(--input-focus-shadow);
+}
+
+.error {
+  color: var(--danger);
+  font-size: var(--font-xs);
+  margin-top: 0.25rem;
+}

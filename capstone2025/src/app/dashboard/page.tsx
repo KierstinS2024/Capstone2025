@@ -1,18 +1,17 @@
-// path: src/app/dashboard/page.tsx
+// Path: src/app/dashboard/page.tsx
 "use client";
 
 /**
  * DashboardPage
  * -------------
- * Displays user-specific dashboard data including next meal, shopping list count,
- * recent intake, and favorites count. Protected route — only accessible to authenticated users.
- * Fetches data from /api/dashboard using the HttpOnly cookie-based auth.
+ * Main authenticated dashboard.
+ * Shows summary cards and quick links.
  */
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import DashboardLayout from "./DashboardLayout";
+import DashboardCard from "@/components/DashboardCard";
 import { useAuth } from "@/context/AuthContext";
-import DashboardCard from "../../components/DashboardCard";
-import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface DashboardData {
   nextMeal: string | null;
@@ -22,79 +21,71 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
-  // Wrap dashboard in ProtectedRoute to enforce auth
-  return (
-    <ProtectedRoute>
-      <DashboardContent />
-    </ProtectedRoute>
-  );
-}
-
-function DashboardContent() {
   const { user, loading } = useAuth();
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-    null
-  );
-  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [fetching, setFetching] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    /**
-     * fetchDashboard
-     * --------------
-     * Fetches dashboard data from the server.
-     * Relies on HttpOnly cookie for authentication.
-     */
-    const fetchDashboard = async () => {
+    if (!user || loading) return;
+
+    const fetchData = async () => {
       setFetching(true);
       setError(null);
-
       try {
-        const res = await fetch("/api/dashboard", {
-          method: "GET",
-          credentials: "include", // sends HttpOnly cookie automatically
-        });
-
-        const data: DashboardData & { message?: string } = await res.json();
-
+        const res = await fetch("/api/dashboard", { credentials: "include" });
+        const json = await res.json();
         if (!res.ok)
-          throw new Error(data.message || "Failed to load dashboard");
-
-        setDashboardData(data);
+          throw new Error(json.message || "Failed to fetch dashboard");
+        setData(json);
       } catch (err: any) {
-        setError(err.message || "Error fetching dashboard");
+        setError(err.message);
       } finally {
         setFetching(false);
       }
     };
 
-    if (!loading && user) fetchDashboard();
-  }, [loading, user]);
+    fetchData();
+  }, [user, loading]);
 
-  // Render loading state
   if (loading || fetching) return <p>Loading dashboard...</p>;
+  if (error) return <p style={{ color: "var(--danger)" }}>Error: {error}</p>;
+  if (!data) return <p>No data available.</p>;
 
-  // Render error state
-  if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
-
-  // Render empty state
-  if (!dashboardData) return <p>No dashboard data available.</p>;
-
-  // Render dashboard cards
   return (
-    <div style={{ display: "grid", gap: "1rem" }}>
-      <DashboardCard title="Next Meal">
-        {dashboardData.nextMeal || "N/A"}
-      </DashboardCard>
-      <DashboardCard title="Shopping List Items">
-        {dashboardData.shoppingListCount}
-      </DashboardCard>
-      <DashboardCard title="Recent Food Intake">
-        {dashboardData.recentIntake || "N/A"}
-      </DashboardCard>
-      <DashboardCard title="Favorites">
-        {dashboardData.favoritesCount}
-      </DashboardCard>
-    </div>
+    <DashboardLayout>
+      <div
+        style={{
+          display: "grid",
+          gap: "1rem",
+          gridTemplateColumns: "1fr",
+        }}
+      >
+        {/* Cards */}
+        <DashboardCard title="Next Meal">
+          {data.nextMeal || "N/A"}
+        </DashboardCard>
+        <DashboardCard title="Shopping List Items">
+          {data.shoppingListCount}
+        </DashboardCard>
+        <DashboardCard title="Recent Food Intake">
+          {data.recentIntake || "N/A"}
+        </DashboardCard>
+        <DashboardCard title="Favorites">{data.favoritesCount}</DashboardCard>
+
+        <style jsx>{`
+          @media (min-width: 768px) {
+            div {
+              grid-template-columns: repeat(2, 1fr);
+            }
+          }
+          @media (min-width: 1024px) {
+            div {
+              grid-template-columns: repeat(4, 1fr);
+            }
+          }
+        `}</style>
+      </div>
+    </DashboardLayout>
   );
 }

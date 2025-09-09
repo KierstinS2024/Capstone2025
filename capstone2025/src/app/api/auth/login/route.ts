@@ -1,4 +1,4 @@
-// path: src/app/api/auth/login/route.ts
+// src/app/api/auth/login/route.ts
 /**
  * POST /api/auth/login
  * --------------------
@@ -9,18 +9,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
-import { verifyPassword, signToken } from "@/lib/auth";
+import { signToken } from "@/lib/auth";
 import { User as ClientUser } from "@/types/auth";
 
-// Cookie configuration
 const COOKIE_NAME = "token";
 const COOKIE_PATH = "/";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export async function POST(req: NextRequest) {
   try {
+    // Connect to MongoDB
     await connectToDatabase();
 
+    // Parse request body
     const { email, password }: { email?: string; password?: string } =
       await req.json();
 
@@ -31,31 +32,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fetch user with explicit type to fix "_id is unknown"
-    const userDoc = await User.findOne({ email }).lean<{
-      _id: string;
-      email: string;
-      password: string;
-      avatarUrl?: string;
-      preferences?: Record<string, any>;
-    }>();
-
-    if (!userDoc || !(await verifyPassword(password, userDoc.password))) {
+    // Find the user with password included
+    const userDoc = await User.findOne({ email }).select("+password");
+    if (!userDoc) {
       return NextResponse.json(
         { message: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    const token = signToken({ userId: userDoc._id });
+    // Use Mongoose method to verify password
+    const isValid = await userDoc.comparePassword(password);
+    if (!isValid) {
+      return NextResponse.json(
+        { message: "Invalid email or password" },
+        { status: 401 }
+      );
+    }
 
+    // Sign JWT
+    const token = signToken({ userId: userDoc._id.toString() });
+
+    // Build client-safe user object (exclude password)
     const safeUser: ClientUser = {
-      _id: userDoc._id,
+      _id: userDoc._id.toString(),
       email: userDoc.email,
       avatarUrl: userDoc.avatarUrl,
       preferences: userDoc.preferences || {},
     };
 
+    // Attach cookie and respond
     const response = NextResponse.json({ user: safeUser }, { status: 200 });
     response.cookies.set({
       name: COOKIE_NAME,

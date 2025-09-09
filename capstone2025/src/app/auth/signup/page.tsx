@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import styles from "./AuthForm.module.css";
+import styles from "../AuthForm.module.css";
 
 export default function SignupPage() {
   const { signup, loading, error } = useAuth();

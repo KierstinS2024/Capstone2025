@@ -18,17 +18,19 @@ export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
 
+    // Extract JWT from cookie
     const token = req.cookies.get(COOKIE_NAME)?.value;
     if (!token) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify JWT and extract userId
     const userId = verifyToken(token);
     if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // Use lean with explicit type for type-safe _id
+    // Fetch user but exclude password by default (protected in schema)
     const userDoc = await User.findById(userId).lean<{
       _id: string;
       email: string;
@@ -40,6 +42,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
+    // Construct safe user object
     const safeUser: ClientUser = {
       _id: userDoc._id,
       email: userDoc.email,

@@ -1,0 +1,43 @@
+/* Path: src/components/Modal.module.css */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 40, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+
+.title {
+  margin-bottom: 1rem;
+  font-size: var(--font-xl);
+}
+
+.content {
+  margin-bottom: 1.5rem;
+}
+
+.closeBtn {
+  background-color: var(--accent-primary);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  transition: background-color 0.2s;
+}
+
+.closeBtn:hover {
+  background-color: var(--accent-hover);
+}

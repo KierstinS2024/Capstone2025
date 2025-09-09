@@ -6,8 +6,9 @@
  * -----------------
  * Reusable form component for creating or editing meal plans.
  * Features:
- * - Uses react-hook-form with Zod for validation
+ * - Uses react-hook-form with Zod validation
  * - Allows selecting recipes per day & meal type
+ * - Dynamic entries table (add/remove entries)
  * - Can be used for both creating and editing meal plans
  */
 
@@ -26,16 +27,9 @@ interface Props {
   loading?: boolean;
 }
 
-const DAYS_OF_WEEK = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-] as const;
-const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
+// Days and meal types constants
+const DAYS_OF_WEEK = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"] as const;
+const MEAL_TYPES = ["breakfast","lunch","dinner","snack"] as const;
 
 export default function MealPlanForm({
   initialValues,
@@ -62,34 +56,36 @@ export default function MealPlanForm({
     name: "entries",
   });
 
-  const onSubmitHandler: SubmitHandler<MealPlanFormSchema> = (data) => {
-    onSubmit(data);
-  };
-
-  const addEntry = () => {
+  // Add new entry template
+  const addEntry = () =>
     append({
       dayOfWeek: "Monday",
       mealType: "breakfast",
       recipeId: "",
       servings: 1,
     });
-  };
+
+  const onSubmitHandler: SubmitHandler<MealPlanFormSchema> = (data) =>
+    onSubmit(data);
 
   return (
     <form onSubmit={handleSubmit(onSubmitHandler)}>
+      {/* Week Start Date */}
       <label>
         Week Start Date *
         <input type="date" {...register("weekStartDate")} />
         {errors.weekStartDate && <span>{errors.weekStartDate.message}</span>}
       </label>
 
+      {/* Notes */}
       <label>
         Notes
         <textarea {...register("notes")} />
         {errors.notes && <span>{errors.notes.message}</span>}
       </label>
 
-      <h3>Meal Plan Entries</h3>
+      {/* Entries Section */}
+      <h3>Entries</h3>
       <button type="button" onClick={addEntry}>
         Add Entry
       </button>
@@ -103,6 +99,7 @@ export default function MealPlanForm({
             marginBottom: "0.5rem",
           }}
         >
+          {/* Day selection */}
           <label>
             Day *
             <select {...register(`entries.${idx}.dayOfWeek` as const)}>
@@ -112,40 +109,56 @@ export default function MealPlanForm({
                 </option>
               ))}
             </select>
+            {errors.entries?.[idx]?.dayOfWeek && (
+              <span>{errors.entries[idx].dayOfWeek?.message}</span>
+            )}
           </label>
 
+          {/* Meal type selection */}
           <label>
             Meal Type *
             <select {...register(`entries.${idx}.mealType` as const)}>
-              {MEAL_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
+              {MEAL_TYPES.map((meal) => (
+                <option key={meal} value={meal}>
+                  {meal}
                 </option>
               ))}
             </select>
+            {errors.entries?.[idx]?.mealType && (
+              <span>{errors.entries[idx].mealType?.message}</span>
+            )}
           </label>
 
+          {/* Recipe selection */}
           <label>
             Recipe *
             <select {...register(`entries.${idx}.recipeId` as const)}>
-              <option value="">Select recipe</option>
-              {recipes.map((r) => (
-                <option key={r._id} value={r._id}>
-                  {r.title}
+              <option value="">Select Recipe</option>
+              {recipes.map((recipe) => (
+                <option key={recipe._id} value={recipe._id}>
+                  {recipe.title}
                 </option>
               ))}
             </select>
+            {errors.entries?.[idx]?.recipeId && (
+              <span>{errors.entries[idx].recipeId?.message}</span>
+            )}
           </label>
 
+          {/* Servings */}
           <label>
             Servings *
             <input
               type="number"
-              step={0.1}
+              min={1}
               {...register(`entries.${idx}.servings` as const)}
             />
+            {errors.entries?.[idx]?.servings && (
+              <span>{errors.entries[idx].servings?.message}</span>
+            )}
           </label>
 
+          {/* Remove entry button */}
           <button type="button" onClick={() => remove(idx)}>
             Remove Entry
           </button>

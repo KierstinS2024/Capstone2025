@@ -1,4 +1,4 @@
-// path: src/app/api/auth/signup/route.ts
+// src/app/api/auth/signup/route.ts
 /**
  * POST /api/auth/signup
  * --------------------
@@ -9,12 +9,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import User from "@/models/User";
-import { hashPassword, signToken } from "@/lib/auth";
+import { signToken } from "@/lib/auth";
 import { User as ClientUser } from "@/types/auth";
 
 const COOKIE_NAME = "token";
 const COOKIE_PATH = "/";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingUser = await User.findOne({ email }).lean<{ _id: string }>();
+    // Check if email is already in use
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
         { message: "Email already in use" },
@@ -38,11 +39,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const hashedPassword = await hashPassword(password);
+    // Create new user — password will be hashed by pre-save middleware
+    const newUserDoc = await User.create({ email, password });
 
-    // Create user and lean to get plain object with typed _id
-    const newUserDoc = await User.create({ email, password: hashedPassword });
+    // Sign JWT
+    const token = signToken({ userId: newUserDoc._id.toString() });
 
+    // Build client-safe user object
     const safeUser: ClientUser = {
       _id: newUserDoc._id.toString(),
       email: newUserDoc.email,
@@ -50,8 +53,7 @@ export async function POST(req: NextRequest) {
       preferences: newUserDoc.preferences || {},
     };
 
-    const token = signToken({ userId: newUserDoc._id.toString() });
-
+    // Attach cookie and respond
     const response = NextResponse.json({ user: safeUser }, { status: 201 });
     response.cookies.set({
       name: COOKIE_NAME,

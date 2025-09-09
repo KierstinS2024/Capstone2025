@@ -1,151 +1,151 @@
+// Path: src/app/api/ingredients/[id]/route.ts
+"use server";
+
 /**
- * Ingredient Individual API
- * - GET: Fetch ingredient by ID (JWT-protected)
- * - PUT: Update ingredient by ID (JWT-protected)
- * - DELETE: Delete ingredient by ID (JWT-protected)
+ * Ingredient Single API
+ * --------------------
+ * GET → Retrieve a single ingredient by ID
+ * PUT → Update ingredient (JWT required)
+ * DELETE → Delete ingredient (JWT required)
+ * Features:
+ * - Lean queries
+ * - Zod validation for PUT
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import Ingredient from "@/models/Ingredient";
 import { requireAuth } from "@/lib/authHelpers";
-import { IngredientBody, ApiResponse } from "@/types/ingredient"; // updated import
+import { z, ZodError } from "zod";
+import mongoose from "mongoose";
 
-// GET /api/ingredients/:id
+// Zod schema for PUT
+const updateIngredientSchema = z.object({
+  name: z.string().min(1),
+  unit: z.string().min(1),
+  defaultQuantity: z.number().positive(),
+  nutritionInfo: z.record(z.any()).optional(),
+});
+
+/**
+ * GET /api/ingredients/[id]
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     await connectToDatabase();
-    const userId = requireAuth(req);
-
+    requireAuth(req);
     const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Invalid ingredient ID" },
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return NextResponse.json(
+        { success: false, message: "Invalid ID" },
         { status: 400 }
       );
-    }
 
-    const ingredient = await Ingredient.findById(id);
-    if (!ingredient) {
-      return NextResponse.json<ApiResponse<null>>(
+    const ingredient = await Ingredient.findById(id).lean();
+    if (!ingredient)
+      return NextResponse.json(
         { success: false, message: "Ingredient not found" },
         { status: 404 }
       );
-    }
 
-    return NextResponse.json<ApiResponse<typeof ingredient>>({
-      success: true,
-      data: ingredient,
-    });
+    return NextResponse.json({ success: true, data: ingredient });
   } catch (err) {
-    console.error("Fetching ingredient error:", err);
-    return NextResponse.json<ApiResponse<null>>(
+    console.error("GET /api/ingredients/[id] error:", err);
+    return NextResponse.json(
       {
         success: false,
-        message: err instanceof Error ? err.message : "Server error",
+        message:
+          err instanceof Error ? err.message : "Failed to fetch ingredient",
       },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/ingredients/:id
+/**
+ * PUT /api/ingredients/[id]
+ */
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     await connectToDatabase();
-    const userId = requireAuth(req);
+    requireAuth(req);
 
     const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Invalid ingredient ID" },
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return NextResponse.json(
+        { success: false, message: "Invalid ID" },
         { status: 400 }
       );
-    }
 
-    const body: IngredientBody = await req.json();
-    if (!body.name || !body.unit || body.defaultQuantity === undefined) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          message: "name, unit, and defaultQuantity are required",
-        },
-        { status: 400 }
-      );
-    }
+    const body = await req.json();
+    const parsed = updateIngredientSchema.parse(body);
 
-    const ingredient = await Ingredient.findByIdAndUpdate(
-      id,
-      { ...body, nutritionInfo: body.nutritionInfo || {} },
-      { new: true }
-    );
-
-    if (!ingredient) {
-      return NextResponse.json<ApiResponse<null>>(
+    const updated = await Ingredient.findByIdAndUpdate(id, parsed, {
+      new: true,
+    }).lean();
+    if (!updated)
+      return NextResponse.json(
         { success: false, message: "Ingredient not found" },
         { status: 404 }
       );
-    }
 
-    return NextResponse.json<ApiResponse<typeof ingredient>>({
-      success: true,
-      data: ingredient,
-      message: "Ingredient updated successfully",
-    });
+    return NextResponse.json({ success: true, data: updated });
   } catch (err) {
-    console.error("Updating ingredient error:", err);
-    return NextResponse.json<ApiResponse<null>>(
+    console.error("PUT /api/ingredients/[id] error:", err);
+    if (err instanceof ZodError) {
+      const message = err.issues.map((i) => i.message).join(", ");
+      return NextResponse.json({ success: false, message }, { status: 400 });
+    }
+    return NextResponse.json(
       {
         success: false,
-        message: err instanceof Error ? err.message : "Server error",
+        message:
+          err instanceof Error ? err.message : "Failed to update ingredient",
       },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/ingredients/:id
+/**
+ * DELETE /api/ingredients/[id]
+ */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     await connectToDatabase();
-    const userId = requireAuth(req);
+    requireAuth(req);
 
     const { id } = params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, message: "Invalid ingredient ID" },
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return NextResponse.json(
+        { success: false, message: "Invalid ID" },
         { status: 400 }
       );
-    }
 
-    const ingredient = await Ingredient.findByIdAndDelete(id);
-    if (!ingredient) {
-      return NextResponse.json<ApiResponse<null>>(
+    const deleted = await Ingredient.findByIdAndDelete(id).lean();
+    if (!deleted)
+      return NextResponse.json(
         { success: false, message: "Ingredient not found" },
         { status: 404 }
       );
-    }
 
-    return NextResponse.json<ApiResponse<null>>({
-      success: true,
-      message: "Ingredient deleted successfully",
-    });
+    return NextResponse.json({ success: true, message: "Ingredient deleted" });
   } catch (err) {
-    console.error("Deleting ingredient error:", err);
-    return NextResponse.json<ApiResponse<null>>(
+    console.error("DELETE /api/ingredients/[id] error:", err);
+    return NextResponse.json(
       {
         success: false,
-        message: err instanceof Error ? err.message : "Server error",
+        message:
+          err instanceof Error ? err.message : "Failed to delete ingredient",
       },
       { status: 500 }
     );
