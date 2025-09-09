@@ -1,0 +1,6 @@
+/* src/app/page.module.css */
+/* Container style for the homepage */
+.container {
+  padding: 2rem;
+  font-family: var(--font-family);
+}

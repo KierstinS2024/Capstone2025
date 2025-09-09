@@ -1,0 +1,7 @@
+/* src/styles/variables.css */
+/* CSS variables for theme and colors */
+:root {
+  --primary-color: #4f46e5;
+  --secondary-color: #6366f1;
+  --font-family: "Helvetica", sans-serif;
+}

@@ -1,0 +1,12 @@
+/* src/app/globals.css */
+/* Global CSS reset and styles */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+}
+
+* {
+  box-sizing: border-box;
+}
