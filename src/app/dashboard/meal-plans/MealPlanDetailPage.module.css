@@ -1,0 +1,205 @@
+/* path: src/app/dashboard/meal-plans/MealPlanDetailPage.module.css */
+
+/* Container for the entire meal plan detail page */
+.container {
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: auto;
+}
+
+/* Page title */
+.title {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* Subtitles for sections like Entries or Shopping List */
+.subtitle {
+  font-size: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Form row for week start date, notes, and save button */
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Label styling */
+.label {
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Inputs for text and date */
+.input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+/* Textarea styling */
+.textarea {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 0.25rem;
+  resize: vertical;
+  margin-top: 0.25rem;
+}
+
+/* Button to save changes */
+.updateButton {
+  padding: 0.5rem 1rem;
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.updateButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Entry list styling */
+.entryList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Each entry row */
+.entryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Entry main info: title and servings */
+.entryMain {
+  flex: 1;
+}
+
+/* Entry title and recipe name */
+.entryTitle {
+  font-weight: 600;
+  display: flex;
+  gap: 0.25rem;
+}
+
+/* Recipe name in entry */
+.entryRecipe {
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* Meta info like servings */
+.entryMeta {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+/* Buttons container */
+.entryActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Edit button */
+.editButton {
+  background-color: #facc15;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+/* Delete button */
+.deleteButton {
+  background-color: #ef4444;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  color: white;
+  cursor: pointer;
+}
+
+/* Empty state text */
+.empty {
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 1rem;
+}
+
+/* Messages and errors */
+.message {
+  color: #2563eb;
+  font-style: italic;
+}
+.error {
+  color: #dc2626;
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
+/* Shopping list preview section */
+.previewSection {
+  margin-top: 2rem;
+}
+
+/* Header row for shopping list preview */
+.previewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Shopping list preview button */
+.previewButton {
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.previewButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Grid for shopping list items */
+.previewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Each preview item */
+.previewItem {
+  background-color: #f3f4f6;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Name and quantity in preview */
+.previewName {
+  font-weight: 500;
+}
+.previewQty {
+  font-weight: 600;
+}

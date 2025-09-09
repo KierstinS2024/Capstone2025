@@ -1,0 +1,42 @@
+/* path: src/components/GenerateShoppingListButton.module.css */
+
+/* Main button */
+.button {
+  display: inline-block;
+  background-color: #10b981; /* Tailwind green-500 */
+  color: #ffffff;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  margin-bottom: 1.5rem;
+}
+
+/* Hover effect */
+.button:hover {
+  background-color: #059669; /* Darker green */
+  transform: translateY(-1px);
+}
+
+/* Disabled state (while generating) */
+.button:disabled {
+  background-color: #6ee7b7; /* Lighter green */
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Success message */
+.messageSuccess {
+  margin-top: 0.5rem;
+  color: #2a9d8f; /* Teal */
+  font-size: 0.9rem;
+}
+
+/* Error message */
+.messageError {
+  margin-top: 0.5rem;
+  color: #e63946; /* Red */
+  font-size: 0.9rem;
+}

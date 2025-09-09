@@ -1,0 +1,44 @@
+/* path: src/app/dashboard/meal-plans/new/CreateMealPlanPage.module.css */
+
+.container {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.label { font-weight: 600; color: var(--text-secondary); }
+.input, .textarea {
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-gray);
+  background: transparent;
+  color: var(--text-primary);
+}
+.textarea { min-height: 120px; resize: vertical; }
+
+.submitButton {
+  margin-top: 0.75rem;
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.error { color: var(--danger); font-weight: 700; }

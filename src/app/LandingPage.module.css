@@ -1,0 +1,152 @@
+/* Container: full viewport height with spacing */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 6rem;
+  padding: 2rem 1rem;
+}
+
+/* ------------------- Hero Section ------------------- */
+.hero {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg-alt);
+  padding: 5rem 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  flex-wrap: wrap;
+  gap: 3rem;
+}
+
+.text {
+  max-width: 600px;
+  text-align: center;
+}
+
+.text h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.text p {
+  font-size: 1.3rem;
+  margin-bottom: 2rem;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btnPrimary {
+  background: var(--primary);
+  color: #fff;
+  padding: 0.85rem 1.75rem;
+  font-weight: 700;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
+}
+.btnPrimary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.btnSecondary {
+  background: var(--secondary);
+  color: #fff;
+  padding: 0.85rem 1.75rem;
+  font-weight: 700;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
+}
+.btnSecondary:hover {
+  background: var(--secondary-hover);
+  transform: translateY(-2px);
+}
+
+/* ------------------- Features ------------------- */
+.features {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.card {
+  max-width: 300px;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Card Text */
+.card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.card p {
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+/* ------------------- CTA Section ------------------- */
+.cta {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
+
+.cta h2 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+}
+
+.cta .btnPrimary {
+  background: #fff;
+  color: var(--primary);
+  font-weight: 700;
+  padding: 1rem 2rem;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  transition: all 0.3s ease;
+}
+
+.cta .btnPrimary:hover {
+  background: var(--primary-hover);
+  color: #fff;
+}
+
+/* ------------------- Responsive ------------------- */
+@media (max-width: 900px) {
+  .hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  .features {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+@media (max-width: 500px) {
+  .text h1 {
+    font-size: 2rem;
+  }
+  .text p {
+    font-size: 1.1rem;
+  }
+  .cta h2 {
+    font-size: 1.5rem;
+  }
+}

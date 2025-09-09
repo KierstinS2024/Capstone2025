@@ -1,0 +1,73 @@
+/* Path: src/app/dashboard/recipes/RecipesPage.module.css */
+
+/* ===== Page Container ===== */
+.container {
+  max-width: 1024px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+/* ===== Page Title ===== */
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+/* ===== Grid of Recipes ===== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+/* ===== Empty & Loading States ===== */
+.empty,
+.message {
+  font-style: italic;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 2rem;
+}
+
+/* ===== Error Message ===== */
+.error {
+  color: var(--error);
+  font-weight: bold;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+/* ===== Search Form ===== */
+.form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  background-color: var(--accent-primary);
+  color: var(--bg-card);
+  cursor: pointer;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.button:hover {
+  background-color: var(--accent-secondary);
+  transform: translateY(-1px);
+}

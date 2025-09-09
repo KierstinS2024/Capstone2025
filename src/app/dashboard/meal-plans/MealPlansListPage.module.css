@@ -1,0 +1,46 @@
+/* path: src/app/dashboard/meal-plans/MealPlansListPage.module.css */
+
+.container {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #111827; /* dark text */
+}
+
+.createButton {
+  background-color: #4f46e5; /* indigo */
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.createButton:hover {
+  background-color: #4338ca; /* darker indigo */
+}
+
+.error {
+  color: #dc2626; /* red for errors */
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+.loading {
+  font-size: 1rem;
+  color: #6b7280; /* gray text */
+}

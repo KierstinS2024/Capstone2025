@@ -1,0 +1,50 @@
+/* path: src/components/EditMealPlanEntryModal.module.css */
+
+/* Modal overlay that dims the page */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2,6,23,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 80;
+}
+
+/* Modal box */
+.modal {
+  background: var(--bg-card);
+  width: 100%;
+  max-width: 560px;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+/* Modal header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--text-primary);
+}
+
+/* Close button positioned top-right */
+.closeButton {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+/* Modal content/body */
+.body {
+  margin-top: 0.5rem;
+}

@@ -1,0 +1,73 @@
+/* Path: src/app/dashboard/recipes/RecipesShared.module.css */
+
+/* ===== Shared Container ===== */
+.container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background-color: var(--bg-page);
+  border-radius: var(--radius);
+}
+
+/* ===== Shared Titles ===== */
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+/* ===== Shared Messages ===== */
+.message {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.error {
+  color: var(--error);
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+/* ===== Shared List ===== */
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.listItem {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background-color: var(--bg-card);
+  margin-bottom: 0.5rem;
+}
+
+.link {
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.link:hover {
+  color: var(--accent-primary);
+}
+
+/* ===== Shared Button ===== */
+.button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--accent-primary);
+  color: var(--bg-card);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover {
+  background-color: var(--accent-secondary);
+}

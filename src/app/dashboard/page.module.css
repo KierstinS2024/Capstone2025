@@ -1,0 +1,66 @@
+/* src/app/dashboard/page.module.css */
+
+/* Container for the dashboard page */
+.dashboardPage {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 2rem;
+  font-family: "Inter", sans-serif;
+  background-color: #f9fafb; /* light gray background */
+  min-height: 100vh;
+}
+
+/* Header / welcome section */
+.welcome {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827; /* gray-900 */
+}
+
+/* Navigation section */
+.nav {
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.nav ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.nav li a {
+  text-decoration: none;
+  color: #374151; /* gray-700 */
+  font-weight: 500;
+  transition: color 0.2s ease-in-out;
+}
+
+.nav li a:hover {
+  color: #111827; /* gray-900 */
+}
+
+/* Main content area */
+.main {
+  flex-grow: 1;
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  color: #111827;
+}
+
+/* Empty state message */
+.emptyMessage {
+  color: #6b7280; /* gray-500 */
+  font-size: 1rem;
+  margin-top: 1rem;
+}

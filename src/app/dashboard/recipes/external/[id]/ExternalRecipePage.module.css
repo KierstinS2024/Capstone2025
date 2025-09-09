@@ -1,0 +1,77 @@
+/* Path: src/app/dashboard/recipes/external/[id]/ExternalRecipePage.module.css */
+
+/* ===== Container ===== */
+.container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background-color: var(--bg-page);
+  border-radius: 12px;
+}
+
+/* ===== Page Title ===== */
+.title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+/* ===== Image ===== */
+.image {
+  width: 100%;
+  max-width: 500px;
+  display: block;
+  margin: 1rem auto;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  background-color: var(--card);
+}
+
+/* ===== Source Badge / Info ===== */
+.source {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+/* ===== Ingredient List ===== */
+.ingredientList {
+  list-style: none;
+  padding: 0;
+}
+
+.ingredientItem {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  border-radius: 8px;
+  background-color: var(--bg-card);
+  margin-bottom: 0.5rem;
+}
+
+/* ===== Instructions ===== */
+.instructions {
+  background-color: var(--bg-card);
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  margin-top: 1rem;
+  color: var(--text-primary);
+}
+
+/* ===== Back Button ===== */
+.backButton {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--accent-primary);
+  color: var(--bg-card);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.backButton:hover {
+  background-color: var(--accent-secondary);
+}

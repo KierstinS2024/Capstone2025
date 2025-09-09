@@ -1,0 +1,176 @@
+/* path: src/styles/globals.css (ADD these variables near the top of the file) */
+
+/* Design tokens / CSS variables for consistent theming */
+:root {
+  --bg: #f6f7fb;
+  --bg-card: #ffffff;
+  --bg-secondary: #fbfcfe;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --accent-primary: #0f766e;
+  --accent-primary-dark: #0c5f58;
+  --accent-secondary: #2563eb;
+  --accent-secondary-dark: #1e4fd1;
+  --danger: #dc2626;
+  --danger-dark: #b91c1c;
+  --border-gray: #e6e9ef;
+  --shadow-sm: 0 1px 3px rgba(16,24,40,0.04);
+  --shadow-md: 0 8px 20px rgba(16,24,40,0.08);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+}
+
+/* Dark theme (optional) */
+[data-theme="dark"] {
+  --bg: #0b1220;
+  --bg-card: #0f1724;
+  --bg-secondary: #0b1220;
+  --text-primary: #e6eef8;
+  --text-secondary: #9aa7b8;
+  --text-tertiary: #7e8ba0;
+  --accent-primary: #0fb4a3;
+  --accent-primary-dark: #0b8f80;
+  --accent-secondary: #60a5fa;
+  --accent-secondary-dark: #3b82f6;
+  --danger: #fb7185;
+  --danger-dark: #f43f5e;
+  --border-gray: #1f2a37;
+  --shadow-sm: 0 1px 3px rgba(2,6,23,0.5);
+  --shadow-md: 0 10px 30px rgba(2,6,23,0.6);
+}
+
+/* ----------------------------------------
+   Global Styles + Theme Variables
+   ---------------------------------------- */
+
+/* Base Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#__next {
+  height: 100%;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ----------------------------------------
+   Theme Variables
+   ---------------------------------------- */
+html.light,
+html.dark {
+  --radius: 12px;
+  --shadow-soft: 0 4px 10px rgba(0,0,0,0.08);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+}
+
+/* Light Theme */
+html.light {
+  --bg: #f6f4f1;           /* Soft neutral background */
+  --bg-alt: #fffdf8;       /* Cards, sections */
+  --text: #1f2a24;         /* Dark earthy text */
+  --muted: #4a5a52;        /* Secondary text */
+  --primary: #6b8f71;      /* Muted green */
+  --primary-hover: #5a7d60;
+  --secondary: #c86b49;    /* Warm accent */
+  --secondary-hover: #9f5b34;
+  --card: #ffffff;
+  --border: #d8cdc1;
+  --success: #4d7c57;
+  --warning: #d9a441;
+  --danger: #a23b35;
+}
+
+/* Dark Theme */
+html.dark {
+  --bg: #1a1a1a;
+  --bg-alt: #2a2a2a;
+  --text: #f5f5f5;
+  --muted: #b3b3b3;
+  --primary: #8fbf9c;
+  --primary-hover: #7ca88a;
+  --secondary: #e08563;
+  --secondary-hover: #c86b49;
+  --card: #2a2a2a;
+  --border: #444;
+  --success: #6dbf7b;
+  --warning: #f1c75c;
+  --danger: #e06a64;
+}
+
+/* ----------------------------------------
+   Base Styles
+   ---------------------------------------- */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* Buttons */
+.btn {
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.6rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: background 0.3s, transform 0.2s;
+}
+.btn.primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn.primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+.btn.secondary {
+  background: var(--secondary);
+  color: #fff;
+}
+.btn.secondary:hover {
+  background: var(--secondary-hover);
+  transform: translateY(-2px);
+}
+
+/* Cards */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.3s;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+/* Containers */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
