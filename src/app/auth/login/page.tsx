@@ -1,7 +1,7 @@
 // path: src/app/auth/login/page.tsx
 /**
  * LoginPage
- * ----------
+ * ---------
  * Renders the login form for existing users
  * - Uses shared AuthForm styles
  * - ThemeToggle floats in top-right
@@ -15,7 +15,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
-import styles from "../AuthForm.module.css"; // relative import to shared AuthForm CSS
+import styles from "../AuthForm.module.css";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,10 +57,14 @@ export default function LoginPage() {
       <ThemeToggle />
 
       <form className={styles.form} onSubmit={handleLoginSubmit}>
-        <h1 className={styles.title}>Login</h1>
+        <h1 className={styles.title}>Log In</h1>
 
         {/* Display error message if login fails */}
-        {errorMessage && <p className={styles.error}>{errorMessage}</p>}
+        {errorMessage && (
+          <p className={styles.error} role="alert">
+            {errorMessage}
+          </p>
+        )}
 
         {/* Email input */}
         <input
@@ -83,12 +88,12 @@ export default function LoginPage() {
 
         {/* Submit button */}
         <button type="submit" className={styles.button} disabled={isLoading}>
-          {isLoading ? "Logging in..." : "Login"}
+          {isLoading ? "Logging in..." : "Log In"}
         </button>
 
         {/* Link to signup page */}
         <p className={styles.link}>
-          Don’t have an account? <a href="/auth/signup">Sign up</a>
+          Don’t have an account? <Link href="/auth/signup">Sign Up</Link>
         </p>
       </form>
     </div>
