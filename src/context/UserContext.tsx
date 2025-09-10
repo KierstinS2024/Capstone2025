@@ -1,26 +1,21 @@
 // src/context/UserContext.tsx
-// React context for user-specific preferences or data
+// React context for global user-related state
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, ReactNode } from "react";
 import type { User } from "@/types/user";
 
-type UserContextType = {
-  user: User | null;
-  setUser: (user: User | null) => void;
-};
+type UserContextType = { user: User | null };
 
 export const UserContext = createContext<UserContextType | undefined>(
   undefined
 );
 
-type ProviderProps = { children: ReactNode };
+type ProviderProps = { children: ReactNode; user: User | null };
 
-export const UserProvider = ({ children }: ProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-
-  const value: UserContextType = { user, setUser };
-
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+export const UserProvider = ({ children, user }: ProviderProps) => {
+  return (
+    <UserContext.Provider value={{ user }}>{children}</UserContext.Provider>
+  );
 };
 
 export const useUser = () => {

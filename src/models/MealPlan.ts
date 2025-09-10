@@ -1,20 +1,27 @@
-import mongoose, { Schema, Document } from "mongoose";
+// src/models/MealPlan.ts
+// Mongoose schema and model for meal plans
 
-export interface IMealEntry {
+import mongoose, { Schema, Document, Types } from "mongoose";
+import type { IUser } from "./User";
+import type { IRecipe } from "./Recipe";
+
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
+export interface IMealPlanEntry {
   date: Date;
-  mealType: "breakfast" | "lunch" | "dinner" | "snack";
-  recipeId: mongoose.Types.ObjectId;
+  mealType: MealType;
+  recipeId: Types.ObjectId | IRecipe;
 }
 
 export interface IMealPlan extends Document {
-  userId: mongoose.Types.ObjectId;
+  userId: Types.ObjectId | IUser;
   title: string;
   startDate: Date;
   endDate: Date;
-  entries: IMealEntry[];
+  entries: IMealPlanEntry[];
 }
 
-const MealPlanSchema = new Schema<IMealPlan>({
+const mealPlanSchema = new Schema<IMealPlan>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   title: { type: String, required: true },
   startDate: { type: Date, required: true },
@@ -32,5 +39,6 @@ const MealPlanSchema = new Schema<IMealPlan>({
   ],
 });
 
-export default mongoose.models.MealPlan ||
-  mongoose.model<IMealPlan>("MealPlan", MealPlanSchema);
+export const MealPlan =
+  mongoose.models.MealPlan ||
+  mongoose.model<IMealPlan>("MealPlan", mealPlanSchema);

@@ -12,11 +12,11 @@ import type { ShoppingList } from "@/types/shoppingList";
 import { apiFetch } from "@/lib/api";
 
 type ShoppingListContextType = {
-  lists: ShoppingList[];
+  shoppingLists: ShoppingList[];
   loading: boolean;
-  fetchLists: () => Promise<void>;
-  createList: (list: Partial<ShoppingList>) => Promise<void>;
-  deleteList: (id: string) => Promise<void>;
+  fetchShoppingLists: () => Promise<void>;
+  createShoppingList: (list: Partial<ShoppingList>) => Promise<void>;
+  deleteShoppingList: (id: string) => Promise<void>;
 };
 
 export const ShoppingListContext = createContext<
@@ -26,45 +26,45 @@ export const ShoppingListContext = createContext<
 type ProviderProps = { children: ReactNode };
 
 export const ShoppingListProvider = ({ children }: ProviderProps) => {
-  const [lists, setLists] = useState<ShoppingList[]>([]);
+  const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchLists();
+    fetchShoppingLists();
   }, []);
 
   /** Fetch all shopping lists */
-  const fetchLists = async () => {
+  const fetchShoppingLists = async () => {
     setLoading(true);
     try {
       const data = await apiFetch<ShoppingList[]>("/shopping-lists");
-      setLists(data);
+      setShoppingLists(data);
     } finally {
       setLoading(false);
     }
   };
 
-  /** Create new shopping list */
-  const createList = async (list: Partial<ShoppingList>) => {
+  /** Create a shopping list */
+  const createShoppingList = async (list: Partial<ShoppingList>) => {
     await apiFetch("/shopping-lists", {
       method: "POST",
       body: JSON.stringify(list),
     });
-    await fetchLists();
+    await fetchShoppingLists();
   };
 
-  /** Delete shopping list by ID */
-  const deleteList = async (id: string) => {
+  /** Delete a shopping list */
+  const deleteShoppingList = async (id: string) => {
     await apiFetch(`/shopping-lists/${id}`, { method: "DELETE" });
-    setLists(lists.filter((l) => l._id !== id));
+    setShoppingLists(shoppingLists.filter((s) => s._id !== id));
   };
 
   const value: ShoppingListContextType = {
-    lists,
+    shoppingLists,
     loading,
-    fetchLists,
-    createList,
-    deleteList,
+    fetchShoppingLists,
+    createShoppingList,
+    deleteShoppingList,
   };
 
   return (

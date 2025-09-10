@@ -1,5 +1,11 @@
 // src/types/recipe.d.ts
-export interface Ingredient {
+// Type definitions for Recipe model
+
+import type { Types } from "mongoose";
+
+export type RecipeSource = "local" | "spoonacular";
+
+export interface RecipeIngredient {
   name: string;
   quantity: string;
   unit: string;
@@ -7,11 +13,18 @@ export interface Ingredient {
 
 export interface Recipe {
   _id: string;
-  userId: string;
+  userId: string; // reference to User._id
   title: string;
-  ingredients: Ingredient[];
+  ingredients: RecipeIngredient[];
   instructions: string;
-  source: "local" | "spoonacular";
+  source: RecipeSource;
   spoonacularId?: number;
-  isFavorite?: boolean; // helpful client-side flag
+}
+
+export interface CreateRecipePayload {
+  title: string;
+  ingredients: RecipeIngredient[];
+  instructions: string;
+  source?: RecipeSource;
+  spoonacularId?: number;
 }

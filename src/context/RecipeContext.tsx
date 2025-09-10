@@ -1,11 +1,10 @@
 // src/context/RecipeContext.tsx
-// React context for managing recipes (CRUD, favorites)
+// React context for managing recipes
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { Recipe } from "@/types/recipe";
 import { apiFetch } from "@/lib/api";
 
-// Context type
 type RecipeContextType = {
   recipes: Recipe[];
   loading: boolean;
@@ -14,19 +13,16 @@ type RecipeContextType = {
   deleteRecipe: (id: string) => Promise<void>;
 };
 
-// Create context
 export const RecipeContext = createContext<RecipeContextType | undefined>(
   undefined
 );
 
 type ProviderProps = { children: ReactNode };
 
-// Provider
 export const RecipeProvider = ({ children }: ProviderProps) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch recipes on mount
   useEffect(() => {
     fetchRecipes();
   }, []);
@@ -42,16 +38,16 @@ export const RecipeProvider = ({ children }: ProviderProps) => {
     }
   };
 
-  /** Create a new recipe */
+  /** Create a recipe */
   const createRecipe = async (recipe: Partial<Recipe>) => {
     await apiFetch("/recipes", {
       method: "POST",
       body: JSON.stringify(recipe),
     });
-    await fetchRecipes(); // refresh list
+    await fetchRecipes();
   };
 
-  /** Delete recipe by ID */
+  /** Delete a recipe */
   const deleteRecipe = async (id: string) => {
     await apiFetch(`/recipes/${id}`, { method: "DELETE" });
     setRecipes(recipes.filter((r) => r._id !== id));
@@ -70,7 +66,6 @@ export const RecipeProvider = ({ children }: ProviderProps) => {
   );
 };
 
-// Hook
 export const useRecipes = () => {
   const context = useContext(RecipeContext);
   if (!context)

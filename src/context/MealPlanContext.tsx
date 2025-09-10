@@ -53,7 +53,7 @@ export const MealPlanProvider = ({ children }: ProviderProps) => {
     await fetchMealPlans();
   };
 
-  /** Delete meal plan by ID */
+  /** Delete a meal plan */
   const deleteMealPlan = async (id: string) => {
     await apiFetch(`/meal-plans/${id}`, { method: "DELETE" });
     setMealPlans(mealPlans.filter((p) => p._id !== id));

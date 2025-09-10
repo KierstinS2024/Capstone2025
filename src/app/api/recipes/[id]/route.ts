@@ -3,8 +3,8 @@
 // Connects to MongoDB via db.ts and uses Recipe model
 
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "../../../lib/db";
-import RecipeModel from "../../../models/Recipe";
+import { connectDB } from "@/lib/db";
+import RecipeModel from "@/models/Recipe";
 
 export async function GET(req: NextRequest) {
   try {
