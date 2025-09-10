@@ -1,51 +1,32 @@
 // src/context/ShoppingListContext.tsx
-// Provides state management for shopping lists
+import { createContext, useState, useEffect, ReactNode } from "react";
+import type { ShoppingList } from "../models/ShoppingList";
+import { fetchShoppingLists } from "../lib/shoppingListApi";
 
-"use client";
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import type { ShoppingList } from "@/models/ShoppingList";
+type ShoppingListContextType = {
+  lists: ShoppingList[];
+  refresh: () => Promise<void>;
+};
 
-// Define context shape
-interface ShoppingListContextType {
-  shoppingLists: ShoppingList[];
-  addShoppingList: (list: ShoppingList) => void;
-  removeShoppingList: (id: string) => void;
-}
+export const ShoppingListContext = createContext<
+  ShoppingListContextType | undefined
+>(undefined);
 
-// Create context with undefined default for safety
-const ShoppingListContext = createContext<ShoppingListContextType | undefined>(
-  undefined
-);
+export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
+  const [lists, setLists] = useState<ShoppingList[]>([]);
 
-// Provider component
-export function ShoppingListProvider({ children }: { children: ReactNode }) {
-  const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
-
-  // Add a new list
-  const addShoppingList = (list: ShoppingList) => {
-    setShoppingLists((prev) => [...prev, list]);
+  const refresh = async () => {
+    const data = await fetchShoppingLists();
+    setLists(data);
   };
 
-  // Remove list by id
-  const removeShoppingList = (id: string) => {
-    setShoppingLists((prev) => prev.filter((list) => list.id !== id));
-  };
+  useEffect(() => {
+    refresh();
+  }, []);
 
   return (
-    <ShoppingListContext.Provider
-      value={{ shoppingLists, addShoppingList, removeShoppingList }}
-    >
+    <ShoppingListContext.Provider value={{ lists, refresh }}>
       {children}
     </ShoppingListContext.Provider>
   );
-}
-
-// Hook for consuming the context
-export function useShoppingListContext() {
-  const context = useContext(ShoppingListContext);
-  if (!context)
-    throw new Error(
-      "useShoppingListContext must be used within ShoppingListProvider"
-    );
-  return context;
-}
+};

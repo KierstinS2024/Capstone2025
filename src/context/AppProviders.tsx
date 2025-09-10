@@ -1,21 +1,25 @@
-// src/context/AppProviders.tsx
-// Wraps all contexts into one provider for use in layout.tsx
+// Path: src/context/AppProviders.tsx
+"use client"; // This is a client component
 
-"use client";
 import React, { ReactNode } from "react";
-import { UserProvider } from "./UserContext";
-import { MealPlanProvider } from "./MealPlanContext";
+import { AuthProvider } from "./AuthContext";
 import { RecipeProvider } from "./RecipeContext";
+import { MealPlanProvider } from "./MealPlanContext";
 import { ShoppingListProvider } from "./ShoppingListContext";
 
-export function AppProviders({ children }: { children: ReactNode }) {
+type AppProvidersProps = {
+  children: ReactNode;
+};
+
+// Combine all providers into a single wrapper
+export const AppProviders = ({ children }: AppProvidersProps) => {
   return (
-    <UserProvider>
-      <MealPlanProvider>
-        <RecipeProvider>
+    <AuthProvider>
+      <RecipeProvider>
+        <MealPlanProvider>
           <ShoppingListProvider>{children}</ShoppingListProvider>
-        </RecipeProvider>
-      </MealPlanProvider>
-    </UserProvider>
+        </MealPlanProvider>
+      </RecipeProvider>
+    </AuthProvider>
   );
-}
+};
