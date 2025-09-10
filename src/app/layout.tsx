@@ -1,22 +1,25 @@
 // src/app/layout.tsx
-import "../styles/variables.css";
+// Root layout updated to include AppProviders
+
 import "./globals.css";
-import { ReactNode } from "react";
+import type { Metadata } from "next";
+import { AppProviders } from "../context/AppProviders";
 
-// Root layout component wraps all pages
-interface RootLayoutProps {
-  children: ReactNode;
-}
+export const metadata: Metadata = {
+  title: "Capstone Project",
+  description: "Meal planning, recipes, and shopping lists",
+};
 
-const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>
-        {/* This is where all page content will be rendered */}
-        {children}
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );
-};
-
-export default RootLayout;
+}
