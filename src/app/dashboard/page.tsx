@@ -1,61 +1,52 @@
 // src/app/dashboard/page.tsx
+// Dashboard page integrating recipes, meal plans, shopping lists, and favorites
 "use client";
-
-/**
- * Dashboard Page
- * Displays Recipes, Meal Plans, Shopping Lists, and Favorites
- * All contexts are provided at the top-level for full state management
- */
 
 import React from "react";
 import DashboardCard from "@/components/DashboardCard";
-import { RecipeCard } from "@/components/RecipeCard";
+import { RecipeManager } from "@/components/RecipeManager";
 import { MealPlanCard } from "@/components/MealPlanCard";
 import { ShoppingListCard } from "@/components/ShoppingListCard";
 import { FavoritesCard } from "@/components/FavoritesCard";
-
 import { RecipeProvider } from "@/context/RecipeContext";
 import { MealPlanProvider } from "@/context/MealPlanContext";
 import { ShoppingListProvider } from "@/context/ShoppingListContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 
+// --------------------
+// Dashboard Page
+// --------------------
 const DashboardPage: React.FC = () => {
   return (
+    // Wrap with all relevant providers for context
     <RecipeProvider>
-      <MealPlanProvider>
-        <ShoppingListProvider>
-          <FavoritesProvider>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                gap: "16px",
-                padding: "16px",
-              }}
-            >
-              {/* Recipes */}
-              <DashboardCard title="Recipes">
-                <RecipeCard />
+      <FavoritesProvider>
+        <MealPlanProvider>
+          <ShoppingListProvider>
+            <div style={{ padding: "24px", display: "grid", gap: "24px" }}>
+              {/* Recipes Section */}
+              <DashboardCard title="My Recipes">
+                <RecipeManager />
               </DashboardCard>
 
-              {/* Meal Plans */}
-              <DashboardCard title="Meal Plans">
+              {/* Favorites Section */}
+              <DashboardCard title="My Favorites">
+                <FavoritesCard />
+              </DashboardCard>
+
+              {/* Meal Plan Section */}
+              <DashboardCard title="Current Meal Plan">
                 <MealPlanCard />
               </DashboardCard>
 
-              {/* Shopping Lists */}
-              <DashboardCard title="Shopping Lists">
+              {/* Shopping List Section */}
+              <DashboardCard title="Shopping List">
                 <ShoppingListCard />
               </DashboardCard>
-
-              {/* Favorites */}
-              <DashboardCard title="Favorites">
-                <FavoritesCard />
-              </DashboardCard>
             </div>
-          </FavoritesProvider>
-        </ShoppingListProvider>
-      </MealPlanProvider>
+          </ShoppingListProvider>
+        </MealPlanProvider>
+      </FavoritesProvider>
     </RecipeProvider>
   );
 };
