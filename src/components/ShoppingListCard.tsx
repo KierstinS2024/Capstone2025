@@ -2,28 +2,11 @@
 import React from "react";
 import { useShoppingLists } from "@/context/ShoppingListContext";
 
-/**
- * ShoppingListCard
- * Displays the first shopping list from ShoppingListContext
- */
 export const ShoppingListCard: React.FC = () => {
   const { shoppingLists } = useShoppingLists();
-  const activeList = shoppingLists[0]; // first list as "active"
+  const activeList = shoppingLists[0];
 
-  if (!activeList) {
-    return (
-      <div
-        style={{
-          padding: "16px",
-          border: "1px solid #ccc",
-          borderRadius: "8px",
-          backgroundColor: "#fefefe",
-        }}
-      >
-        No shopping list found.
-      </div>
-    );
-  }
+  if (!activeList) return <div>No shopping list found.</div>;
 
   return (
     <div

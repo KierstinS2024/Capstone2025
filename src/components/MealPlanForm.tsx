@@ -1,124 +1,158 @@
 // src/components/MealPlanForm.tsx
-// MealPlan creation form with recipe selection
 "use client";
 
 import React, { useState } from "react";
+import type { MealPlan, MealPlanEntry } from "@/types/mealPlan";
 import { useMealPlan } from "@/context/MealPlanContext";
 import { useRecipes } from "@/context/RecipeContext";
-import type { MealType, MealPlanEntry } from "@/types/mealPlan";
-import type { Recipe } from "@/types/recipe";
 
-// --------------------
-// Types
-// --------------------
-interface MealEntryInput {
-  mealType: MealType;
-  date: string;
-  recipeId: string;
+interface MealPlanFormProps {
+  existingPlan?: MealPlan; // optional for edit mode
+  onClose: () => void;
 }
 
-// --------------------
-// MealPlanForm Component
-// --------------------
-export const MealPlanForm: React.FC = () => {
+export const MealPlanForm: React.FC<MealPlanFormProps> = ({
+  existingPlan,
+  onClose,
+}) => {
   const { createMealPlan } = useMealPlan();
   const { recipes } = useRecipes();
 
-  const [title, setTitle] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [entries, setEntries] = useState<MealEntryInput[]>([]);
+  // --------------------
+  // Local state
+  // --------------------
+  const [title, setTitle] = useState(existingPlan?.title || "");
+  const [startDate, setStartDate] = useState(
+    existingPlan?.startDate.slice(0, 10) || ""
+  );
+  const [endDate, setEndDate] = useState(
+    existingPlan?.endDate.slice(0, 10) || ""
+  );
+  const [entries, setEntries] = useState<MealPlanEntry[]>(
+    existingPlan?.entries || []
+  );
 
-  // Add new empty meal entry
+  // --------------------
+  // Handlers
+  // --------------------
+
+  /** Add a new meal plan entry */
   const addEntry = () => {
+    if (!recipes.length) {
+      alert("No recipes available to add.");
+      return;
+    }
+
     setEntries((prev) => [
       ...prev,
-      { mealType: "breakfast", date: startDate || "", recipeId: "" },
+      {
+        date: startDate,
+        mealType: "breakfast",
+        recipeId: recipes[0]._id,
+        ingredients: [], // required for type safety
+      },
     ]);
   };
 
-  // Update a single entry
-  const updateEntry = (index: number, updated: Partial<MealEntryInput>) => {
+  /** Update an existing entry */
+  const updateEntry = (index: number, updated: Partial<MealPlanEntry>) => {
     setEntries((prev) =>
       prev.map((e, i) => (i === index ? { ...e, ...updated } : e))
     );
   };
 
-  // Remove entry
+  /** Remove an entry by index */
   const removeEntry = (index: number) => {
     setEntries((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Submit meal plan
+  /** Submit the meal plan form */
   const handleSubmit = async () => {
     if (!title || !startDate || !endDate) {
-      alert("Fill all fields");
+      alert("Title, start date, and end date are required.");
       return;
     }
 
-    // Convert MealEntryInput to MealPlanEntry
-    const mealPlanEntries: MealPlanEntry[] = entries.map((e) => ({
-      date: e.date,
-      mealType: e.mealType,
-      recipeId: e.recipeId,
-      ingredients: [], // optional, will be filled when generating shopping list
-    }));
-
-    await createMealPlan({
+    const payload: Partial<MealPlan> = {
       title,
       startDate,
       endDate,
-      entries: mealPlanEntries,
-    });
+      entries,
+    };
 
-    // Reset form
-    setTitle("");
-    setStartDate("");
-    setEndDate("");
-    setEntries([]);
+    await createMealPlan(payload);
+
+    onClose();
   };
 
+  // --------------------
+  // Render
+  // --------------------
   return (
-    <div className="p-4 border rounded shadow-md bg-white">
-      <h2 className="text-xl font-bold mb-4">Create Meal Plan</h2>
+    <div
+      style={{
+        backgroundColor: "white",
+        padding: "24px",
+        borderRadius: "8px",
+        minWidth: "400px",
+        maxHeight: "90vh",
+        overflowY: "auto",
+      }}
+    >
+      <h2 className="text-xl font-bold mb-4">
+        {existingPlan ? "Edit Meal Plan" : "New Meal Plan"}
+      </h2>
 
+      {/* Title input */}
       <div className="mb-2">
+        <label className="block font-medium">Title</label>
         <input
           type="text"
-          placeholder="Meal Plan Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="border p-1 w-full mb-1"
-        />
-        <input
-          type="date"
-          placeholder="Start Date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="border p-1 w-full mb-1"
-        />
-        <input
-          type="date"
-          placeholder="End Date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="border p-1 w-full"
+          className="w-full border px-2 py-1 rounded"
         />
       </div>
 
-      <div className="mb-4">
-        <h3 className="font-semibold mb-2">Meal Entries</h3>
-        {entries.map((entry, index) => (
+      {/* Date inputs */}
+      <div className="mb-2 flex gap-2">
+        <div>
+          <label className="block font-medium">Start Date</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="border px-2 py-1 rounded"
+          />
+        </div>
+        <div>
+          <label className="block font-medium">End Date</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="border px-2 py-1 rounded"
+          />
+        </div>
+      </div>
+
+      {/* Entries */}
+      <div className="entries mb-2">
+        <h3 className="font-semibold mb-1">Entries</h3>
+        {entries.map((entry, idx) => (
           <div
-            key={index}
-            className="flex items-center gap-2 mb-2 border p-2 rounded"
+            key={idx}
+            className="entry flex items-center gap-2 mb-1 border-b pb-1"
           >
+            {/* Meal Type */}
             <select
               value={entry.mealType}
               onChange={(e) =>
-                updateEntry(index, { mealType: e.target.value as MealType })
+                updateEntry(idx, {
+                  mealType: e.target.value as MealPlanEntry["mealType"],
+                })
               }
-              className="border p-1"
+              className="border px-2 py-1 rounded"
             >
               <option value="breakfast">Breakfast</option>
               <option value="lunch">Lunch</option>
@@ -126,28 +160,22 @@ export const MealPlanForm: React.FC = () => {
               <option value="snack">Snack</option>
             </select>
 
-            <input
-              type="date"
-              value={entry.date}
-              onChange={(e) => updateEntry(index, { date: e.target.value })}
-              className="border p-1"
-            />
-
+            {/* Recipe selection */}
             <select
               value={entry.recipeId}
-              onChange={(e) => updateEntry(index, { recipeId: e.target.value })}
-              className="border p-1 flex-1"
+              onChange={(e) => updateEntry(idx, { recipeId: e.target.value })}
+              className="border px-2 py-1 rounded flex-1"
             >
-              <option value="">-- Select Recipe --</option>
-              {recipes.map((r: Recipe) => (
+              {recipes.map((r) => (
                 <option key={r._id} value={r._id}>
-                  {r.title}
+                  {r.title} {r.source === "spoonacular" ? "(Spoonacular)" : ""}
                 </option>
               ))}
             </select>
 
+            {/* Remove button */}
             <button
-              onClick={() => removeEntry(index)}
+              onClick={() => removeEntry(idx)}
               className="px-2 py-1 bg-red-500 text-white rounded"
             >
               Remove
@@ -155,20 +183,27 @@ export const MealPlanForm: React.FC = () => {
           </div>
         ))}
 
+        {/* Add Entry button */}
         <button
           onClick={addEntry}
-          className="px-3 py-1 bg-blue-500 text-white rounded"
+          className="mt-1 px-3 py-1 bg-green-500 text-white rounded"
         >
           Add Entry
         </button>
       </div>
 
-      <button
-        onClick={handleSubmit}
-        className="px-4 py-2 bg-green-500 text-white rounded"
-      >
-        Save Meal Plan
-      </button>
+      {/* Action buttons */}
+      <div className="flex justify-end gap-2 mt-4">
+        <button onClick={onClose} className="px-3 py-1 bg-gray-300 rounded">
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          className="px-3 py-1 bg-blue-500 text-white rounded"
+        >
+          Save Plan
+        </button>
+      </div>
     </div>
   );
 };

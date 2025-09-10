@@ -1,53 +1,51 @@
 // src/app/dashboard/page.tsx
-// Dashboard page integrating recipes, meal plans, shopping lists, and favorites
 "use client";
 
 import React from "react";
-import DashboardCard from "@/components/DashboardCard";
-import { RecipeManager } from "@/components/RecipeManager";
+import { RecipeCard } from "@/components/RecipeCard";
+import { FavoritesCard } from "@/components/FavoritesCard";
 import { MealPlanCard } from "@/components/MealPlanCard";
 import { ShoppingListCard } from "@/components/ShoppingListCard";
-import { FavoritesCard } from "@/components/FavoritesCard";
-import { RecipeProvider } from "@/context/RecipeContext";
-import { MealPlanProvider } from "@/context/MealPlanContext";
-import { ShoppingListProvider } from "@/context/ShoppingListContext";
-import { FavoritesProvider } from "@/context/FavoritesContext";
+import { useRecipes } from "@/context/RecipeContext";
+import { useFavorites } from "@/context/FavoritesContext";
+import { useMealPlan } from "@/context/MealPlanContext";
+import { useShoppingLists } from "@/context/ShoppingListContext";
 
-// --------------------
-// Dashboard Page
-// --------------------
+/**
+ * DashboardPage
+ * Displays main dashboard with Recipes, Favorites, Meal Plan, and Shopping List cards
+ */
 const DashboardPage: React.FC = () => {
+  const { recipes, loading: recipesLoading } = useRecipes();
+  const { favorites, loading: favoritesLoading } = useFavorites();
+  const { currentMealPlan } = useMealPlan();
+  const { shoppingLists, loading: shoppingListsLoading } = useShoppingLists();
+
+  const isLoading = recipesLoading || favoritesLoading || shoppingListsLoading;
+
   return (
-    // Wrap with all relevant providers for context
-    <RecipeProvider>
-      <FavoritesProvider>
-        <MealPlanProvider>
-          <ShoppingListProvider>
-            <div style={{ padding: "24px", display: "grid", gap: "24px" }}>
-              {/* Recipes Section */}
-              <DashboardCard title="My Recipes">
-                <RecipeManager />
-              </DashboardCard>
+    <div
+      style={{
+        padding: "24px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "24px",
+      }}
+    >
+      {isLoading && <div>Loading dashboard...</div>}
 
-              {/* Favorites Section */}
-              <DashboardCard title="My Favorites">
-                <FavoritesCard />
-              </DashboardCard>
+      {/* Recipes */}
+      <RecipeCard />
 
-              {/* Meal Plan Section */}
-              <DashboardCard title="Current Meal Plan">
-                <MealPlanCard />
-              </DashboardCard>
+      {/* Favorites */}
+      <FavoritesCard />
 
-              {/* Shopping List Section */}
-              <DashboardCard title="Shopping List">
-                <ShoppingListCard />
-              </DashboardCard>
-            </div>
-          </ShoppingListProvider>
-        </MealPlanProvider>
-      </FavoritesProvider>
-    </RecipeProvider>
+      {/* Meal Plan */}
+      <MealPlanCard mealPlan={currentMealPlan ?? undefined} />
+
+      {/* Shopping List */}
+      <ShoppingListCard />
+    </div>
   );
 };
 

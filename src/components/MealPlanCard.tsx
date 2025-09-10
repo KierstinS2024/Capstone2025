@@ -1,103 +1,103 @@
 // src/components/MealPlanCard.tsx
-// Displays the current meal plan with options to delete or generate a shopping list
-
 import React, { useState } from "react";
 import { useMealPlan } from "@/context/MealPlanContext";
-import { generateShoppingListFromMealPlanAPI } from "@/lib/shoppingListApi";
-import type { ShoppingList } from "@/types/shoppingList";
+import type { MealPlan, MealPlanEntry } from "@/types/mealPlan";
+import { MealPlanForm } from "./MealPlanForm";
 
-export const MealPlanCard: React.FC = () => {
-  const {
-    currentMealPlan,
-    deleteMealPlan,
-    fetchMealPlans,
-    setCurrentMealPlan,
-  } = useMealPlan();
-  const [generating, setGenerating] = useState(false);
-  const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
+interface MealPlanCardProps {
+  mealPlan?: MealPlan;
+}
 
-  if (!currentMealPlan) {
-    return <div>No active meal plan. Create one to get started!</div>;
+export const MealPlanCard: React.FC<MealPlanCardProps> = ({ mealPlan }) => {
+  const { currentMealPlan } = useMealPlan();
+  const [editing, setEditing] = useState(false);
+
+  const activePlan = mealPlan || currentMealPlan;
+
+  if (!activePlan) {
+    return (
+      <div
+        style={{
+          padding: "16px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          backgroundColor: "#fefefe",
+        }}
+      >
+        No active meal plan. Create one to get started!
+      </div>
+    );
   }
 
-  const handleDelete = async () => {
-    if (
-      confirm(
-        `Are you sure you want to delete the meal plan "${currentMealPlan.title}"?`
-      )
-    ) {
-      await deleteMealPlan(currentMealPlan._id);
-      setCurrentMealPlan(null);
-    }
-  };
-
-  const handleGenerateShoppingList = async () => {
-    setGenerating(true);
-    try {
-      const list = await generateShoppingListFromMealPlanAPI(
-        currentMealPlan._id
-      );
-      setShoppingList(list);
-      alert(`Shopping list "${list.title}" generated!`);
-    } catch (err) {
-      console.error("Error generating shopping list:", err);
-      alert("Failed to generate shopping list");
-    } finally {
-      setGenerating(false);
-    }
-  };
+  const { title, startDate, endDate, entries } = activePlan;
 
   return (
-    <div className="meal-plan-card p-4 border rounded shadow-md bg-white">
-      <h2 className="text-xl font-bold">{currentMealPlan.title}</h2>
-      <p className="text-sm text-gray-500">
-        {new Date(currentMealPlan.startDate).toLocaleDateString()} -{" "}
-        {new Date(currentMealPlan.endDate).toLocaleDateString()}
+    <div
+      style={{
+        padding: "16px",
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+        backgroundColor: "#fafafa",
+      }}
+    >
+      <h2 style={{ fontSize: "20px", marginBottom: "8px" }}>{title}</h2>
+      <p style={{ fontSize: "14px", color: "#555", marginBottom: "12px" }}>
+        {new Date(startDate).toLocaleDateString()} -{" "}
+        {new Date(endDate).toLocaleDateString()}
       </p>
 
-      <div className="entries mt-2">
-        {currentMealPlan.entries.map((entry) => (
-          <div
-            key={entry.date + entry.mealType}
-            className="entry border-t py-1 flex justify-between"
+      <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+        {entries.map((entry: MealPlanEntry, idx) => (
+          <li
+            key={entry.date + entry.mealType + idx}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "6px",
+              padding: "4px 0",
+              borderBottom: "1px solid #eee",
+            }}
           >
-            <span className="meal-type font-medium">{entry.mealType}</span>
-            <span className="recipe-id text-gray-700">
-              Recipe ID: {entry.recipeId}
-            </span>
-          </div>
+            <span style={{ fontWeight: 500 }}>{entry.mealType}</span>
+            <span style={{ color: "#666" }}>Recipe ID: {entry.recipeId}</span>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={handleDelete}
-          className="px-3 py-1 bg-red-500 text-white rounded"
+      <button
+        onClick={() => setEditing(true)}
+        style={{
+          marginTop: "12px",
+          padding: "6px 12px",
+          backgroundColor: "#0070f3",
+          color: "#fff",
+          border: "none",
+          borderRadius: "4px",
+          cursor: "pointer",
+        }}
+      >
+        Edit Plan
+      </button>
+
+      {editing && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
         >
-          Delete Plan
-        </button>
-
-        <button
-          onClick={handleGenerateShoppingList}
-          disabled={generating}
-          className={`px-3 py-1 rounded text-white ${
-            generating ? "bg-gray-400" : "bg-blue-500"
-          }`}
-        >
-          {generating ? "Generating..." : "Generate Shopping List"}
-        </button>
-      </div>
-
-      {shoppingList && (
-        <div className="shopping-list mt-3 p-2 border rounded bg-gray-50">
-          <h3 className="font-semibold">{shoppingList.title}</h3>
-          <ul className="list-disc pl-5">
-            {shoppingList.items.map((item, idx) => (
-              <li key={idx}>
-                {item.ingredient} - {item.quantity} ({item.category})
-              </li>
-            ))}
-          </ul>
+          <MealPlanForm
+            existingPlan={activePlan}
+            onClose={() => setEditing(false)}
+          />
         </div>
       )}
     </div>

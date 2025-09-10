@@ -1,9 +1,4 @@
 // src/components/FavoritesCard.tsx
-/**
- * FavoritesCard
- * Displays a list of favorite recipes
- */
-
 import React from "react";
 import { useFavorites } from "@/context/FavoritesContext";
 
