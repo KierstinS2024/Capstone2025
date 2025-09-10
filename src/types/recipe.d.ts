@@ -1,3 +1,17 @@
 // src/types/recipe.d.ts
-import { Recipe } from "../models/Recipe";
-export type { Recipe };
+export interface Ingredient {
+  name: string;
+  quantity: string;
+  unit: string;
+}
+
+export interface Recipe {
+  _id: string;
+  userId: string;
+  title: string;
+  ingredients: Ingredient[];
+  instructions: string;
+  source: "local" | "spoonacular";
+  spoonacularId?: number;
+  isFavorite?: boolean; // helpful client-side flag
+}

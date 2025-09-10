@@ -1,3 +1,7 @@
 // src/types/user.d.ts
-import { User } from "../models/User";
-export type { User };
+export interface User {
+  _id: string;
+  email: string;
+  name: string;
+  favorites: string[]; // Array of Recipe IDs
+}

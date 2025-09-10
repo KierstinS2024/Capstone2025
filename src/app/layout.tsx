@@ -1,7 +1,7 @@
 // src/app/layout.tsx
 // Root layout updated to include AppProviders
 
-import "./globals.css";
+import "./global.css";
 import type { Metadata } from "next";
 import { AppProviders } from "../context/AppProviders";
 
