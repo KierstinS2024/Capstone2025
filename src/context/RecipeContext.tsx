@@ -1,99 +1,79 @@
 // src/context/RecipeContext.tsx
-import {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useEffect,
-} from "react";
-import type { Recipe } from "@/models/Recipe";
-import {
-  fetchRecipes,
-  createRecipe,
-  updateRecipe,
-  deleteRecipe,
-  toggleFavorite,
-} from "@/lib/recipeApi";
+// React context for managing recipes (CRUD, favorites)
 
-// Type-safe context shape
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import type { Recipe } from "@/types/recipe";
+import { apiFetch } from "@/lib/api";
+
+// Context type
 type RecipeContextType = {
   recipes: Recipe[];
   loading: boolean;
-  error: string | null;
-  reload: () => Promise<void>;
-  addRecipe: (recipe: Partial<Recipe>) => Promise<void>;
-  editRecipe: (id: string, recipe: Partial<Recipe>) => Promise<void>;
-  removeRecipe: (id: string) => Promise<void>;
-  toggleFavoriteRecipe: (id: string) => Promise<void>;
+  fetchRecipes: () => Promise<void>;
+  createRecipe: (recipe: Partial<Recipe>) => Promise<void>;
+  deleteRecipe: (id: string) => Promise<void>;
 };
 
-// Default placeholder
-const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
+// Create context
+export const RecipeContext = createContext<RecipeContextType | undefined>(
+  undefined
+);
 
-// Provider component
-export const RecipeProvider = ({ children }: { children: ReactNode }) => {
+type ProviderProps = { children: ReactNode };
+
+// Provider
+export const RecipeProvider = ({ children }: ProviderProps) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const reload = async () => {
+  // Fetch recipes on mount
+  useEffect(() => {
+    fetchRecipes();
+  }, []);
+
+  /** Fetch all recipes */
+  const fetchRecipes = async () => {
     setLoading(true);
     try {
-      const data = await fetchRecipes();
+      const data = await apiFetch<Recipe[]>("/recipes");
       setRecipes(data);
-      setError(null);
-    } catch (err) {
-      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
   };
 
-  const addRecipe = async (recipe: Partial<Recipe>) => {
-    const newRecipe = await createRecipe(recipe);
-    setRecipes((prev) => [...prev, newRecipe]);
+  /** Create a new recipe */
+  const createRecipe = async (recipe: Partial<Recipe>) => {
+    await apiFetch("/recipes", {
+      method: "POST",
+      body: JSON.stringify(recipe),
+    });
+    await fetchRecipes(); // refresh list
   };
 
-  const editRecipe = async (id: string, recipe: Partial<Recipe>) => {
-    const updated = await updateRecipe(id, recipe);
-    setRecipes((prev) => prev.map((r) => (r._id === id ? updated : r)));
+  /** Delete recipe by ID */
+  const deleteRecipe = async (id: string) => {
+    await apiFetch(`/recipes/${id}`, { method: "DELETE" });
+    setRecipes(recipes.filter((r) => r._id !== id));
   };
 
-  const removeRecipe = async (id: string) => {
-    await deleteRecipe(id);
-    setRecipes((prev) => prev.filter((r) => r._id !== id));
+  const value: RecipeContextType = {
+    recipes,
+    loading,
+    fetchRecipes,
+    createRecipe,
+    deleteRecipe,
   };
-
-  const toggleFavoriteRecipe = async (id: string) => {
-    const updated = await toggleFavorite(id);
-    setRecipes((prev) => prev.map((r) => (r._id === id ? updated : r)));
-  };
-
-  useEffect(() => {
-    reload();
-  }, []);
 
   return (
-    <RecipeContext.Provider
-      value={{
-        recipes,
-        loading,
-        error,
-        reload,
-        addRecipe,
-        editRecipe,
-        removeRecipe,
-        toggleFavoriteRecipe,
-      }}
-    >
-      {children}
-    </RecipeContext.Provider>
+    <RecipeContext.Provider value={value}>{children}</RecipeContext.Provider>
   );
 };
 
-// Hook for consuming
-export const useRecipes = (): RecipeContextType => {
+// Hook
+export const useRecipes = () => {
   const context = useContext(RecipeContext);
-  if (!context) throw new Error("useRecipes must be used within a RecipeProvider");
+  if (!context)
+    throw new Error("useRecipes must be used within a RecipeProvider");
   return context;
 };

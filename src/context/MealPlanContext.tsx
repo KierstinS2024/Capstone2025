@@ -1,56 +1,74 @@
-// Path: src/context/MealPlanContext.tsx
+// src/context/MealPlanContext.tsx
+// React context for managing meal plans
+
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
   ReactNode,
-  useEffect,
 } from "react";
-import type { MealPlan } from "@/models/MealPlan";
-import {
-  fetchMealPlans,
-  createMealPlan,
-  updateMealPlan,
-  deleteMealPlan,
-} from "@/lib/mealPlanApi";
+import type { MealPlan } from "@/types/mealPlan";
+import { apiFetch } from "@/lib/api";
 
 type MealPlanContextType = {
   mealPlans: MealPlan[];
-  addMealPlan: (plan: Omit<MealPlan, "_id">) => Promise<void>;
-  editMealPlan: (id: string, plan: Partial<MealPlan>) => Promise<void>;
-  removeMealPlan: (id: string) => Promise<void>;
+  loading: boolean;
+  fetchMealPlans: () => Promise<void>;
+  createMealPlan: (plan: Partial<MealPlan>) => Promise<void>;
+  deleteMealPlan: (id: string) => Promise<void>;
 };
 
-const MealPlanContext = createContext<MealPlanContextType | undefined>(
+export const MealPlanContext = createContext<MealPlanContextType | undefined>(
   undefined
 );
 
-export const MealPlanProvider = ({ children }: { children: ReactNode }) => {
+type ProviderProps = { children: ReactNode };
+
+export const MealPlanProvider = ({ children }: ProviderProps) => {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchMealPlans().then(setMealPlans);
+    fetchMealPlans();
   }, []);
 
-  const addMealPlan = async (plan: Omit<MealPlan, "_id">) => {
-    const newPlan = await createMealPlan(plan);
-    setMealPlans((prev) => [...prev, newPlan]);
+  /** Fetch all meal plans */
+  const fetchMealPlans = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch<MealPlan[]>("/meal-plans");
+      setMealPlans(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const editMealPlan = async (id: string, plan: Partial<MealPlan>) => {
-    const updated = await updateMealPlan(id, plan);
-    setMealPlans((prev) => prev.map((p) => (p._id === id ? updated : p)));
+  /** Create a meal plan */
+  const createMealPlan = async (plan: Partial<MealPlan>) => {
+    await apiFetch("/meal-plans", {
+      method: "POST",
+      body: JSON.stringify(plan),
+    });
+    await fetchMealPlans();
   };
 
-  const removeMealPlan = async (id: string) => {
-    await deleteMealPlan(id);
-    setMealPlans((prev) => prev.filter((p) => p._id !== id));
+  /** Delete meal plan by ID */
+  const deleteMealPlan = async (id: string) => {
+    await apiFetch(`/meal-plans/${id}`, { method: "DELETE" });
+    setMealPlans(mealPlans.filter((p) => p._id !== id));
+  };
+
+  const value: MealPlanContextType = {
+    mealPlans,
+    loading,
+    fetchMealPlans,
+    createMealPlan,
+    deleteMealPlan,
   };
 
   return (
-    <MealPlanContext.Provider
-      value={{ mealPlans, addMealPlan, editMealPlan, removeMealPlan }}
-    >
+    <MealPlanContext.Provider value={value}>
       {children}
     </MealPlanContext.Provider>
   );
@@ -59,6 +77,6 @@ export const MealPlanProvider = ({ children }: { children: ReactNode }) => {
 export const useMealPlans = () => {
   const context = useContext(MealPlanContext);
   if (!context)
-    throw new Error("useMealPlans must be used within MealPlanProvider");
+    throw new Error("useMealPlans must be used within a MealPlanProvider");
   return context;
 };

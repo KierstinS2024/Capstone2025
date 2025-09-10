@@ -1,87 +1,90 @@
-// Path: src/context/AuthContext.tsx
-"use client"; // This is a client component
+// src/context/AuthContext.tsx
+// React context for authentication (signup, login, logout, current user)
 
-import React, {
+import {
   createContext,
-  useState,
   useContext,
-  ReactNode,
   useEffect,
+  useState,
+  ReactNode,
 } from "react";
 import type { User } from "@/types/user";
-import { fetcher } from "@/lib/api"; // simple wrapper for fetch + JSON
+import { apiFetch } from "@/lib/api";
 
-// Define the shape of the Auth context
+// Type for context state
 type AuthContextType = {
-  user: User | null;
-  loading: boolean;
+  user: User | null; // currently logged-in user
+  loading: boolean; // loading state while fetching user
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
 };
 
-// Create context with default empty values
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  login: async () => {},
-  signup: async () => {},
-  logout: async () => {},
-  refreshUser: async () => {},
-});
+// Create the context with a default value
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
-// Provider component
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+// Provider props type
+type AuthProviderProps = { children: ReactNode };
+
+// AuthContext provider component
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch current user on mount
   useEffect(() => {
-    refreshUser();
+    const fetchCurrentUser = async () => {
+      try {
+        const data = await apiFetch<User>("/auth/me");
+        setUser(data);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCurrentUser();
   }, []);
 
-  const refreshUser = async () => {
-    setLoading(true);
-    try {
-      const data = await fetcher<User>("/api/auth/me");
-      setUser(data);
-    } catch {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  /** Login user via API */
   const login = async (email: string, password: string) => {
-    const res = await fetcher<User>("/api/auth/login", {
+    await apiFetch("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    setUser(res);
+    // refresh current user after login
+    const data = await apiFetch<User>("/auth/me");
+    setUser(data);
   };
 
+  /** Signup new user via API */
   const signup = async (name: string, email: string, password: string) => {
-    const res = await fetcher<User>("/api/auth/signup", {
+    await apiFetch("/auth/signup", {
       method: "POST",
       body: JSON.stringify({ name, email, password }),
     });
-    setUser(res);
+    // refresh current user after signup
+    const data = await apiFetch<User>("/auth/me");
+    setUser(data);
   };
 
+  /** Logout user via API */
   const logout = async () => {
-    await fetcher("/api/auth/logout", { method: "POST" });
+    await apiFetch("/auth/logout", { method: "POST" });
     setUser(null);
   };
 
-  return (
-    <AuthContext.Provider
-      value={{ user, loading, login, signup, logout, refreshUser }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  // Context value
+  const value: AuthContextType = { user, loading, login, signup, logout };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Custom hook for convenience
-export const useAuth = () => useContext(AuthContext);
+// Custom hook for consuming AuthContext
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
+  return context;
+};

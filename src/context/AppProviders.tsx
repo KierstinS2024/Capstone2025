@@ -1,19 +1,26 @@
-// Path: src/context/AppProviders.tsx
+// src/context/AppProviders.tsx
+// Combines all context providers for the app
+
 import { ReactNode } from "react";
 import { AuthProvider } from "./AuthContext";
-import { MealPlanProvider } from "./MealPlanContext";
 import { RecipeProvider } from "./RecipeContext";
+import { MealPlanProvider } from "./MealPlanContext";
 import { ShoppingListProvider } from "./ShoppingListContext";
+import { UserProvider } from "./UserContext";
 
-// Wrap all context providers for the app
-export const AppProviders = ({ children }: { children: ReactNode }) => {
+type AppProvidersProps = { children: ReactNode };
+
+export const AppProviders = ({ children }: AppProvidersProps) => {
+  // Wrap children in all providers in proper order
   return (
     <AuthProvider>
-      <MealPlanProvider>
+      <UserProvider>
         <RecipeProvider>
-          <ShoppingListProvider>{children}</ShoppingListProvider>
+          <MealPlanProvider>
+            <ShoppingListProvider>{children}</ShoppingListProvider>
+          </MealPlanProvider>
         </RecipeProvider>
-      </MealPlanProvider>
+      </UserProvider>
     </AuthProvider>
   );
 };

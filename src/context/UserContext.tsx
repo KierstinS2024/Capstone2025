@@ -1,47 +1,30 @@
 // src/context/UserContext.tsx
-// React Context for user authentication state with API integration
+// React context for user-specific preferences or data
 
-"use client";
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import type { User } from "../models/User";
-import { loginUser, logoutUser, registerUser } from "../lib/authHelpers";
+import { createContext, useContext, useState, ReactNode } from "react";
+import type { User } from "@/types/user";
 
 type UserContextType = {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  setUser: (user: User | null) => void;
 };
 
-const UserContext = createContext<UserContextType | undefined>(undefined);
+export const UserContext = createContext<UserContextType | undefined>(
+  undefined
+);
 
-export function UserProvider({ children }: { children: ReactNode }) {
+type ProviderProps = { children: ReactNode };
+
+export const UserProvider = ({ children }: ProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
 
-  async function login(email: string, password: string) {
-    const loggedInUser = await loginUser(email, password);
-    setUser(loggedInUser);
-  }
+  const value: UserContextType = { user, setUser };
 
-  async function logout() {
-    await logoutUser();
-    setUser(null);
-  }
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+};
 
-  async function register(name: string, email: string, password: string) {
-    const newUser = await registerUser(name, email, password);
-    setUser(newUser);
-  }
-
-  return (
-    <UserContext.Provider value={{ user, login, logout, register }}>
-      {children}
-    </UserContext.Provider>
-  );
-}
-
-export function useUser() {
-  const ctx = useContext(UserContext);
-  if (!ctx) throw new Error("useUser must be used inside UserProvider");
-  return ctx;
-}
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (!context) throw new Error("useUser must be used within a UserProvider");
+  return context;
+};
