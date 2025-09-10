@@ -9,8 +9,15 @@ import {
   ReactNode,
 } from "react";
 import type { ShoppingList } from "@/types/shoppingList";
-import { apiFetch } from "@/lib/api";
+import {
+  fetchShoppingListsAPI,
+  createShoppingListAPI,
+  deleteShoppingListAPI,
+} from "@/lib/shoppingListApi";
 
+// --------------------
+// Types
+// --------------------
 type ShoppingListContextType = {
   shoppingLists: ShoppingList[];
   loading: boolean;
@@ -19,46 +26,57 @@ type ShoppingListContextType = {
   deleteShoppingList: (id: string) => Promise<void>;
 };
 
+// --------------------
+// Context creation
+// --------------------
 export const ShoppingListContext = createContext<
   ShoppingListContextType | undefined
 >(undefined);
 
 type ProviderProps = { children: ReactNode };
 
+// --------------------
+// Provider component
+// --------------------
 export const ShoppingListProvider = ({ children }: ProviderProps) => {
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Fetch shopping lists on mount
   useEffect(() => {
     fetchShoppingLists();
   }, []);
+
+  // --------------------
+  // Context actions
+  // --------------------
 
   /** Fetch all shopping lists */
   const fetchShoppingLists = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<ShoppingList[]>("/shopping-lists");
+      const data = await fetchShoppingListsAPI();
       setShoppingLists(data);
     } finally {
       setLoading(false);
     }
   };
 
-  /** Create a shopping list */
+  /** Create a new shopping list and refresh state */
   const createShoppingList = async (list: Partial<ShoppingList>) => {
-    await apiFetch("/shopping-lists", {
-      method: "POST",
-      body: JSON.stringify(list),
-    });
+    await createShoppingListAPI(list);
     await fetchShoppingLists();
   };
 
-  /** Delete a shopping list */
+  /** Delete a shopping list by ID */
   const deleteShoppingList = async (id: string) => {
-    await apiFetch(`/shopping-lists/${id}`, { method: "DELETE" });
-    setShoppingLists(shoppingLists.filter((s) => s._id !== id));
+    await deleteShoppingListAPI(id);
+    setShoppingLists((prev) => prev.filter((l) => l._id !== id));
   };
 
+  // --------------------
+  // Context value
+  // --------------------
   const value: ShoppingListContextType = {
     shoppingLists,
     loading,
@@ -74,7 +92,10 @@ export const ShoppingListProvider = ({ children }: ProviderProps) => {
   );
 };
 
-export const useShoppingLists = () => {
+// --------------------
+// Hook for consuming ShoppingListContext safely
+// --------------------
+export const useShoppingLists = (): ShoppingListContextType => {
   const context = useContext(ShoppingListContext);
   if (!context)
     throw new Error(

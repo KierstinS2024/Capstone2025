@@ -1,31 +1,14 @@
 // src/lib/authHelpers.ts
-// Auth-related helpers that integrate with UserContext
+// Helpers for authentication API calls
 
+import type { User } from "@/types/user";
 import { apiFetch } from "./api";
-import type { User } from "../models/User";
 
-// Simulated login (replace with real backend later)
-export async function loginUser(
-  email: string,
-  password: string
-): Promise<User> {
-  return apiFetch<User>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-}
-
-export async function logoutUser(): Promise<void> {
-  return apiFetch<void>("/auth/logout", { method: "POST" });
-}
-
-export async function registerUser(
-  name: string,
-  email: string,
-  password: string
-): Promise<User> {
-  return apiFetch<User>("/auth/register", {
-    method: "POST",
-    body: JSON.stringify({ name, email, password }),
-  });
-}
+/** Fetch the current logged-in user */
+export const fetchCurrentUserAPI = async (): Promise<User | null> => {
+  try {
+    return await apiFetch<User>("/auth/me");
+  } catch {
+    return null; // not logged in or error
+  }
+};

@@ -1,9 +1,9 @@
 // src/context/index.ts
-// Re-export all providers and hooks for easy imports
+// Central export for all contexts and hooks
 
+export * from "./AppProviders";
 export * from "./AuthContext";
+export * from "./UserContext";
 export * from "./MealPlanContext";
 export * from "./RecipeContext";
 export * from "./ShoppingListContext";
-export * from "./UserContext";
-export * from "./AppProviders";

@@ -1,24 +1,77 @@
 // src/context/UserContext.tsx
-// React context for global user-related state
+// React context for managing current user info
 
-import { createContext, useContext, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import type { User } from "@/types/user";
+import { fetchCurrentUserAPI } from "@/lib/authHelpers";
 
-type UserContextType = { user: User | null };
-
-export const UserContext = createContext<UserContextType | undefined>(
-  undefined
-);
-
-type ProviderProps = { children: ReactNode; user: User | null };
-
-export const UserProvider = ({ children, user }: ProviderProps) => {
-  return (
-    <UserContext.Provider value={{ user }}>{children}</UserContext.Provider>
-  );
+// --------------------
+// Types
+// --------------------
+type UserContextType = {
+  user: User | null;
+  loading: boolean;
+  refreshUser: () => Promise<void>;
 };
 
-export const useUser = () => {
+// --------------------
+// Context creation
+// --------------------
+export const UserContext = createContext<UserContextType | undefined>(undefined);
+
+type ProviderProps = { children: ReactNode };
+
+// --------------------
+// Provider component
+// --------------------
+export const UserProvider = ({ children }: ProviderProps) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user on mount
+  useEffect(() => {
+    refreshUser();
+  }, []);
+
+  // --------------------
+  // Context actions
+  // --------------------
+
+  /** Refresh current user info from API */
+  const refreshUser = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchCurrentUserAPI();
+      setUser(data);
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --------------------
+  // Context value
+  // --------------------
+  const value: UserContextType = {
+    user,
+    loading,
+    refreshUser,
+  };
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+};
+
+// --------------------
+// Hook for consuming UserContext safely
+// --------------------
+export const useUser = (): UserContextType => {
   const context = useContext(UserContext);
   if (!context) throw new Error("useUser must be used within a UserProvider");
   return context;

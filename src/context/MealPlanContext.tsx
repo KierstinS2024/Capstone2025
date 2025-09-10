@@ -9,8 +9,15 @@ import {
   ReactNode,
 } from "react";
 import type { MealPlan } from "@/types/mealPlan";
-import { apiFetch } from "@/lib/api";
+import {
+  fetchMealPlansAPI,
+  createMealPlanAPI,
+  deleteMealPlanAPI,
+} from "@/lib/mealPlanApi";
 
+// --------------------
+// Types
+// --------------------
 type MealPlanContextType = {
   mealPlans: MealPlan[];
   loading: boolean;
@@ -19,46 +26,55 @@ type MealPlanContextType = {
   deleteMealPlan: (id: string) => Promise<void>;
 };
 
-export const MealPlanContext = createContext<MealPlanContextType | undefined>(
-  undefined
-);
+// --------------------
+// Context creation
+// --------------------
+export const MealPlanContext = createContext<MealPlanContextType | undefined>(undefined);
 
 type ProviderProps = { children: ReactNode };
 
+// --------------------
+// Provider component
+// --------------------
 export const MealPlanProvider = ({ children }: ProviderProps) => {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Fetch meal plans on mount
   useEffect(() => {
     fetchMealPlans();
   }, []);
 
-  /** Fetch all meal plans */
+  // --------------------
+  // Context actions
+  // --------------------
+
+  /** Fetch all meal plans and update state */
   const fetchMealPlans = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<MealPlan[]>("/meal-plans");
+      const data = await fetchMealPlansAPI();
       setMealPlans(data);
     } finally {
       setLoading(false);
     }
   };
 
-  /** Create a meal plan */
+  /** Create a new meal plan and refresh list */
   const createMealPlan = async (plan: Partial<MealPlan>) => {
-    await apiFetch("/meal-plans", {
-      method: "POST",
-      body: JSON.stringify(plan),
-    });
+    await createMealPlanAPI(plan);
     await fetchMealPlans();
   };
 
-  /** Delete a meal plan */
+  /** Delete a meal plan by ID */
   const deleteMealPlan = async (id: string) => {
-    await apiFetch(`/meal-plans/${id}`, { method: "DELETE" });
-    setMealPlans(mealPlans.filter((p) => p._id !== id));
+    await deleteMealPlanAPI(id);
+    setMealPlans((prev) => prev.filter((p) => p._id !== id));
   };
 
+  // --------------------
+  // Context value
+  // --------------------
   const value: MealPlanContextType = {
     mealPlans,
     loading,
@@ -74,7 +90,10 @@ export const MealPlanProvider = ({ children }: ProviderProps) => {
   );
 };
 
-export const useMealPlans = () => {
+// --------------------
+// Hook for consuming MealPlanContext safely
+// --------------------
+export const useMealPlans = (): MealPlanContextType => {
   const context = useContext(MealPlanContext);
   if (!context)
     throw new Error("useMealPlans must be used within a MealPlanProvider");

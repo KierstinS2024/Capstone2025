@@ -1,23 +1,17 @@
 // src/app/layout.tsx
-// Root layout updated to include AppProviders
+// Root layout wrapping the app with context providers
 
-import "./global.css";
-import type { Metadata } from "next";
-import { AppProviders } from "../context/AppProviders";
+import "@/global.css"; // global styles
+import type { ReactNode } from "react";
+import { AppProviders } from "@/context/AppProviders";
 
-export const metadata: Metadata = {
-  title: "Capstone Project",
-  description: "Meal planning, recipes, and shopping lists",
-};
+type RootLayoutProps = { children: ReactNode };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
       <body>
+        {/* Wrap the entire app with all context providers */}
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

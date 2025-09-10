@@ -3,8 +3,15 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { Recipe } from "@/types/recipe";
-import { apiFetch } from "@/lib/api";
+import {
+  fetchRecipesAPI,
+  createRecipeAPI,
+  deleteRecipeAPI,
+} from "@/lib/recipeApi";
 
+// --------------------
+// Types
+// --------------------
 type RecipeContextType = {
   recipes: Recipe[];
   loading: boolean;
@@ -13,46 +20,55 @@ type RecipeContextType = {
   deleteRecipe: (id: string) => Promise<void>;
 };
 
-export const RecipeContext = createContext<RecipeContextType | undefined>(
-  undefined
-);
+// --------------------
+// Context creation
+// --------------------
+export const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
 type ProviderProps = { children: ReactNode };
 
+// --------------------
+// Provider component
+// --------------------
 export const RecipeProvider = ({ children }: ProviderProps) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Fetch recipes on mount
   useEffect(() => {
     fetchRecipes();
   }, []);
 
-  /** Fetch all recipes */
+  // --------------------
+  // Context actions
+  // --------------------
+
+  /** Fetch all recipes and update state */
   const fetchRecipes = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<Recipe[]>("/recipes");
+      const data = await fetchRecipesAPI();
       setRecipes(data);
     } finally {
       setLoading(false);
     }
   };
 
-  /** Create a recipe */
+  /** Create a new recipe and refresh list */
   const createRecipe = async (recipe: Partial<Recipe>) => {
-    await apiFetch("/recipes", {
-      method: "POST",
-      body: JSON.stringify(recipe),
-    });
+    await createRecipeAPI(recipe);
     await fetchRecipes();
   };
 
-  /** Delete a recipe */
+  /** Delete a recipe by ID */
   const deleteRecipe = async (id: string) => {
-    await apiFetch(`/recipes/${id}`, { method: "DELETE" });
-    setRecipes(recipes.filter((r) => r._id !== id));
+    await deleteRecipeAPI(id);
+    setRecipes((prev) => prev.filter((r) => r._id !== id));
   };
 
+  // --------------------
+  // Context value
+  // --------------------
   const value: RecipeContextType = {
     recipes,
     loading,
@@ -66,7 +82,10 @@ export const RecipeProvider = ({ children }: ProviderProps) => {
   );
 };
 
-export const useRecipes = () => {
+// --------------------
+// Hook for consuming RecipeContext safely
+// --------------------
+export const useRecipes = (): RecipeContextType => {
   const context = useContext(RecipeContext);
   if (!context)
     throw new Error("useRecipes must be used within a RecipeProvider");

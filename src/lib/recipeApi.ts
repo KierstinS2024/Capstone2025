@@ -1,50 +1,30 @@
 // src/lib/recipeApi.ts
-import { Recipe } from "@/models/Recipe";
-import { apiFetch } from "@/lib/api"; // helper for fetch wrapper
+// Recipe API helpers (type-safe)
 
-// Fetch all recipes (user + optionally external search)
-export async function fetchRecipes(query?: string): Promise<Recipe[]> {
-  const url = query
-    ? `/api/recipes?q=${encodeURIComponent(query)}`
-    : `/api/recipes`;
-  const res = await apiFetch<Recipe[]>(url);
-  return res;
-}
+import type { Recipe } from "@/types/recipe";
+import { apiFetch } from "./api";
 
-// Fetch single recipe by ID
-export async function getRecipeById(id: string): Promise<Recipe> {
-  const res = await apiFetch<Recipe>(`/api/recipes/${id}`);
-  return res;
-}
+/** Fetch all recipes */
+export const fetchRecipesAPI = async (): Promise<Recipe[]> => {
+  return apiFetch<Recipe[]>("/recipes");
+};
 
-// Create a new recipe
-export async function createRecipe(recipe: Partial<Recipe>): Promise<Recipe> {
-  const res = await apiFetch<Recipe>(`/api/recipes`, {
+/** Create a new recipe */
+export const createRecipeAPI = async (
+  recipe: Partial<Recipe>
+): Promise<Recipe> => {
+  return apiFetch<Recipe>("/recipes", {
     method: "POST",
     body: JSON.stringify(recipe),
   });
-  return res;
-}
+};
 
-// Update an existing recipe
-export async function updateRecipe(
-  id: string,
-  recipe: Partial<Recipe>
-): Promise<Recipe> {
-  const res = await apiFetch<Recipe>(`/api/recipes/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(recipe),
-  });
-  return res;
-}
+/** Delete recipe by ID */
+export const deleteRecipeAPI = async (id: string): Promise<void> => {
+  return apiFetch<void>(`/recipes/${id}`, { method: "DELETE" });
+};
 
-// Delete a recipe
-export async function deleteRecipe(id: string): Promise<void> {
-  await apiFetch(`/api/recipes/${id}`, { method: "DELETE" });
-}
-
-// Toggle favorite
-export async function toggleFavorite(id: string): Promise<Recipe> {
-  const res = await apiFetch<Recipe>(`/api/recipes/${id}/favorite`, { method: "POST" });
-  return res;
-}
+/** Toggle favorite status for recipe */
+export const toggleFavoriteAPI = async (id: string): Promise<void> => {
+  return apiFetch<void>(`/recipes/${id}/favorite`, { method: "POST" });
+};

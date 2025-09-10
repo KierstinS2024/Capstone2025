@@ -1,7 +1,23 @@
 // src/lib/mealPlanApi.ts
-import type { MealPlan } from "../models/MealPlan";
+// Meal Plan API helpers (type-safe)
 
-export async function fetchMealPlans(): Promise<MealPlan[]> {
-  const res = await fetch("/api/meal-plans");
-  return res.json();
-}
+import type { MealPlan } from "@/types/mealPlan";
+import { apiFetch } from "./api";
+
+/** Fetch all meal plans for current user */
+export const fetchMealPlansAPI = async (): Promise<MealPlan[]> => {
+  return apiFetch<MealPlan[]>("/meal-plans");
+};
+
+/** Create a new meal plan */
+export const createMealPlanAPI = async (plan: Partial<MealPlan>): Promise<MealPlan> => {
+  return apiFetch<MealPlan>("/meal-plans", {
+    method: "POST",
+    body: JSON.stringify(plan),
+  });
+};
+
+/** Delete meal plan by ID */
+export const deleteMealPlanAPI = async (id: string): Promise<void> => {
+  return apiFetch<void>(`/meal-plans/${id}`, { method: "DELETE" });
+};
