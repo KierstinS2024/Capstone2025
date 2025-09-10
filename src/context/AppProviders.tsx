@@ -1,5 +1,6 @@
 // src/context/AppProviders.tsx
 // Aggregates all context providers to wrap the app
+"use client";
 
 import { ReactNode } from "react";
 import { AuthProvider } from "./AuthContext";

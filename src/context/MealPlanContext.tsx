@@ -1,5 +1,6 @@
 // src/context/MealPlanContext.tsx
 // React context for managing meal plans
+"use client";
 
 import {
   createContext,

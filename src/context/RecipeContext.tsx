@@ -1,5 +1,6 @@
 // src/context/RecipeContext.tsx
 // React context for managing recipes
+"use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { Recipe } from "@/types/recipe";

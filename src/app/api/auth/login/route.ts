@@ -1,45 +1,28 @@
-// Path: src/app/api/auth/login/route.ts
+// src/app/api/auth/login/route.ts
+// Logs in a user with email + password
+
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import { connectDB } from "@/lib/db";
-import User from "@/models/User";
+import { loginAPI } from "@/lib/authHelpers"; // helper already typed
+import type { User } from "@/types/user";
 
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
-
-    await connectDB();
-
-    const user = await User.findOne({ email }).select("+passwordHash");
-    if (!user) {
       return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
+        { message: "Missing credentials" },
+        { status: 400 }
       );
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
-    }
-
-    return NextResponse.json({
-      id: user._id,
-      email: user.email,
-      name: user.name,
-    });
-  } catch (err) {
-    console.error("Login Error:", err);
+    const user: User = await loginAPI(email, password);
+    return NextResponse.json(user, { status: 200 });
+  } catch (error: any) {
+    console.error("POST /api/auth/login error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { message: error.message || "Login failed" },
+      { status: 400 }
     );
   }
 }

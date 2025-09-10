@@ -1,5 +1,6 @@
 // src/context/UserContext.tsx
 // React context for managing current user info
+"use client";
 
 import {
   createContext,

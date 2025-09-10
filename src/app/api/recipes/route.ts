@@ -1,22 +1,20 @@
-// src/app/api/recipes/route.ts
-// Recipes API: GET all recipes, POST create new recipe
-// Connects to MongoDB via db.ts and uses Recipe model
+"use server";
 
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "../../../lib/db";
-import RecipeModel from "../../../models/Recipe";
+import { connectToDB } from "@/lib/db";
+import { Recipe } from "@/models/Recipe";
 
+/**
+ * GET /api/recipes
+ * Returns all recipes, optionally filtered by userId
+ */
 export async function GET(req: NextRequest) {
   try {
-    await connectDB();
-
-    // Optional: query param ?userId=123 to filter user-specific recipes
+    await connectToDB();
     const url = new URL(req.url);
     const userId = url.searchParams.get("userId");
-
     const filter = userId ? { userId } : {};
-    const recipes = await RecipeModel.find(filter);
-
+    const recipes = await Recipe.find(filter);
     return NextResponse.json(recipes, { status: 200 });
   } catch (error) {
     console.error("GET /api/recipes error:", error);
@@ -27,13 +25,15 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * POST /api/recipes
+ * Create a new recipe
+ */
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
-
+    await connectToDB();
     const data = await req.json();
 
-    // Basic type validation
     if (!data.title || !data.ingredients || !Array.isArray(data.ingredients)) {
       return NextResponse.json(
         { message: "Invalid recipe data" },
@@ -41,11 +41,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newRecipe = await RecipeModel.create({
+    const newRecipe = await Recipe.create({
       ...data,
       source: data.source || "local",
     });
-
     return NextResponse.json(newRecipe, { status: 201 });
   } catch (error) {
     console.error("POST /api/recipes error:", error);

@@ -1,7 +1,7 @@
 // src/app/layout.tsx
 // Root layout wrapping the app with context providers
 
-import "@/global.css"; // global styles
+import "./global.css"; // relative to src/app/layout.tsx
 import type { ReactNode } from "react";
 import { AppProviders } from "@/context/AppProviders";
 

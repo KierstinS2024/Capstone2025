@@ -1,23 +1,19 @@
-// Path: src/app/api/auth/me/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { getUserFromReq } from "@/lib/authHelpers";
+// src/app/api/auth/me/route.ts
+// Returns the current logged-in user
 
-export async function GET(req: NextRequest) {
+import { NextRequest, NextResponse } from "next/server";
+import { fetchCurrentUserAPI } from "@/lib/authHelpers";
+import type { User } from "@/types/user";
+
+export async function GET(_req: NextRequest) {
   try {
-    const user = await getUserFromReq(req);
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-    return NextResponse.json({
-      id: user._id,
-      email: user.email,
-      name: user.name,
-    });
-  } catch (err) {
-    console.error("Auth Me Error:", err);
+    const user: User = await fetchCurrentUserAPI();
+    return NextResponse.json(user, { status: 200 });
+  } catch (error: any) {
+    console.error("GET /api/auth/me error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { message: error.message || "Not authenticated" },
+      { status: 401 }
     );
   }
 }

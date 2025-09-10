@@ -1,5 +1,6 @@
 // src/context/ShoppingListContext.tsx
 // React context for managing shopping lists
+"use client";
 
 import {
   createContext,

@@ -1,5 +1,6 @@
 // src/context/AuthContext.tsx
 // React context for authentication (signup, login, logout, current user)
+"use client";
 
 import {
   createContext,

@@ -1,56 +1,51 @@
-// src/app/api/recipes/route.ts
-// Recipes API: GET all recipes, POST create new recipe
-// Connects to MongoDB via db.ts and uses Recipe model
+"use server";
 
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import RecipeModel from "@/models/Recipe";
+import { connectToDB } from "@/lib/db";
+import { Recipe } from "@/models/Recipe";
 
-export async function GET(req: NextRequest) {
+/**
+ * GET /api/recipes/:id
+ * Returns a single recipe by ID
+ */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    await connectDB();
-
-    // Optional: query param ?userId=123 to filter user-specific recipes
-    const url = new URL(req.url);
-    const userId = url.searchParams.get("userId");
-
-    const filter = userId ? { userId } : {};
-    const recipes = await RecipeModel.find(filter);
-
-    return NextResponse.json(recipes, { status: 200 });
+    await connectToDB();
+    const recipe = await Recipe.findById(params.id);
+    if (!recipe)
+      return NextResponse.json(
+        { message: "Recipe not found" },
+        { status: 404 }
+      );
+    return NextResponse.json(recipe, { status: 200 });
   } catch (error) {
-    console.error("GET /api/recipes error:", error);
+    console.error("GET /api/recipes/:id error:", error);
     return NextResponse.json(
-      { message: "Failed to fetch recipes" },
+      { message: "Failed to fetch recipe" },
       { status: 500 }
     );
   }
 }
 
-export async function POST(req: NextRequest) {
+/**
+ * DELETE /api/recipes/:id
+ * Delete a recipe by ID
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    await connectDB();
-
-    const data = await req.json();
-
-    // Basic type validation
-    if (!data.title || !data.ingredients || !Array.isArray(data.ingredients)) {
-      return NextResponse.json(
-        { message: "Invalid recipe data" },
-        { status: 400 }
-      );
-    }
-
-    const newRecipe = await RecipeModel.create({
-      ...data,
-      source: data.source || "local",
-    });
-
-    return NextResponse.json(newRecipe, { status: 201 });
+    await connectToDB();
+    await Recipe.findByIdAndDelete(params.id);
+    return NextResponse.json({ message: "Recipe deleted" }, { status: 200 });
   } catch (error) {
-    console.error("POST /api/recipes error:", error);
+    console.error("DELETE /api/recipes/:id error:", error);
     return NextResponse.json(
-      { message: "Failed to create recipe" },
+      { message: "Failed to delete recipe" },
       { status: 500 }
     );
   }

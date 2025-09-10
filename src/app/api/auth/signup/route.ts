@@ -1,46 +1,25 @@
-// Path: src/app/api/auth/signup/route.ts
+// src/app/api/auth/signup/route.ts
+// Creates a new user
+
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import { connectDB } from "@/lib/db";
-import User from "@/models/User";
+import { signupAPI } from "@/lib/authHelpers";
+import type { User } from "@/types/user";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, name } = await req.json();
+    const { name, email, password } = await req.json();
 
-    if (!email || !password || !name) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (!name || !email || !password) {
+      return NextResponse.json({ message: "Missing fields" }, { status: 400 });
     }
 
-    await connectDB();
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "User already exists" },
-        { status: 400 }
-      );
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-
-    const user = await User.create({
-      email,
-      passwordHash,
-      name,
-      favorites: [],
-    });
-
-    return NextResponse.json({
-      id: user._id,
-      email: user.email,
-      name: user.name,
-    });
-  } catch (err) {
-    console.error("Signup Error:", err);
+    const user: User = await signupAPI(name, email, password);
+    return NextResponse.json(user, { status: 201 });
+  } catch (error: any) {
+    console.error("POST /api/auth/signup error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { message: error.message || "Signup failed" },
+      { status: 400 }
     );
   }
 }

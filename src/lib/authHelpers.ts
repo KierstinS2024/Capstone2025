@@ -1,14 +1,45 @@
 // src/lib/authHelpers.ts
-// Helpers for authentication API calls
+// Authentication helper functions for API routes
 
+import { apiFetch } from "@/lib/api";
 import type { User } from "@/types/user";
-import { apiFetch } from "./api";
 
-/** Fetch the current logged-in user */
-export const fetchCurrentUserAPI = async (): Promise<User | null> => {
-  try {
-    return await apiFetch<User>("/auth/me");
-  } catch {
-    return null; // not logged in or error
-  }
-};
+/**
+ * Logs in a user with email and password.
+ * Returns the logged-in User object.
+ */
+export async function loginAPI(email: string, password: string): Promise<User> {
+  return await apiFetch<User>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+/**
+ * Registers a new user with name, email, and password.
+ * Returns the newly created User object.
+ */
+export async function signupAPI(
+  name: string,
+  email: string,
+  password: string
+): Promise<User> {
+  return await apiFetch<User>("/auth/signup", {
+    method: "POST",
+    body: JSON.stringify({ name, email, password }),
+  });
+}
+
+/**
+ * Logs out the current user.
+ */
+export async function logoutAPI(): Promise<void> {
+  await apiFetch("/auth/logout", { method: "POST" });
+}
+
+/**
+ * Fetches the current logged-in user from the session.
+ */
+export async function fetchCurrentUserAPI(): Promise<User> {
+  return await apiFetch<User>("/auth/me");
+}
