@@ -6,12 +6,15 @@ import React, { ReactNode } from "react";
 import { UserProvider } from "./UserContext";
 import { MealPlanProvider } from "./MealPlanContext";
 import { RecipeProvider } from "./RecipeContext";
+import { ShoppingListProvider } from "./ShoppingListContext";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <UserProvider>
       <MealPlanProvider>
-        <RecipeProvider>{children}</RecipeProvider>
+        <RecipeProvider>
+          <ShoppingListProvider>{children}</ShoppingListProvider>
+        </RecipeProvider>
       </MealPlanProvider>
     </UserProvider>
   );
