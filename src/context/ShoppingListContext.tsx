@@ -25,6 +25,7 @@ type ShoppingListContextType = {
   fetchShoppingLists: () => Promise<void>;
   createShoppingList: (list: Partial<ShoppingList>) => Promise<void>;
   deleteShoppingList: (id: string) => Promise<void>;
+  addShoppingList: (list: ShoppingList) => void; // <--- NEW
 };
 
 // --------------------
@@ -65,14 +66,19 @@ export const ShoppingListProvider = ({ children }: ProviderProps) => {
 
   /** Create a new shopping list and refresh state */
   const createShoppingList = async (list: Partial<ShoppingList>) => {
-    await createShoppingListAPI(list);
-    await fetchShoppingLists();
+    const newList = await createShoppingListAPI(list);
+    setShoppingLists((prev) => [...prev, newList]);
   };
 
   /** Delete a shopping list by ID */
   const deleteShoppingList = async (id: string) => {
     await deleteShoppingListAPI(id);
     setShoppingLists((prev) => prev.filter((l) => l._id !== id));
+  };
+
+  /** Add a shopping list directly to context (used for generated lists) */
+  const addShoppingList = (list: ShoppingList) => {
+    setShoppingLists((prev) => [...prev, list]);
   };
 
   // --------------------
@@ -84,6 +90,7 @@ export const ShoppingListProvider = ({ children }: ProviderProps) => {
     fetchShoppingLists,
     createShoppingList,
     deleteShoppingList,
+    addShoppingList, // <--- included
   };
 
   return (

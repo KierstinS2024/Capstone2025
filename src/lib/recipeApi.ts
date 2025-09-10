@@ -19,6 +19,17 @@ export const createRecipeAPI = async (
   });
 };
 
+/** Update an existing recipe by ID */
+export const updateRecipeAPI = async (
+  id: string,
+  recipe: Partial<Recipe>
+): Promise<Recipe> => {
+  return apiFetch<Recipe>(`/recipes/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(recipe),
+  });
+};
+
 /** Delete recipe by ID */
 export const deleteRecipeAPI = async (id: string): Promise<void> => {
   return apiFetch<void>(`/recipes/${id}`, { method: "DELETE" });

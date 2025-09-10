@@ -9,7 +9,7 @@ import {
   useState,
   ReactNode,
 } from "react";
-import type { MealPlan } from "@/types/mealPlan";
+import type { MealPlan, MealPlanEntry } from "@/types/mealPlan";
 import {
   fetchMealPlansAPI,
   createMealPlanAPI,
@@ -21,16 +21,20 @@ import {
 // --------------------
 type MealPlanContextType = {
   mealPlans: MealPlan[];
+  currentMealPlan: MealPlan | null;
   loading: boolean;
   fetchMealPlans: () => Promise<void>;
   createMealPlan: (plan: Partial<MealPlan>) => Promise<void>;
   deleteMealPlan: (id: string) => Promise<void>;
+  setCurrentMealPlan: (plan: MealPlan | null) => void;
 };
 
 // --------------------
 // Context creation
 // --------------------
-export const MealPlanContext = createContext<MealPlanContextType | undefined>(undefined);
+export const MealPlanContext = createContext<MealPlanContextType | undefined>(
+  undefined
+);
 
 type ProviderProps = { children: ReactNode };
 
@@ -39,6 +43,7 @@ type ProviderProps = { children: ReactNode };
 // --------------------
 export const MealPlanProvider = ({ children }: ProviderProps) => {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
+  const [currentMealPlan, setCurrentMealPlan] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch meal plans on mount
@@ -56,6 +61,8 @@ export const MealPlanProvider = ({ children }: ProviderProps) => {
     try {
       const data = await fetchMealPlansAPI();
       setMealPlans(data);
+      // Optionally set first plan as current if none selected
+      if (!currentMealPlan && data.length > 0) setCurrentMealPlan(data[0]);
     } finally {
       setLoading(false);
     }
@@ -71,6 +78,8 @@ export const MealPlanProvider = ({ children }: ProviderProps) => {
   const deleteMealPlan = async (id: string) => {
     await deleteMealPlanAPI(id);
     setMealPlans((prev) => prev.filter((p) => p._id !== id));
+    // Reset current plan if it was deleted
+    if (currentMealPlan?._id === id) setCurrentMealPlan(null);
   };
 
   // --------------------
@@ -78,10 +87,12 @@ export const MealPlanProvider = ({ children }: ProviderProps) => {
   // --------------------
   const value: MealPlanContextType = {
     mealPlans,
+    currentMealPlan,
     loading,
     fetchMealPlans,
     createMealPlan,
     deleteMealPlan,
+    setCurrentMealPlan,
   };
 
   return (
@@ -94,9 +105,9 @@ export const MealPlanProvider = ({ children }: ProviderProps) => {
 // --------------------
 // Hook for consuming MealPlanContext safely
 // --------------------
-export const useMealPlans = (): MealPlanContextType => {
+export const useMealPlan = (): MealPlanContextType => {
   const context = useContext(MealPlanContext);
   if (!context)
-    throw new Error("useMealPlans must be used within a MealPlanProvider");
+    throw new Error("useMealPlan must be used within MealPlanProvider");
   return context;
 };

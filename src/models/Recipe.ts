@@ -1,31 +1,22 @@
 // src/models/Recipe.ts
-// Mongoose schema and model for recipes
+// Add favorite field to Recipe schema
 
-import mongoose, { Schema, Document, Types } from "mongoose";
-import type { IUser } from "./User";
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IRecipe extends Document {
-  userId: Types.ObjectId | IUser;
   title: string;
-  ingredients: { name: string; quantity: string; unit: string }[];
+  ingredients: string[];
   instructions: string;
-  source: "local" | "spoonacular";
-  spoonacularId?: number;
+  source: string;
+  favorite: boolean; // <--- new field
 }
 
 const recipeSchema = new Schema<IRecipe>({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   title: { type: String, required: true },
-  ingredients: [
-    {
-      name: { type: String, required: true },
-      quantity: { type: String, required: true },
-      unit: { type: String, required: true },
-    },
-  ],
+  ingredients: [{ type: String, required: true }],
   instructions: { type: String, required: true },
-  source: { type: String, enum: ["local", "spoonacular"], default: "local" },
-  spoonacularId: { type: Number },
+  source: { type: String, default: "local" },
+  favorite: { type: Boolean, default: false }, // <--- default false
 });
 
 export const Recipe =

@@ -19,6 +19,7 @@ export interface Recipe {
   instructions: string;
   source: RecipeSource;
   spoonacularId?: number;
+  favorite: boolean; // <-- added to match schema
 }
 
 export interface CreateRecipePayload {
@@ -27,4 +28,5 @@ export interface CreateRecipePayload {
   instructions: string;
   source?: RecipeSource;
   spoonacularId?: number;
+  favorite?: boolean; // optional when creating a recipe
 }

@@ -1,17 +1,14 @@
 // src/components/ShoppingListCard.tsx
-import React, { useContext } from "react";
-import { ShoppingListContext } from "@/context/ShoppingListContext";
-import type { ShoppingList } from "@/models/ShoppingList";
+import React from "react";
+import { useShoppingLists } from "@/context/ShoppingListContext";
 
 /**
- * ShoppingListCard Component
- * Displays the current user's shopping list with checkable items.
+ * ShoppingListCard
+ * Displays the first shopping list from ShoppingListContext
  */
 export const ShoppingListCard: React.FC = () => {
-  const { shoppingLists } = useContext(ShoppingListContext);
-
-  // Pick the first active list (or placeholder)
-  const activeList: ShoppingList | null = shoppingLists[0] || null;
+  const { shoppingLists } = useShoppingLists();
+  const activeList = shoppingLists[0]; // first list as "active"
 
   if (!activeList) {
     return (

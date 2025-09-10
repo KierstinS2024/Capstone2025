@@ -1,31 +1,17 @@
 // src/components/FavoritesCard.tsx
-import React, { useContext } from "react";
-import { UserContext } from "@/context/UserContext";
-import type { Recipe } from "@/models/Recipe";
-
 /**
- * FavoritesCard Component
- * Displays a preview of the user's favorite recipes.
+ * FavoritesCard
+ * Displays a list of favorite recipes
  */
+
+import React from "react";
+import { useFavorites } from "@/context/FavoritesContext";
+
 export const FavoritesCard: React.FC = () => {
-  const { user } = useContext(UserContext);
+  const { favorites, toggleFavorite, loading } = useFavorites();
 
-  const favorites: Recipe[] = user?.favorites || [];
-
-  if (favorites.length === 0) {
-    return (
-      <div
-        style={{
-          padding: "16px",
-          border: "1px solid #ccc",
-          borderRadius: "8px",
-          backgroundColor: "#fefefe",
-        }}
-      >
-        No favorite recipes yet.
-      </div>
-    );
-  }
+  if (loading) return <div>Loading favorites...</div>;
+  if (!favorites.length) return <div>No favorites yet.</div>;
 
   return (
     <div
@@ -36,11 +22,32 @@ export const FavoritesCard: React.FC = () => {
         backgroundColor: "#fafafa",
       }}
     >
-      <h2 style={{ fontSize: "20px", marginBottom: "12px" }}>Your Favorites</h2>
+      <h2 style={{ fontSize: "20px", marginBottom: "12px" }}>Favorites</h2>
       <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-        {favorites.slice(0, 5).map((recipe, idx) => (
-          <li key={idx} style={{ marginBottom: "8px" }}>
-            {recipe.title}
+        {favorites.map((recipe) => (
+          <li
+            key={recipe._id}
+            style={{
+              marginBottom: "8px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>{recipe.title}</span>
+            <button
+              onClick={() => toggleFavorite(recipe._id)}
+              style={{
+                padding: "4px 8px",
+                backgroundColor: "orange",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Unfavorite
+            </button>
           </li>
         ))}
       </ul>

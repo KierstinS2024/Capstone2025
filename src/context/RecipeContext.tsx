@@ -8,6 +8,8 @@ import {
   fetchRecipesAPI,
   createRecipeAPI,
   deleteRecipeAPI,
+  updateRecipeAPI,
+  toggleFavoriteAPI,
 } from "@/lib/recipeApi";
 
 // --------------------
@@ -18,13 +20,17 @@ type RecipeContextType = {
   loading: boolean;
   fetchRecipes: () => Promise<void>;
   createRecipe: (recipe: Partial<Recipe>) => Promise<void>;
+  updateRecipe: (id: string, recipe: Partial<Recipe>) => Promise<void>;
   deleteRecipe: (id: string) => Promise<void>;
+  toggleFavorite: (id: string) => Promise<void>;
 };
 
 // --------------------
 // Context creation
 // --------------------
-export const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
+export const RecipeContext = createContext<RecipeContextType | undefined>(
+  undefined
+);
 
 type ProviderProps = { children: ReactNode };
 
@@ -61,10 +67,24 @@ export const RecipeProvider = ({ children }: ProviderProps) => {
     await fetchRecipes();
   };
 
+  /** Update a recipe */
+  const updateRecipe = async (id: string, recipe: Partial<Recipe>) => {
+    await updateRecipeAPI(id, recipe);
+    await fetchRecipes();
+  };
+
   /** Delete a recipe by ID */
   const deleteRecipe = async (id: string) => {
     await deleteRecipeAPI(id);
     setRecipes((prev) => prev.filter((r) => r._id !== id));
+  };
+
+  /** Toggle favorite status */
+  const toggleFavorite = async (id: string) => {
+    await toggleFavoriteAPI(id);
+    setRecipes((prev) =>
+      prev.map((r) => (r._id === id ? { ...r, favorite: !r.favorite } : r))
+    );
   };
 
   // --------------------
@@ -75,7 +95,9 @@ export const RecipeProvider = ({ children }: ProviderProps) => {
     loading,
     fetchRecipes,
     createRecipe,
+    updateRecipe,
     deleteRecipe,
+    toggleFavorite,
   };
 
   return (
