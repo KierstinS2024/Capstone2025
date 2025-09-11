@@ -1,17 +1,14 @@
 // src/app/api/shopping-lists/route.ts
-"use client"; // Required for hooks in helpers if any
-
 /**
- * ShoppingList API routes
- * GET: fetch all shopping lists
+ * ShoppingList API
+ * GET: fetch all shopping lists (optional filter by userId)
  * POST: create a new shopping list
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/db";
-import { ShoppingList } from "@/models/ShoppingList"; // ✅ named import
+import { ShoppingList } from "@/models/ShoppingList";
 
-/** GET: fetch all shopping lists, optionally filtered by userId */
 export async function GET(req: NextRequest) {
   try {
     await connectToDB();
@@ -32,25 +29,19 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/** POST: create a new shopping list */
 export async function POST(req: NextRequest) {
   try {
     await connectToDB();
-
     const data = await req.json();
 
-    // Basic validation
-    if (!data.name || !data.items || !Array.isArray(data.items)) {
+    if (!data.title || !data.items || !Array.isArray(data.items)) {
       return NextResponse.json(
         { message: "Invalid shopping list data" },
         { status: 400 }
       );
     }
 
-    const newList = await ShoppingList.create({
-      ...data,
-      source: data.source || "local",
-    });
+    const newList = await ShoppingList.create({ ...data });
 
     return NextResponse.json(newList, { status: 201 });
   } catch (error) {

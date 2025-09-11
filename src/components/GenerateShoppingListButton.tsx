@@ -1,68 +1,98 @@
 // src/components/GenerateShoppingListButton.tsx
-// Button to generate a shopping list from the current meal plan
 "use client";
 
 import React, { useState } from "react";
 import { useMealPlan } from "@/context/MealPlanContext";
-import { useShoppingLists } from "@/context/ShoppingListContext";
-import { generateShoppingListFromMealPlanAPI } from "@/lib/shoppingListApi";
+import type {
+  CreateShoppingListPayload,
+  ShoppingCategory,
+} from "@/types/shoppingList";
+import type { MealIngredient } from "@/types/mealPlan";
 
 /**
  * GenerateShoppingListButton
- * Calls API to create a shopping list from the current meal plan
- * Adds it to ShoppingListContext
+ * Generates a shopping list from the current meal plan
  */
 export const GenerateShoppingListButton: React.FC = () => {
   const { currentMealPlan } = useMealPlan();
-  const { addShoppingList } = useShoppingLists();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  if (!currentMealPlan) {
-    return (
-      <div style={{ color: "gray", fontStyle: "italic" }}>
-        No active meal plan to generate a shopping list.
-      </div>
-    );
-  }
+  if (!currentMealPlan) return null; // nothing to generate
 
+  /** Safely map a string (optional) to ShoppingCategory */
+  const mapCategory = (category?: string): ShoppingCategory => {
+    switch (category) {
+      case "produce":
+      case "meat":
+      case "dairy":
+      case "frozen":
+      case "other":
+        return category;
+      default:
+        return "other";
+    }
+  };
+
+  /** Convert a MealIngredient to a ShoppingItem */
+  const mapIngredientToShoppingItem = (ingredient: MealIngredient) => ({
+    ingredient: ingredient.name,
+    quantity: ingredient.quantity,
+    category: mapCategory(ingredient.category),
+    checked: false,
+  });
+
+  /** Handle generating the shopping list */
   const handleGenerate = async () => {
+    if (!currentMealPlan.entries.length) {
+      alert("Meal plan has no entries to generate a shopping list.");
+      return;
+    }
+
     setLoading(true);
-    setError(null);
+
     try {
-      const newList = await generateShoppingListFromMealPlanAPI(
-        currentMealPlan._id
+      // Flatten all ingredients from all meal plan entries
+      const allIngredients = currentMealPlan.entries.flatMap((entry) =>
+        entry.ingredients.map(mapIngredientToShoppingItem)
       );
-      // Add the generated list to context
-      addShoppingList(newList);
-    } catch (err: any) {
-      console.error("Failed to generate shopping list:", err);
-      setError(err.message || "Failed to generate shopping list");
+
+      const payload: CreateShoppingListPayload = {
+        title: `${currentMealPlan.title} Shopping List`,
+        items: allIngredients,
+      };
+
+      // Call our fixed server API
+      const response = await fetch("/api/shopping-lists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Failed to create shopping list");
+
+      alert("Shopping list generated successfully!");
+    } catch (error: any) {
+      console.error("Error generating shopping list:", error);
+      alert(`Error generating shopping list: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ marginBottom: "16px" }}>
-      <button
-        onClick={handleGenerate}
-        disabled={loading}
-        style={{
-          padding: "8px 16px",
-          backgroundColor: "#4f46e5",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          cursor: "pointer",
-          opacity: loading ? 0.7 : 1,
-        }}
-      >
-        {loading ? "Generating..." : "Generate Shopping List"}
-      </button>
-      {error && (
-        <p style={{ color: "red", marginTop: "8px" }}>Error: {error}</p>
-      )}
-    </div>
+    <button
+      onClick={handleGenerate}
+      disabled={loading}
+      style={{
+        padding: "6px 12px",
+        backgroundColor: "#22c55e",
+        color: "white",
+        border: "none",
+        borderRadius: "4px",
+        cursor: "pointer",
+      }}
+    >
+      {loading ? "Generating..." : "Generate Shopping List"}
+    </button>
   );
 };

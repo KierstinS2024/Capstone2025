@@ -1,5 +1,6 @@
 // src/context/AuthContext.tsx
-// React context for authentication (signup, login, logout, current user)
+// Provides authentication state and methods to the app
+
 "use client";
 
 import {
@@ -10,92 +11,79 @@ import {
   ReactNode,
 } from "react";
 import type { User } from "@/types/user";
-import { apiFetch } from "@/lib/api";
+import {
+  fetchCurrentUserAPI,
+  loginAPI,
+  signupAPI,
+  logoutAPI,
+} from "@/lib/authHelpers";
 
-// --------------------
-// Types
-// --------------------
 type AuthContextType = {
-  user: User | null; // currently logged-in user
-  loading: boolean; // true while fetching user
+  user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
-// --------------------
-// Context creation
-// --------------------
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 type AuthProviderProps = { children: ReactNode };
 
-// --------------------
-// Provider component
-// --------------------
+/**
+ * AuthProvider wraps the app and provides authentication state and methods.
+ */
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch current user on mount
   useEffect(() => {
-    const fetchCurrentUser = async () => {
+    const fetchUser = async () => {
       try {
-        const data = await apiFetch<User>("/auth/me");
-        setUser(data);
+        const currentUser = await fetchCurrentUserAPI();
+        setUser(currentUser);
       } catch {
-        setUser(null); // no user logged in
+        setUser(null);
       } finally {
         setLoading(false);
       }
     };
-    fetchCurrentUser();
+    fetchUser();
   }, []);
 
-  // --------------------
-  // Authentication actions
-  // --------------------
-
-  /** Login user via API */
+  // Login method
   const login = async (email: string, password: string) => {
-    await apiFetch("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-    // Refresh current user after login
-    const data = await apiFetch<User>("/auth/me");
-    setUser(data);
+    const u = await loginAPI(email, password);
+    setUser(u);
   };
 
-  /** Signup new user via API */
+  // Signup method
   const signup = async (name: string, email: string, password: string) => {
-    await apiFetch("/auth/signup", {
-      method: "POST",
-      body: JSON.stringify({ name, email, password }),
-    });
-    // Refresh current user after signup
-    const data = await apiFetch<User>("/auth/me");
-    setUser(data);
+    const u = await signupAPI(name, email, password);
+    setUser(u);
   };
 
-  /** Logout user via API */
+  // Logout method
   const logout = async () => {
-    await apiFetch("/auth/logout", { method: "POST" });
+    await logoutAPI();
     setUser(null);
   };
 
-  // --------------------
-  // Context value
-  // --------------------
-  const value: AuthContextType = { user, loading, login, signup, logout };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-// --------------------
-// Hook for consuming AuthContext
-// --------------------
-export const useAuth = (): AuthContextType => {
+/**
+ * Custom hook to access AuthContext.
+ * Throws error if used outside AuthProvider.
+ */
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;

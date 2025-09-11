@@ -43,15 +43,15 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
       return;
     }
 
-    setEntries((prev) => [
-      ...prev,
-      {
-        date: startDate,
-        mealType: "breakfast",
-        recipeId: recipes[0]._id,
-        ingredients: [], // required for type safety
-      },
-    ]);
+    // Create a fully typed MealPlanEntry
+    const newEntry: MealPlanEntry = {
+      date: startDate,
+      mealType: "breakfast",
+      recipeId: recipes[0]._id,
+      ingredients: recipes[0].ingredients || [], // ensure ingredients array exists
+    };
+
+    setEntries((prev) => [...prev, newEntry]);
   };
 
   /** Update an existing entry */
@@ -81,7 +81,6 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
     };
 
     await createMealPlan(payload);
-
     onClose();
   };
 

@@ -1,77 +1,84 @@
 // src/context/FavoritesContext.tsx
-// React context for managing favorite recipes
+// React context for managing user's favorite recipes (local + spoonacular read-only)
+// Provides: favorites list, loading state, fetchFavorites, toggleFavorite
+
 "use client";
 
 import {
   createContext,
   useContext,
-  ReactNode,
   useEffect,
   useState,
+  ReactNode,
 } from "react";
 import type { Recipe } from "@/types/recipe";
-import { useRecipes } from "./RecipeContext";
+import { fetchRecipesAPI, toggleFavoriteAPI } from "@/lib/recipeApi";
 
-// --------------------
-// Types
-// --------------------
-interface FavoritesContextType {
+type FavoritesContextType = {
   favorites: Recipe[];
-  toggleFavorite: (id: string) => Promise<void>;
   loading: boolean;
-}
+  fetchFavorites: () => Promise<void>;
+  toggleFavorite: (recipeId: string) => Promise<void>;
+};
 
-// --------------------
-// Context creation
-// --------------------
 export const FavoritesContext = createContext<FavoritesContextType | undefined>(
   undefined
 );
 
 type ProviderProps = { children: ReactNode };
 
-// --------------------
-// Provider component
-// --------------------
+/**
+ * FavoritesProvider
+ * - Fetches recipes and keeps a filtered list of favorites
+ * - toggleFavorite calls backend then refreshes favorites
+ *
+ * Note: We derive favorites from recipes where `recipe.favorite === true`.
+ * This keeps behavior simple and avoids adding extra API endpoints for now.
+ */
 export const FavoritesProvider = ({ children }: ProviderProps) => {
-  const {
-    recipes,
-    createRecipe,
-    deleteRecipe,
-    loading: recipesLoading,
-  } = useRecipes();
   const [favorites, setFavorites] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Sync favorites from recipes
+  // Load favorites on mount
   useEffect(() => {
-    const favs = recipes.filter((r) => r.favorite);
-    setFavorites(favs);
-    setLoading(recipesLoading);
-  }, [recipes, recipesLoading]);
+    fetchFavorites();
+  }, []);
 
-  // --------------------
-  // Actions
-  // --------------------
-  const toggleFavorite = async (id: string) => {
-    const recipe = recipes.find((r) => r._id === id);
-    if (!recipe) return;
-
-    // Clone recipe and toggle favorite
-    const updatedRecipe = { ...recipe, favorite: !recipe.favorite };
-
-    // Delete then recreate pattern to match backend (or update if implemented)
-    await deleteRecipe(id);
-    await createRecipe(updatedRecipe);
+  /** Fetch all recipes and keep only those marked favorite */
+  const fetchFavorites = async () => {
+    setLoading(true);
+    try {
+      const all = await fetchRecipesAPI();
+      const favs = all.filter((r) => Boolean((r as Recipe).favorite));
+      setFavorites(favs);
+    } catch (error) {
+      console.error("FavoritesProvider.fetchFavorites error:", error);
+      setFavorites([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // --------------------
-  // Context value
-  // --------------------
+  /**
+   * Toggle a recipe's favorite status.
+   * - Calls the API helper then refreshes favorites.
+   * - Keeps things simple by re-fetching the favorites list after toggle.
+   */
+  const toggleFavorite = async (recipeId: string) => {
+    try {
+      await toggleFavoriteAPI(recipeId);
+      await fetchFavorites();
+    } catch (error) {
+      console.error("FavoritesProvider.toggleFavorite error:", error);
+      throw error;
+    }
+  };
+
   const value: FavoritesContextType = {
     favorites,
-    toggleFavorite,
     loading,
+    fetchFavorites,
+    toggleFavorite,
   };
 
   return (
@@ -81,12 +88,10 @@ export const FavoritesProvider = ({ children }: ProviderProps) => {
   );
 };
 
-// --------------------
-// Hook for consuming FavoritesContext safely
-// --------------------
+/** Hook to consume FavoritesContext safely */
 export const useFavorites = (): FavoritesContextType => {
   const context = useContext(FavoritesContext);
   if (!context)
-    throw new Error("useFavorites must be used within FavoritesProvider");
+    throw new Error("useFavorites must be used within a FavoritesProvider");
   return context;
 };

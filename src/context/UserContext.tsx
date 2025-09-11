@@ -1,5 +1,8 @@
 // src/context/UserContext.tsx
-// React context for managing current user info
+// React context for managing current user info (smart provider)
+// Provides: user, loading, refreshUser, setUser
+// Keeps the same external contract components expect (useUser, refreshUser, loading)
+
 "use client";
 
 import {
@@ -12,66 +15,65 @@ import {
 import type { User } from "@/types/user";
 import { fetchCurrentUserAPI } from "@/lib/authHelpers";
 
-// --------------------
-// Types
-// --------------------
 type UserContextType = {
   user: User | null;
   loading: boolean;
   refreshUser: () => Promise<void>;
+  setUser: (u: User | null) => void;
 };
 
-// --------------------
-// Context creation
-// --------------------
-export const UserContext = createContext<UserContextType | undefined>(undefined);
+export const UserContext = createContext<UserContextType | undefined>(
+  undefined
+);
 
 type ProviderProps = { children: ReactNode };
 
-// --------------------
-// Provider component
-// --------------------
+/**
+ * UserProvider
+ * - Fetches current user on mount
+ * - Exposes refreshUser to let other code update user info after auth actions
+ * - Exposes setUser to allow direct updates (e.g. login/signup flows)
+ */
 export const UserProvider = ({ children }: ProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUserState] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Fetch user on mount
+  // Fetch user on mount (keeps session across reloads)
   useEffect(() => {
-    refreshUser();
+    void refreshUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --------------------
-  // Context actions
-  // --------------------
-
-  /** Refresh current user info from API */
-  const refreshUser = async () => {
+  /** Refresh current user from API */
+  const refreshUser = async (): Promise<void> => {
     setLoading(true);
     try {
-      const data = await fetchCurrentUserAPI();
-      setUser(data);
-    } catch {
-      setUser(null);
+      const u = await fetchCurrentUserAPI();
+      setUserState(u);
+    } catch (error) {
+      // Not authenticated or network error -> clear user
+      setUserState(null);
     } finally {
       setLoading(false);
     }
   };
 
-  // --------------------
-  // Context value
-  // --------------------
+  /** Exposed setter (keeps same signature as before) */
+  const setUser = (u: User | null) => {
+    setUserState(u);
+  };
+
   const value: UserContextType = {
     user,
     loading,
     refreshUser,
+    setUser,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 
-// --------------------
-// Hook for consuming UserContext safely
-// --------------------
+/** Hook for consuming UserContext safely */
 export const useUser = (): UserContextType => {
   const context = useContext(UserContext);
   if (!context) throw new Error("useUser must be used within a UserProvider");

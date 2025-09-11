@@ -1,26 +1,20 @@
 // src/app/api/meal-plans/[id]/route.ts
-"use client"; // Client directive if needed for hooks inside helpers
-
 /**
- * MealPlan API routes for a single meal plan by ID
- * Supports GET, PUT, DELETE
+ * API for single meal plan by ID
+ * GET / PUT / DELETE
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/db";
 import { MealPlan } from "@/models/MealPlan";
 
-// Helper to extract ID from request URL
-const getIdFromReq = (req: NextRequest) => {
-  const url = new URL(req.url);
-  return url.pathname.split("/").pop();
-};
+// Extract ID from URL
+const getIdFromReq = (req: NextRequest) =>
+  new URL(req.url).pathname.split("/").pop();
 
-/** GET: Fetch a single meal plan by ID */
 export async function GET(req: NextRequest) {
   try {
     await connectToDB();
-
     const id = getIdFromReq(req);
     if (!id)
       return NextResponse.json({ message: "ID not provided" }, { status: 400 });
@@ -42,11 +36,9 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/** PUT: Update a meal plan by ID */
 export async function PUT(req: NextRequest) {
   try {
     await connectToDB();
-
     const id = getIdFromReq(req);
     if (!id)
       return NextResponse.json({ message: "ID not provided" }, { status: 400 });
@@ -72,11 +64,9 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-/** DELETE: Delete a meal plan by ID */
 export async function DELETE(req: NextRequest) {
   try {
     await connectToDB();
-
     const id = getIdFromReq(req);
     if (!id)
       return NextResponse.json({ message: "ID not provided" }, { status: 400 });

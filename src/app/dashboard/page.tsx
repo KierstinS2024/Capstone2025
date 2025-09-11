@@ -11,10 +11,6 @@ import { useFavorites } from "@/context/FavoritesContext";
 import { useMealPlan } from "@/context/MealPlanContext";
 import { useShoppingLists } from "@/context/ShoppingListContext";
 
-/**
- * DashboardPage
- * Displays main dashboard with Recipes, Favorites, Meal Plan, and Shopping List cards
- */
 const DashboardPage: React.FC = () => {
   const { recipes, loading: recipesLoading } = useRecipes();
   const { favorites, loading: favoritesLoading } = useFavorites();
@@ -27,23 +23,27 @@ const DashboardPage: React.FC = () => {
     <div
       style={{
         padding: "24px",
-        display: "flex",
-        flexDirection: "column",
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
         gap: "24px",
       }}
     >
-      {isLoading && <div>Loading dashboard...</div>}
+      {isLoading && (
+        <div style={{ gridColumn: "1 / -1", textAlign: "center" }}>
+          Loading dashboard...
+        </div>
+      )}
 
-      {/* Recipes */}
+      {/* Recipes Card */}
       <RecipeCard />
 
-      {/* Favorites */}
+      {/* Favorites Card */}
       <FavoritesCard />
 
-      {/* Meal Plan */}
-      <MealPlanCard mealPlan={currentMealPlan ?? undefined} />
+      {/* Meal Plan Card */}
+      <MealPlanCard mealPlan={currentMealPlan || undefined} />
 
-      {/* Shopping List */}
+      {/* Shopping List Card */}
       <ShoppingListCard />
     </div>
   );

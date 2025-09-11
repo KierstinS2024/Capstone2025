@@ -3,130 +3,133 @@
 
 import React, { useState } from "react";
 import { useRecipes } from "@/context/RecipeContext";
-import type { RecipeIngredient, CreateRecipePayload } from "@/types/recipe";
+import type { RecipeIngredient } from "@/types/recipe";
 
-const AddRecipeForm: React.FC = () => {
+interface AddRecipeFormProps {
+  onClose: () => void;
+}
+
+export const AddRecipeForm: React.FC<AddRecipeFormProps> = ({ onClose }) => {
   const { createRecipe } = useRecipes();
 
   const [title, setTitle] = useState("");
-  const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
   const [instructions, setInstructions] = useState("");
-  const [ingredientName, setIngredientName] = useState("");
-  const [ingredientQuantity, setIngredientQuantity] = useState("");
-  const [ingredientUnit, setIngredientUnit] = useState("");
+  const [ingredients, setIngredients] = useState<RecipeIngredient[]>([
+    { name: "", quantity: "", unit: "" },
+  ]);
 
-  const handleAddIngredient = () => {
-    if (!ingredientName || !ingredientQuantity) return;
-
-    const newIngredient: RecipeIngredient = {
-      name: ingredientName,
-      quantity: ingredientQuantity,
-      unit: ingredientUnit || "",
-    };
-
-    setIngredients((prev) => [...prev, newIngredient]);
-
-    setIngredientName("");
-    setIngredientQuantity("");
-    setIngredientUnit("");
+  const handleIngredientChange = (
+    index: number,
+    field: keyof RecipeIngredient,
+    value: string
+  ) => {
+    setIngredients((prev) =>
+      prev.map((ing, i) => (i === index ? { ...ing, [field]: value } : ing))
+    );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const addIngredient = () => {
+    setIngredients((prev) => [...prev, { name: "", quantity: "", unit: "" }]);
+  };
 
-    const payload: CreateRecipePayload = {
-      title,
-      ingredients,
-      instructions,
-      source: "local",
-    };
+  const removeIngredient = (index: number) => {
+    setIngredients((prev) => prev.filter((_, i) => i !== index));
+  };
 
-    await createRecipe(payload);
+  const handleSubmit = async () => {
+    if (!title || !instructions || ingredients.length === 0) {
+      alert("Please fill out all required fields.");
+      return;
+    }
 
-    // Reset form
-    setTitle("");
-    setIngredients([]);
-    setInstructions("");
+    await createRecipe({ title, instructions, ingredients });
+    onClose();
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="p-4 border rounded-lg shadow-md bg-white flex flex-col gap-4"
+    <div
+      style={{
+        backgroundColor: "white",
+        padding: 24,
+        borderRadius: 8,
+        minWidth: 400,
+      }}
     >
-      <h2 className="text-lg font-semibold">Add New Recipe</h2>
+      <h2 className="text-xl font-bold mb-4">Add New Recipe</h2>
 
-      {/* Title */}
-      <input
-        type="text"
-        placeholder="Recipe Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="border rounded px-2 py-1"
-        required
-      />
-
-      {/* Ingredients */}
-      <div>
-        <h3 className="font-medium">Ingredients</h3>
-        <div className="flex gap-2 mt-2">
-          <input
-            type="text"
-            placeholder="Name"
-            value={ingredientName}
-            onChange={(e) => setIngredientName(e.target.value)}
-            className="border rounded px-2 py-1 flex-1"
-          />
-          <input
-            type="text"
-            placeholder="Quantity"
-            value={ingredientQuantity}
-            onChange={(e) => setIngredientQuantity(e.target.value)}
-            className="border rounded px-2 py-1 w-24"
-          />
-          <input
-            type="text"
-            placeholder="Unit"
-            value={ingredientUnit}
-            onChange={(e) => setIngredientUnit(e.target.value)}
-            className="border rounded px-2 py-1 w-24"
-          />
-          <button
-            type="button"
-            onClick={handleAddIngredient}
-            className="px-3 py-1 bg-blue-600 text-white rounded"
-          >
-            Add
-          </button>
-        </div>
-
-        {/* Current ingredients */}
-        <ul className="list-disc list-inside mt-2 text-sm">
-          {ingredients.map((ing, idx) => (
-            <li key={idx}>
-              {ing.quantity} {ing.unit} {ing.name}
-            </li>
-          ))}
-        </ul>
+      <div className="mb-2">
+        <label>Title</label>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full border px-2 py-1 rounded"
+        />
       </div>
 
-      {/* Instructions */}
-      <textarea
-        placeholder="Instructions"
-        value={instructions}
-        onChange={(e) => setInstructions(e.target.value)}
-        className="border rounded px-2 py-1 min-h-[100px]"
-      />
+      <div className="mb-2">
+        <label>Instructions</label>
+        <textarea
+          value={instructions}
+          onChange={(e) => setInstructions(e.target.value)}
+          className="w-full border px-2 py-1 rounded"
+        />
+      </div>
 
-      {/* Submit */}
-      <button
-        type="submit"
-        className="px-4 py-2 bg-green-600 text-white rounded"
-      >
-        Save Recipe
-      </button>
-    </form>
+      <div className="mb-2">
+        <h3>Ingredients</h3>
+        {ingredients.map((ing, idx) => (
+          <div key={idx} className="flex gap-2 mb-1">
+            <input
+              placeholder="Name"
+              value={ing.name}
+              onChange={(e) =>
+                handleIngredientChange(idx, "name", e.target.value)
+              }
+              className="border px-2 py-1 rounded flex-1"
+            />
+            <input
+              placeholder="Qty"
+              value={ing.quantity}
+              onChange={(e) =>
+                handleIngredientChange(idx, "quantity", e.target.value)
+              }
+              className="border px-2 py-1 rounded w-20"
+            />
+            <input
+              placeholder="Unit"
+              value={ing.unit}
+              onChange={(e) =>
+                handleIngredientChange(idx, "unit", e.target.value)
+              }
+              className="border px-2 py-1 rounded w-20"
+            />
+            <button
+              onClick={() => removeIngredient(idx)}
+              className="px-2 py-1 bg-red-500 text-white rounded"
+            >
+              X
+            </button>
+          </div>
+        ))}
+        <button
+          onClick={addIngredient}
+          className="mt-1 px-3 py-1 bg-green-500 text-white rounded"
+        >
+          Add Ingredient
+        </button>
+      </div>
+
+      <div className="flex justify-end gap-2 mt-4">
+        <button onClick={onClose} className="px-3 py-1 bg-gray-300 rounded">
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          className="px-3 py-1 bg-blue-500 text-white rounded"
+        >
+          Save
+        </button>
+      </div>
+    </div>
   );
 };
-
-export default AddRecipeForm;
