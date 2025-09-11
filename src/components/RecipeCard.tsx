@@ -1,87 +1,31 @@
-// src/components/RecipeCard.tsx
-import React, { useState } from "react";
+// Path: src/components/RecipeCard.tsx
+"use client";
+
+import React from "react";
+import type { Recipe } from "@/types/recipe";
 import { useRecipes } from "@/context/RecipeContext";
-import MealCard from "./MealCard"; // reuse mini-card style
 
-/**
- * RecipeCard
- * Displays a list of recipes in mini-card style
- * Toggle to show all or only favorites
- */
-export const RecipeCard: React.FC = () => {
-  const { recipes, toggleFavorite } = useRecipes();
-  const [showFavorites, setShowFavorites] = useState(false);
+interface RecipeCardProps {
+  recipeId: string;
+}
 
-  const filteredRecipes = showFavorites
-    ? recipes.filter((r) => r.favorite)
-    : recipes;
-
-  if (!filteredRecipes.length) {
-    return (
-      <div
-        style={{
-          padding: "16px",
-          border: "1px solid #ccc",
-          borderRadius: "8px",
-          backgroundColor: "#fafafa",
-        }}
-      >
-        {showFavorites
-          ? "No favorite recipes yet. ⭐ Mark some to see them here!"
-          : "No recipes found. Add some to get started!"}
-      </div>
-    );
-  }
+const RecipeCard: React.FC<RecipeCardProps> = ({ recipeId }) => {
+  const { recipes } = useRecipes();
+  const recipe = recipes.find((r) => r._id === recipeId);
+  if (!recipe) return <div>Recipe not found</div>;
 
   return (
-    <div
-      style={{
-        padding: "16px",
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-        backgroundColor: "#fafafa",
-      }}
-    >
-      {/* Header with toggle button */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "12px",
-        }}
-      >
-        <h2 style={{ fontSize: "20px" }}>Recipes</h2>
-        <button
-          onClick={() => setShowFavorites((prev) => !prev)}
-          style={{
-            padding: "6px 12px",
-            backgroundColor: showFavorites ? "#ffcc00" : "#ccc",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
-        >
-          {showFavorites ? "Show All" : "Show Favorites"}
-        </button>
-      </div>
-
-      {/* Recipe List using mini-card style */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-          gap: "12px",
-        }}
-      >
-        {filteredRecipes.map((recipe) => (
-          <MealCard
-            key={recipe._id}
-            name={recipe.title}
-            // optional: could add recipe.image if available
-          />
-        ))}
-      </div>
+    <div style={{ border: "1px solid #ccc", borderRadius: 8, padding: 12 }}>
+      <h3>{recipe.title}</h3>
+      {recipe.image && (
+        <img
+          src={recipe.image}
+          alt={recipe.title}
+          style={{ width: "100%", borderRadius: 6 }}
+        />
+      )}
     </div>
   );
 };
+
+export default RecipeCard;

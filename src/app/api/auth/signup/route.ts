@@ -20,6 +20,7 @@ export async function POST(req: Request) {
 
     await connectToDB();
 
+    // Check for duplicate email
     const existingUser = await User.findOne({ email }).select("+passwordHash");
     if (existingUser) {
       return NextResponse.json(
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
     const newUser = new User({
@@ -35,25 +37,28 @@ export async function POST(req: Request) {
       email,
       passwordHash,
       favorites: [],
+      createdAt: new Date(), // optional
     });
 
     await newUser.save();
 
-    // Set a simple session cookie (just using user ID)
+    // Create response with HttpOnly session cookie
     const response = NextResponse.json({
-      _id: newUser._id.toString(),
-      name: newUser.name,
-      email: newUser.email,
-      favorites: [],
+      user: {
+        _id: newUser._id.toString(),
+        name: newUser.name,
+        email: newUser.email,
+        favorites: [],
+      },
     });
 
-    // HttpOnly cookie for session
     response.cookies.set({
       name: "session",
       value: newUser._id.toString(),
       httpOnly: true,
       path: "/",
       maxAge: 60 * 60 * 24, // 1 day
+      secure: process.env.NODE_ENV === "production", // optional
     });
 
     return response;

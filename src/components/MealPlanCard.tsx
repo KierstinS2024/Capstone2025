@@ -1,81 +1,59 @@
+// Path: src/components/MealPlanCard.tsx
+"use client";
+
 import React, { useState } from "react";
-import { useMealPlan } from "@/context/MealPlanContext";
-import { MealCard } from "./MealCard";
-import { AddMealForm } from "./AddMealForm";
 import type { MealPlanEntry, MealType } from "@/types/mealPlan";
+import RecipeCard from "./RecipeCard";
+import { AddMealForm } from "./AddMealForm";
 
-export const MealPlanCard: React.FC = () => {
-  const { todayMeals } = useMealPlan();
+interface MealPlanCardProps {
+  meal: MealPlanEntry;
+  isGuest?: boolean;
+}
+
+const MealPlanCard: React.FC<MealPlanCardProps> = ({
+  meal,
+  isGuest = false,
+}) => {
   const [editingMealType, setEditingMealType] = useState<MealType | null>(null);
-
-  // Map today's meals for Breakfast, Lunch, Dinner
-  const mealsByType: Record<MealType, MealPlanEntry | undefined> = {
-    Breakfast: todayMeals.find((m) => m.mealType === "Breakfast"),
-    Lunch: todayMeals.find((m) => m.mealType === "Lunch"),
-    Dinner: todayMeals.find((m) => m.mealType === "Dinner"),
-  };
-
-  const handleAddMeal = (mealType: MealType) => setEditingMealType(mealType);
-  const handleOpenRecipe = (meal: MealPlanEntry) => {
-    window.location.href = `/recipes/${meal.recipeId}`;
-  };
-
-  const mealTypes: MealType[] = ["Breakfast", "Lunch", "Dinner"];
 
   return (
     <div
       style={{
         padding: "16px",
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-        backgroundColor: "#fafafa",
+        border: "1px solid #d8cfc4",
+        borderRadius: 10,
+        backgroundColor: "#f4f1ed",
       }}
     >
-      <h2 style={{ fontSize: "20px", marginBottom: "12px" }}>
-        Today's Meal Plan
+      <h2 style={{ fontSize: 20, marginBottom: 12, color: "#6b4c3b" }}>
+        {meal.mealType}
       </h2>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "12px",
-        }}
-      >
-        {mealTypes.map((mealType) => (
-          <MealCard
-            key={mealType}
-            mealType={mealType}
-            meal={mealsByType[mealType]}
-            onAddMeal={() => handleAddMeal(mealType)}
-            onClick={() =>
-              mealsByType[mealType] && handleOpenRecipe(mealsByType[mealType]!)
-            }
-          />
-        ))}
-      </div>
-
-      {editingMealType && (
+      {meal.recipeId ? (
+        <RecipeCard recipeId={meal.recipeId} />
+      ) : (
         <div
+          onClick={() => !isGuest && setEditingMealType(meal.mealType)}
           style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
+            padding: 12,
+            border: "1px dashed #c0b49f",
+            borderRadius: 8,
+            cursor: isGuest ? "default" : "pointer",
           }}
         >
-          <AddMealForm
-            mealType={editingMealType}
-            onClose={() => setEditingMealType(null)}
-          />
+          Add {meal.mealType}
         </div>
+      )}
+
+      {editingMealType && !isGuest && (
+        <AddMealForm
+          mealType={editingMealType}
+          onClose={() => setEditingMealType(null)}
+        />
       )}
     </div>
   );
 };
+
+export default MealPlanCard;

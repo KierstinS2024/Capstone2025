@@ -1,82 +1,93 @@
-"use client";
+// Path: src/app/page.tsx
+"use client"; // Required for client-side navigation
 
-import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import React from "react";
 
 const LandingPage: React.FC = () => {
-  const { login, signup, loading } = useAuth();
-  const [isSignup, setIsSignup] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [error, setError] = useState("");
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    try {
-      if (isSignup) {
-        await signup(form.name, form.email, form.password);
-      } else {
-        await login(form.email, form.password);
-      }
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong");
-    }
-  };
-
   return (
-    <div style={{ maxWidth: "400px", margin: "auto", padding: "24px" }}>
-      <h1 style={{ textAlign: "center" }}>{isSignup ? "Sign Up" : "Login"}</h1>
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "12px" }}>
-        {isSignup && (
-          <input
-            name="name"
-            placeholder="Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-          />
-        )}
-        <input
-          name="email"
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          required
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? "Please wait..." : isSignup ? "Sign Up" : "Login"}
-        </button>
-      </form>
-      {error && <div style={{ color: "red", marginTop: "12px" }}>{error}</div>}
-      <div style={{ marginTop: "12px", textAlign: "center" }}>
-        {isSignup ? (
-          <>
-            Already have an account?{" "}
-            <button type="button" onClick={() => setIsSignup(false)}>
-              Login
-            </button>
-          </>
-        ) : (
-          <>
-            Don't have an account?{" "}
-            <button type="button" onClick={() => setIsSignup(true)}>
-              Sign Up
-            </button>
-          </>
-        )}
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#f9f6f2",
+        padding: "20px",
+      }}
+    >
+      <h1
+        style={{
+          fontSize: "2.5rem",
+          marginBottom: "20px",
+          color: "#6b4c3b",
+          textAlign: "center",
+        }}
+      >
+        Welcome to Meal Planner
+      </h1>
+      <p
+        style={{
+          marginBottom: "40px",
+          fontSize: "1.2rem",
+          textAlign: "center",
+          color: "#4a3c2f",
+        }}
+      >
+        Organize your meals, save recipes, and plan your week with ease.
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          width: "100%",
+          maxWidth: "300px",
+        }}
+      >
+        <a
+          href="/login"
+          style={{
+            padding: "12px",
+            textAlign: "center",
+            borderRadius: "8px",
+            backgroundColor: "#6b4c3b",
+            color: "#fff",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Login
+        </a>
+        <a
+          href="/signup"
+          style={{
+            padding: "12px",
+            textAlign: "center",
+            borderRadius: "8px",
+            backgroundColor: "#8a6b56",
+            color: "#fff",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Sign Up
+        </a>
+        <a
+          href="/guest-dashboard"
+          style={{
+            padding: "12px",
+            textAlign: "center",
+            borderRadius: "8px",
+            backgroundColor: "#b49e8a",
+            color: "#fff",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Try Guest Mode
+        </a>
       </div>
     </div>
   );

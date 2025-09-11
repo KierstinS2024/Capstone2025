@@ -1,3 +1,4 @@
+// Path: src/context/AuthContext.tsx
 "use client";
 
 import React, {
@@ -16,6 +17,10 @@ import {
   logoutAPI,
 } from "@/lib/authHelpers";
 
+/**
+ * AuthContextType
+ * Provides user authentication info and methods
+ */
 type AuthContextType = {
   user: User | null;
   loading: boolean;
@@ -61,12 +66,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshUser = async () => {
-    if (!user) return;
     const current = await fetchCurrentUserAPI();
     setUser(current);
   };
 
-  // On mount, try to fetch the current user if session exists
+  // Fetch user on mount if session exists
   useEffect(() => {
     refreshUser();
   }, []);

@@ -1,15 +1,19 @@
-// src/components/FavoritesCard.tsx
+// Path: src/components/FavoritesCard.tsx
+"use client";
+
 import React from "react";
 import { useFavorites } from "@/context/FavoritesContext";
 import MealCard from "./MealCard";
 
 /**
  * FavoritesCard
- * Shows all favorite recipes in mini-card style
+ * Displays all favorite recipes in a compact, mini-card grid.
+ * Users can see favorites even in guest mode (read-only).
  */
-export const FavoritesCard: React.FC = () => {
-  const { favorites, toggleFavorite, loading } = useFavorites();
+const FavoritesCard: React.FC = () => {
+  const { favorites, loading } = useFavorites();
 
+  // Loading placeholder
   if (loading) {
     return (
       <div
@@ -25,6 +29,7 @@ export const FavoritesCard: React.FC = () => {
     );
   }
 
+  // No favorites state
   if (!favorites.length) {
     return (
       <div
@@ -59,13 +64,11 @@ export const FavoritesCard: React.FC = () => {
         }}
       >
         {favorites.map((recipe) => (
-          <MealCard
-            key={recipe._id}
-            name={recipe.title}
-            // optional: could add recipe.image if available
-          />
+          <MealCard key={recipe._id} recipe={recipe} />
         ))}
       </div>
     </div>
   );
 };
+
+export default FavoritesCard;

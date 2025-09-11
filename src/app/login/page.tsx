@@ -1,44 +1,38 @@
-// src/app/login/page.tsx
+// Path: src/app/login/page.tsx
 "use client";
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
-  const { login, loading } = useAuth();
+  const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    try {
-      await login(email, password); // AuthContext handles redirect
-    } catch (err: any) {
-      setError(err.message || "Login failed");
-    }
+    await login(email, password);
+    router.push("/dashboard");
   };
 
   return (
-    <main style={{ padding: "2rem", textAlign: "center" }}>
-      <h1>Login</h1>
+    <div className="container center" style={{ height: "100vh" }}>
       <form
+        className="card"
+        style={{ maxWidth: "400px", width: "100%" }}
         onSubmit={handleSubmit}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "1rem",
-          maxWidth: "300px",
-          margin: "1rem auto",
-        }}
       >
+        <h2 style={{ marginBottom: "1rem" }}>Login</h2>
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          style={{ marginBottom: "1rem", padding: "0.5rem" }}
         />
         <input
           type="password"
@@ -46,12 +40,19 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          style={{ marginBottom: "1rem", padding: "0.5rem" }}
         />
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
+        <button type="submit" className="btn btn-primary">
+          Login
         </button>
-        {error && <p style={{ color: "red" }}>{error}</p>}
+
+        <p style={{ marginTop: "1rem", textAlign: "center" }}>
+          Don’t have an account? <Link href="/signup">Signup</Link>
+        </p>
+        <p style={{ marginTop: "0.5rem", textAlign: "center" }}>
+          Or continue in <Link href="/guest-dashboard">Guest Mode</Link>
+        </p>
       </form>
-    </main>
+    </div>
   );
 }

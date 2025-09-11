@@ -7,7 +7,6 @@
 "use client";
 import { ReactNode } from "react";
 import { AuthProvider } from "./AuthContext";
-import { UserProvider } from "./UserContext";
 import { RecipeProvider } from "./RecipeContext";
 import { FavoritesProvider } from "./FavoritesContext";
 import { MealPlanProvider } from "./MealPlanContext";
@@ -17,14 +16,12 @@ type AppProvidersProps = { children: ReactNode };
 
 export const AppProviders = ({ children }: AppProvidersProps) => (
   <AuthProvider>
-    <UserProvider>
-      <RecipeProvider>
-        <FavoritesProvider>
-          <MealPlanProvider>
-            <ShoppingListProvider>{children}</ShoppingListProvider>
-          </MealPlanProvider>
-        </FavoritesProvider>
-      </RecipeProvider>
-    </UserProvider>
+    <RecipeProvider>
+      <FavoritesProvider>
+        <MealPlanProvider>
+          <ShoppingListProvider>{children}</ShoppingListProvider>
+        </MealPlanProvider>
+      </FavoritesProvider>
+    </RecipeProvider>
   </AuthProvider>
 );

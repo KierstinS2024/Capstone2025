@@ -1,45 +1,55 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import type { MealPlanEntry, MealPlan } from "@/types/mealPlan";
-import { useRecipes } from "./RecipeContext";
+// Path: src/context/MealPlanContext.tsx
+"use client";
+
+import React, { createContext, useContext, useState } from "react";
+import type {
+  MealPlan,
+  MealPlanEntry,
+  CreateMealPlanPayload,
+} from "@/types/mealPlan";
 
 interface MealPlanContextType {
+  currentMealPlan: MealPlan | null;
   todayMeals: MealPlanEntry[];
-  setTodayMeals: React.Dispatch<React.SetStateAction<MealPlanEntry[]>>;
+  addMeal: (meal: MealPlanEntry) => void;
+  createMealPlan: (payload: CreateMealPlanPayload) => Promise<void>;
 }
 
-const MealPlanContext = createContext<MealPlanContextType>({
-  todayMeals: [],
-  setTodayMeals: () => {},
-});
+const MealPlanContext = createContext<MealPlanContextType | undefined>(
+  undefined
+);
 
-export const useMealPlan = () => useContext(MealPlanContext);
+export const useMealPlan = () => {
+  const ctx = useContext(MealPlanContext);
+  if (!ctx) throw new Error("useMealPlan must be used within MealPlanProvider");
+  return ctx;
+};
 
 export const MealPlanProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { recipes } = useRecipes();
-  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [currentMealPlan, setCurrentMealPlan] = useState<MealPlan | null>(null);
   const [todayMeals, setTodayMeals] = useState<MealPlanEntry[]>([]);
 
-  // Fetch meal plan and enrich with recipe info
-  useEffect(() => {
-    if (!mealPlan) return;
+  const addMeal = (meal: MealPlanEntry) =>
+    setTodayMeals((prev) => [...prev, meal]);
 
-    const mappedEntries = mealPlan.entries.map((entry) => {
-      const recipe = recipes.find((r) => r._id === entry.recipeId);
-      return {
-        ...entry,
-        recipeTitle: recipe?.title,
-        recipeImage: recipe?.image,
-      };
-    });
-
-    const today = new Date().toISOString().slice(0, 10);
-    setTodayMeals(mappedEntries.filter((e) => e.date === today));
-  }, [mealPlan, recipes]);
+  const createMealPlan = async (payload: CreateMealPlanPayload) => {
+    // Here you would call API to persist meal plan
+    const newPlan: MealPlan = {
+      _id: "temp-id",
+      userId: "user-id",
+      ...payload,
+      entries: payload.entries || [],
+    };
+    setCurrentMealPlan(newPlan);
+    setTodayMeals(payload.entries || []);
+  };
 
   return (
-    <MealPlanContext.Provider value={{ todayMeals, setTodayMeals }}>
+    <MealPlanContext.Provider
+      value={{ currentMealPlan, todayMeals, addMeal, createMealPlan }}
+    >
       {children}
     </MealPlanContext.Provider>
   );

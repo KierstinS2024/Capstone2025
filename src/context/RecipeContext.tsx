@@ -1,65 +1,53 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
-import type { Recipe } from "@/types/recipe";
-import { fetchRecipesAPI, toggleFavoriteAPI } from "@/lib/recipeApi";
-import { useAuth } from "./AuthContext";
+import React, { createContext, useContext, useState } from "react";
+import type { Recipe, CreateRecipePayload } from "@/types/recipe";
 
-type RecipeContextType = {
+interface RecipeContextType {
   recipes: Recipe[];
-  favorites: Recipe[];
-  loading: boolean;
-  refreshRecipes: () => Promise<void>;
-  toggleFavorite: (recipeId: string) => Promise<void>;
-};
+  createRecipe: (payload: CreateRecipePayload) => Promise<void>;
+  searchRecipes: (query: string) => Promise<Recipe[]>;
+}
 
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
-export const RecipeProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
+export const useRecipes = () => {
+  const context = useContext(RecipeContext);
+  if (!context)
+    throw new Error("useRecipes must be used within RecipeProvider");
+  return context;
+};
+
+export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  const refreshRecipes = async () => {
-    if (!user) return;
-    setLoading(true);
-    const data = await fetchRecipesAPI();
-    setRecipes(data);
-    setLoading(false);
+  /** Create a new recipe */
+  const createRecipe = async (payload: CreateRecipePayload) => {
+    const response = await fetch("/api/recipes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error("Failed to create recipe");
+
+    const created: Recipe = await response.json();
+    setRecipes((prev) => [...prev, created]);
   };
 
-  const toggleFavorite = async (recipeId: string) => {
-    await toggleFavoriteAPI(recipeId);
-    setRecipes((prev) =>
-      prev.map((r) =>
-        r._id === recipeId ? { ...r, favorite: !r.favorite } : r
-      )
-    );
+  /** Search recipes (Spoonacular + local) */
+  const searchRecipes = async (query: string) => {
+    const response = await fetch(`/api/recipes/search?query=${query}`);
+    if (!response.ok) throw new Error("Search failed");
+    const results: Recipe[] = await response.json();
+    setRecipes(results);
+    return results;
   };
-
-  useEffect(() => {
-    refreshRecipes();
-  }, [user]);
-
-  const favorites = recipes.filter((r) => r.favorite);
 
   return (
-    <RecipeContext.Provider
-      value={{ recipes, favorites, loading, refreshRecipes, toggleFavorite }}
-    >
+    <RecipeContext.Provider value={{ recipes, createRecipe, searchRecipes }}>
       {children}
     </RecipeContext.Provider>
   );
-};
-
-export const useRecipes = () => {
-  const ctx = useContext(RecipeContext);
-  if (!ctx) throw new Error("useRecipes must be used within RecipeProvider");
-  return ctx;
 };

@@ -1,4 +1,4 @@
-// src/components/MealPlanForm.tsx
+// Path: src/components/MealPlanForm.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -7,10 +7,15 @@ import { useMealPlan } from "@/context/MealPlanContext";
 import { useRecipes } from "@/context/RecipeContext";
 
 interface MealPlanFormProps {
-  existingPlan?: MealPlan; // optional for edit mode
-  onClose: () => void;
+  existingPlan?: MealPlan; // Optional for editing an existing plan
+  onClose: () => void; // Close modal or form
 }
 
+/**
+ * MealPlanForm
+ * Handles creation and editing of a meal plan.
+ * Supports adding/removing entries and selecting recipes.
+ */
 export const MealPlanForm: React.FC<MealPlanFormProps> = ({
   existingPlan,
   onClose,
@@ -18,9 +23,7 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
   const { createMealPlan } = useMealPlan();
   const { recipes } = useRecipes();
 
-  // --------------------
-  // Local state
-  // --------------------
+  // Local form state
   const [title, setTitle] = useState(existingPlan?.title || "");
   const [startDate, setStartDate] = useState(
     existingPlan?.startDate.slice(0, 10) || ""
@@ -32,68 +35,56 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
     existingPlan?.entries || []
   );
 
-  // --------------------
-  // Handlers
-  // --------------------
-
-  /** Add a new meal plan entry */
+  /** Add a new entry defaulting to first recipe if available */
   const addEntry = () => {
     if (!recipes.length) {
       alert("No recipes available to add.");
       return;
     }
-
-    // Create a fully typed MealPlanEntry
     const newEntry: MealPlanEntry = {
       date: startDate,
-      mealType: "breakfast",
+      mealType: "Breakfast",
       recipeId: recipes[0]._id,
-      ingredients: recipes[0].ingredients || [], // ensure ingredients array exists
+      ingredients: recipes[0].ingredients.map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        category: "other",
+      })),
     };
-
     setEntries((prev) => [...prev, newEntry]);
   };
 
-  /** Update an existing entry */
+  /** Update a specific entry */
   const updateEntry = (index: number, updated: Partial<MealPlanEntry>) => {
     setEntries((prev) =>
       prev.map((e, i) => (i === index ? { ...e, ...updated } : e))
     );
   };
 
-  /** Remove an entry by index */
+  /** Remove an entry */
   const removeEntry = (index: number) => {
     setEntries((prev) => prev.filter((_, i) => i !== index));
   };
 
-  /** Submit the meal plan form */
+  /** Submit the meal plan */
   const handleSubmit = async () => {
     if (!title || !startDate || !endDate) {
       alert("Title, start date, and end date are required.");
       return;
     }
 
-    const payload: Partial<MealPlan> = {
-      title,
-      startDate,
-      endDate,
-      entries,
-    };
-
+    const payload: Partial<MealPlan> = { title, startDate, endDate, entries };
     await createMealPlan(payload);
     onClose();
   };
 
-  // --------------------
-  // Render
-  // --------------------
   return (
     <div
       style={{
         backgroundColor: "white",
-        padding: "24px",
-        borderRadius: "8px",
-        minWidth: "400px",
+        padding: 24,
+        borderRadius: 8,
+        minWidth: 400,
         maxHeight: "90vh",
         overflowY: "auto",
       }}
@@ -102,7 +93,7 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
         {existingPlan ? "Edit Meal Plan" : "New Meal Plan"}
       </h2>
 
-      {/* Title input */}
+      {/* Title */}
       <div className="mb-2">
         <label className="block font-medium">Title</label>
         <input
@@ -113,7 +104,7 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
         />
       </div>
 
-      {/* Date inputs */}
+      {/* Dates */}
       <div className="mb-2 flex gap-2">
         <div>
           <label className="block font-medium">Start Date</label>
@@ -136,7 +127,7 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
       </div>
 
       {/* Entries */}
-      <div className="entries mb-2">
+      <div className="mb-2">
         <h3 className="font-semibold mb-1">Entries</h3>
         {entries.map((entry, idx) => (
           <div
@@ -153,10 +144,9 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
               }
               className="border px-2 py-1 rounded"
             >
-              <option value="breakfast">Breakfast</option>
-              <option value="lunch">Lunch</option>
-              <option value="dinner">Dinner</option>
-              <option value="snack">Snack</option>
+              <option value="Breakfast">Breakfast</option>
+              <option value="Lunch">Lunch</option>
+              <option value="Dinner">Dinner</option>
             </select>
 
             {/* Recipe selection */}
@@ -167,12 +157,12 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
             >
               {recipes.map((r) => (
                 <option key={r._id} value={r._id}>
-                  {r.title} {r.source === "spoonacular" ? "(Spoonacular)" : ""}
+                  {r.title}
                 </option>
               ))}
             </select>
 
-            {/* Remove button */}
+            {/* Remove entry */}
             <button
               onClick={() => removeEntry(idx)}
               className="px-2 py-1 bg-red-500 text-white rounded"
@@ -182,7 +172,7 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
           </div>
         ))}
 
-        {/* Add Entry button */}
+        {/* Add new entry */}
         <button
           onClick={addEntry}
           className="mt-1 px-3 py-1 bg-green-500 text-white rounded"
@@ -191,7 +181,7 @@ export const MealPlanForm: React.FC<MealPlanFormProps> = ({
         </button>
       </div>
 
-      {/* Action buttons */}
+      {/* Form actions */}
       <div className="flex justify-end gap-2 mt-4">
         <button onClick={onClose} className="px-3 py-1 bg-gray-300 rounded">
           Cancel

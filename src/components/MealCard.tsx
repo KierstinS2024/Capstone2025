@@ -1,64 +1,50 @@
-import React from "react";
-import type { MealPlanEntry, MealType } from "@/types/mealPlan";
+// Path: src/components/MealCard.tsx
+"use client";
 
+import React from "react";
+import RecipeCard from "./RecipeCard";
+import type { MealPlanEntry } from "@/types/mealPlan";
+import type { Recipe } from "@/types/recipe";
+
+// Props designed for guest or authenticated mode
 interface MealCardProps {
-  mealType: MealType;
-  meal?: MealPlanEntry; // undefined if not added yet
-  onAddMeal: () => void;
-  onClick: () => void;
+  meal: MealPlanEntry;
+  recipe: Recipe; // Full recipe object for authenticated users
+  isGuest?: boolean; // Disable actions requiring backend
 }
 
-/**
- * Mini card representing a single meal
- * Used in MealPlanCard
- */
-export const MealCard: React.FC<MealCardProps> = ({
-  mealType,
+const MealCard: React.FC<MealCardProps> = ({
   meal,
-  onAddMeal,
-  onClick,
+  recipe,
+  isGuest = false,
 }) => {
   return (
     <div
-      onClick={meal ? onClick : undefined}
       style={{
         padding: "12px",
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-        backgroundColor: meal ? "#fafafa" : "#f0f0f0",
-        textAlign: "center",
-        cursor: meal ? "pointer" : "default",
+        border: "1px solid #d8cfc4",
+        borderRadius: "10px",
+        backgroundColor: "#f4f1ed",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <h4 style={{ marginBottom: "8px" }}>{mealType}</h4>
+      {/* Meal type header */}
+      <h3
+        style={{
+          fontSize: "16px",
+          fontWeight: "bold",
+          marginBottom: "8px",
+          color: "#6b4c3b",
+        }}
+      >
+        {meal.mealType}
+      </h3>
 
-      {meal ? (
-        <>
-          <img
-            src={meal.recipeImage || "/placeholder-recipe.jpg"}
-            alt={meal.recipeTitle || "Recipe image"}
-            style={{ width: "100%", borderRadius: "4px", marginBottom: "6px" }}
-          />
-          <div style={{ fontWeight: 500 }}>{meal.recipeTitle || "Recipe"}</div>
-        </>
-      ) : (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddMeal();
-          }}
-          style={{
-            padding: "6px 12px",
-            backgroundColor: "#0070f3",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          + Add Meal
-        </button>
-      )}
+      {/* RecipeCard */}
+      <RecipeCard recipe={recipe} isGuest={isGuest} />
     </div>
   );
 };
+
+export default MealCard;

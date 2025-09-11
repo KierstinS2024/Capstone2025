@@ -3,7 +3,6 @@
 
 export * from "./AppProviders";
 export * from "./AuthContext";
-export * from "./UserContext";
 export * from "./MealPlanContext";
 export * from "./RecipeContext";
 export * from "./ShoppingListContext";
