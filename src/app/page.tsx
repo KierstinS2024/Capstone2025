@@ -1,24 +1,85 @@
-// src/app/page.tsx
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { LoginForm } from "@/components/LoginForm";
-import { SignupForm } from "@/components/SignupForm";
-import { Dashboard } from "@/components/Dashboard";
 
-// Home page: shows login/signup or dashboard depending on auth state
-export default function HomePage() {
-  const { user, loading } = useAuth();
+const LandingPage: React.FC = () => {
+  const { login, signup, loading } = useAuth();
+  const [isSignup, setIsSignup] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [error, setError] = useState("");
 
-  if (loading) return <p>Loading...</p>;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-  if (!user)
-    return (
-      <div className="flex flex-col gap-4">
-        <LoginForm />
-        <SignupForm />
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      if (isSignup) {
+        await signup(form.name, form.email, form.password);
+      } else {
+        await login(form.email, form.password);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Something went wrong");
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: "400px", margin: "auto", padding: "24px" }}>
+      <h1 style={{ textAlign: "center" }}>{isSignup ? "Sign Up" : "Login"}</h1>
+      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "12px" }}>
+        {isSignup && (
+          <input
+            name="name"
+            placeholder="Name"
+            value={form.name}
+            onChange={handleChange}
+            required
+          />
+        )}
+        <input
+          name="email"
+          type="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+        <input
+          name="password"
+          type="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={handleChange}
+          required
+        />
+        <button type="submit" disabled={loading}>
+          {loading ? "Please wait..." : isSignup ? "Sign Up" : "Login"}
+        </button>
+      </form>
+      {error && <div style={{ color: "red", marginTop: "12px" }}>{error}</div>}
+      <div style={{ marginTop: "12px", textAlign: "center" }}>
+        {isSignup ? (
+          <>
+            Already have an account?{" "}
+            <button type="button" onClick={() => setIsSignup(false)}>
+              Login
+            </button>
+          </>
+        ) : (
+          <>
+            Don't have an account?{" "}
+            <button type="button" onClick={() => setIsSignup(true)}>
+              Sign Up
+            </button>
+          </>
+        )}
       </div>
-    );
+    </div>
+  );
+};
 
-  return <Dashboard />;
-}
+export default LandingPage;

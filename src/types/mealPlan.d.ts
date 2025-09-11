@@ -1,35 +1,47 @@
-// src/types/mealPlan.d.ts
-import type { Types } from "mongoose";
+// Path: src/types/mealPlan.d.ts
+// Type definitions for meal planning feature
 
-// Meal types
-export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+/**
+ * Meal types for UI/UX consistency
+ */
+export type MealType = "Breakfast" | "Lunch" | "Dinner";
 
-// Ingredient type for meal plan entries
+/**
+ * Ingredient used in a meal plan entry
+ */
 export interface MealIngredient {
   name: string;
   quantity: string;
-  category?: string;
+  category?: string; // optional: e.g., produce, dairy
 }
 
-// Single entry in a meal plan
+/**
+ * Single meal entry in a meal plan
+ */
 export interface MealPlanEntry {
   date: string; // ISO date string
   mealType: MealType;
   recipeId: string;
-  ingredients: MealIngredient[]; // added for shopping list generation
+  recipeTitle?: string; // optional, for UI display
+  recipeImage?: string; // optional, for UI display
+  ingredients: MealIngredient[];
 }
 
-// Meal plan type
+/**
+ * Meal plan type
+ */
 export interface MealPlan {
   _id: string;
-  userId: string; // reference to User._id
+  userId: string;
   title: string;
   startDate: string; // ISO date string
   endDate: string; // ISO date string
   entries: MealPlanEntry[];
 }
 
-// Payload used for creating a new meal plan
+/**
+ * Payload for creating a new meal plan
+ */
 export interface CreateMealPlanPayload {
   title: string;
   startDate: string;

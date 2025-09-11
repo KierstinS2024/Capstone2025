@@ -1,52 +1,36 @@
-// src/app/dashboard/page.tsx
-"use client";
-
+// Path: src/pages/DashboardPage.tsx
 import React from "react";
-import { RecipeCard } from "@/components/RecipeCard";
-import { FavoritesCard } from "@/components/FavoritesCard";
 import { MealPlanCard } from "@/components/MealPlanCard";
-import { ShoppingListCard } from "@/components/ShoppingListCard";
-import { useRecipes } from "@/context/RecipeContext";
-import { useFavorites } from "@/context/FavoritesContext";
-import { useMealPlan } from "@/context/MealPlanContext";
-import { useShoppingLists } from "@/context/ShoppingListContext";
+import { RecipeCard } from "@/components/RecipeCard";
 
-const DashboardPage: React.FC = () => {
-  const { recipes, loading: recipesLoading } = useRecipes();
-  const { favorites, loading: favoritesLoading } = useFavorites();
-  const { currentMealPlan } = useMealPlan();
-  const { shoppingLists, loading: shoppingListsLoading } = useShoppingLists();
-
-  const isLoading = recipesLoading || favoritesLoading || shoppingListsLoading;
-
+/**
+ * DashboardPage
+ * Main landing page after login
+ * Shows:
+ * - Today's Meal Plan
+ * - Recipes list (favorites, delete, etc.)
+ */
+export const DashboardPage: React.FC = () => {
   return (
     <div
       style={{
         padding: "24px",
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+        maxWidth: "1200px",
+        margin: "0 auto",
+        display: "flex",
+        flexDirection: "column",
         gap: "24px",
       }}
     >
-      {isLoading && (
-        <div style={{ gridColumn: "1 / -1", textAlign: "center" }}>
-          Loading dashboard...
-        </div>
-      )}
+      {/* Section: Today's Meal Plan */}
+      <section>
+        <MealPlanCard />
+      </section>
 
-      {/* Recipes Card */}
-      <RecipeCard />
-
-      {/* Favorites Card */}
-      <FavoritesCard />
-
-      {/* Meal Plan Card */}
-      <MealPlanCard mealPlan={currentMealPlan || undefined} />
-
-      {/* Shopping List Card */}
-      <ShoppingListCard />
+      {/* Section: Recipes / Favorites */}
+      <section>
+        <RecipeCard />
+      </section>
     </div>
   );
 };
-
-export default DashboardPage;

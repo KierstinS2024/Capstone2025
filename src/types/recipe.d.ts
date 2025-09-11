@@ -1,7 +1,5 @@
-// src/types/recipe.d.ts
+// Path: src/types/recipe.d.ts
 // Type definitions for Recipe model
-
-import type { Types } from "mongoose";
 
 export type RecipeSource = "local" | "spoonacular";
 
@@ -13,13 +11,14 @@ export interface RecipeIngredient {
 
 export interface Recipe {
   _id: string;
-  userId: string; // reference to User._id
+  userId: string;
   title: string;
   ingredients: RecipeIngredient[];
   instructions: string;
   source: RecipeSource;
   spoonacularId?: number;
-  favorite: boolean; // <-- added to match schema
+  favorite: boolean;
+  image?: string; // optional image for UI
 }
 
 export interface CreateRecipePayload {
@@ -28,5 +27,5 @@ export interface CreateRecipePayload {
   instructions: string;
   source?: RecipeSource;
   spoonacularId?: number;
-  favorite?: boolean; // optional when creating a recipe
+  favorite?: boolean;
 }

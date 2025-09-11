@@ -1,116 +1,65 @@
-// src/context/RecipeContext.tsx
-// React context for managing recipes
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import type { Recipe } from "@/types/recipe";
-import {
-  fetchRecipesAPI,
-  createRecipeAPI,
-  deleteRecipeAPI,
-  updateRecipeAPI,
-  toggleFavoriteAPI,
-} from "@/lib/recipeApi";
+import { fetchRecipesAPI, toggleFavoriteAPI } from "@/lib/recipeApi";
+import { useAuth } from "./AuthContext";
 
-// --------------------
-// Types
-// --------------------
 type RecipeContextType = {
   recipes: Recipe[];
+  favorites: Recipe[];
   loading: boolean;
-  fetchRecipes: () => Promise<void>;
-  createRecipe: (recipe: Partial<Recipe>) => Promise<void>;
-  updateRecipe: (id: string, recipe: Partial<Recipe>) => Promise<void>;
-  deleteRecipe: (id: string) => Promise<void>;
-  toggleFavorite: (id: string) => Promise<void>;
+  refreshRecipes: () => Promise<void>;
+  toggleFavorite: (recipeId: string) => Promise<void>;
 };
 
-// --------------------
-// Context creation
-// --------------------
-export const RecipeContext = createContext<RecipeContextType | undefined>(
-  undefined
-);
+const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
-type ProviderProps = { children: ReactNode };
-
-// --------------------
-// Provider component
-// --------------------
-export const RecipeProvider = ({ children }: ProviderProps) => {
+export const RecipeProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch recipes on mount
-  useEffect(() => {
-    fetchRecipes();
-  }, []);
-
-  // --------------------
-  // Context actions
-  // --------------------
-
-  /** Fetch all recipes and update state */
-  const fetchRecipes = async () => {
+  const refreshRecipes = async () => {
+    if (!user) return;
     setLoading(true);
-    try {
-      const data = await fetchRecipesAPI();
-      setRecipes(data);
-    } finally {
-      setLoading(false);
-    }
+    const data = await fetchRecipesAPI();
+    setRecipes(data);
+    setLoading(false);
   };
 
-  /** Create a new recipe and refresh list */
-  const createRecipe = async (recipe: Partial<Recipe>) => {
-    await createRecipeAPI(recipe);
-    await fetchRecipes();
-  };
-
-  /** Update a recipe */
-  const updateRecipe = async (id: string, recipe: Partial<Recipe>) => {
-    await updateRecipeAPI(id, recipe);
-    await fetchRecipes();
-  };
-
-  /** Delete a recipe by ID */
-  const deleteRecipe = async (id: string) => {
-    await deleteRecipeAPI(id);
-    setRecipes((prev) => prev.filter((r) => r._id !== id));
-  };
-
-  /** Toggle favorite status */
-  const toggleFavorite = async (id: string) => {
-    await toggleFavoriteAPI(id);
+  const toggleFavorite = async (recipeId: string) => {
+    await toggleFavoriteAPI(recipeId);
     setRecipes((prev) =>
-      prev.map((r) => (r._id === id ? { ...r, favorite: !r.favorite } : r))
+      prev.map((r) =>
+        r._id === recipeId ? { ...r, favorite: !r.favorite } : r
+      )
     );
   };
 
-  // --------------------
-  // Context value
-  // --------------------
-  const value: RecipeContextType = {
-    recipes,
-    loading,
-    fetchRecipes,
-    createRecipe,
-    updateRecipe,
-    deleteRecipe,
-    toggleFavorite,
-  };
+  useEffect(() => {
+    refreshRecipes();
+  }, [user]);
+
+  const favorites = recipes.filter((r) => r.favorite);
 
   return (
-    <RecipeContext.Provider value={value}>{children}</RecipeContext.Provider>
+    <RecipeContext.Provider
+      value={{ recipes, favorites, loading, refreshRecipes, toggleFavorite }}
+    >
+      {children}
+    </RecipeContext.Provider>
   );
 };
 
-// --------------------
-// Hook for consuming RecipeContext safely
-// --------------------
-export const useRecipes = (): RecipeContextType => {
-  const context = useContext(RecipeContext);
-  if (!context)
-    throw new Error("useRecipes must be used within a RecipeProvider");
-  return context;
+export const useRecipes = () => {
+  const ctx = useContext(RecipeContext);
+  if (!ctx) throw new Error("useRecipes must be used within RecipeProvider");
+  return ctx;
 };

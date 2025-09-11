@@ -1,8 +1,6 @@
-// src/context/ShoppingListContext.tsx
-// React context for managing shopping lists
 "use client";
 
-import {
+import React, {
   createContext,
   useContext,
   useEffect,
@@ -16,98 +14,61 @@ import {
   deleteShoppingListAPI,
 } from "@/lib/shoppingListApi";
 
-// --------------------
-// Types
-// --------------------
 type ShoppingListContextType = {
   shoppingLists: ShoppingList[];
   loading: boolean;
   fetchShoppingLists: () => Promise<void>;
-  createShoppingList: (list: Partial<ShoppingList>) => Promise<void>;
+  createShoppingList: (list: ShoppingList) => Promise<void>;
   deleteShoppingList: (id: string) => Promise<void>;
-  addShoppingList: (list: ShoppingList) => void; // <--- NEW
 };
 
-// --------------------
-// Context creation
-// --------------------
-export const ShoppingListContext = createContext<
-  ShoppingListContextType | undefined
->(undefined);
+const ShoppingListContext = createContext<ShoppingListContextType | undefined>(
+  undefined
+);
 
-type ProviderProps = { children: ReactNode };
-
-// --------------------
-// Provider component
-// --------------------
-export const ShoppingListProvider = ({ children }: ProviderProps) => {
+export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch shopping lists on mount
+  const fetchShoppingLists = async () => {
+    setLoading(true);
+    const lists = await fetchShoppingListsAPI();
+    setShoppingLists(lists);
+    setLoading(false);
+  };
+
   useEffect(() => {
     fetchShoppingLists();
   }, []);
 
-  // --------------------
-  // Context actions
-  // --------------------
-
-  /** Fetch all shopping lists */
-  const fetchShoppingLists = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchShoppingListsAPI();
-      setShoppingLists(data);
-    } finally {
-      setLoading(false);
-    }
+  const createShoppingList = async (list: ShoppingList) => {
+    await createShoppingListAPI(list);
+    await fetchShoppingLists();
   };
 
-  /** Create a new shopping list and refresh state */
-  const createShoppingList = async (list: Partial<ShoppingList>) => {
-    const newList = await createShoppingListAPI(list);
-    setShoppingLists((prev) => [...prev, newList]);
-  };
-
-  /** Delete a shopping list by ID */
   const deleteShoppingList = async (id: string) => {
     await deleteShoppingListAPI(id);
-    setShoppingLists((prev) => prev.filter((l) => l._id !== id));
-  };
-
-  /** Add a shopping list directly to context (used for generated lists) */
-  const addShoppingList = (list: ShoppingList) => {
-    setShoppingLists((prev) => [...prev, list]);
-  };
-
-  // --------------------
-  // Context value
-  // --------------------
-  const value: ShoppingListContextType = {
-    shoppingLists,
-    loading,
-    fetchShoppingLists,
-    createShoppingList,
-    deleteShoppingList,
-    addShoppingList, // <--- included
+    await fetchShoppingLists();
   };
 
   return (
-    <ShoppingListContext.Provider value={value}>
+    <ShoppingListContext.Provider
+      value={{
+        shoppingLists,
+        loading,
+        fetchShoppingLists,
+        createShoppingList,
+        deleteShoppingList,
+      }}
+    >
       {children}
     </ShoppingListContext.Provider>
   );
 };
 
-// --------------------
-// Hook for consuming ShoppingListContext safely
-// --------------------
-export const useShoppingLists = (): ShoppingListContextType => {
-  const context = useContext(ShoppingListContext);
-  if (!context)
-    throw new Error(
-      "useShoppingLists must be used within a ShoppingListProvider"
-    );
-  return context;
+export const useShoppingList = () => {
+  const ctx = useContext(ShoppingListContext);
+  if (!ctx)
+    throw new Error("useShoppingList must be used within ShoppingListProvider");
+  return ctx;
 };

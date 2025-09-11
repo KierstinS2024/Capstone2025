@@ -1,113 +1,46 @@
-// src/context/MealPlanContext.tsx
-// React context for managing meal plans
-"use client";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import type { MealPlanEntry, MealPlan } from "@/types/mealPlan";
+import { useRecipes } from "./RecipeContext";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
-import type { MealPlan, MealPlanEntry } from "@/types/mealPlan";
-import {
-  fetchMealPlansAPI,
-  createMealPlanAPI,
-  deleteMealPlanAPI,
-} from "@/lib/mealPlanApi";
+interface MealPlanContextType {
+  todayMeals: MealPlanEntry[];
+  setTodayMeals: React.Dispatch<React.SetStateAction<MealPlanEntry[]>>;
+}
 
-// --------------------
-// Types
-// --------------------
-type MealPlanContextType = {
-  mealPlans: MealPlan[];
-  currentMealPlan: MealPlan | null;
-  loading: boolean;
-  fetchMealPlans: () => Promise<void>;
-  createMealPlan: (plan: Partial<MealPlan>) => Promise<void>;
-  deleteMealPlan: (id: string) => Promise<void>;
-  setCurrentMealPlan: (plan: MealPlan | null) => void;
-};
+const MealPlanContext = createContext<MealPlanContextType>({
+  todayMeals: [],
+  setTodayMeals: () => {},
+});
 
-// --------------------
-// Context creation
-// --------------------
-export const MealPlanContext = createContext<MealPlanContextType | undefined>(
-  undefined
-);
+export const useMealPlan = () => useContext(MealPlanContext);
 
-type ProviderProps = { children: ReactNode };
+export const MealPlanProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const { recipes } = useRecipes();
+  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [todayMeals, setTodayMeals] = useState<MealPlanEntry[]>([]);
 
-// --------------------
-// Provider component
-// --------------------
-export const MealPlanProvider = ({ children }: ProviderProps) => {
-  const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
-  const [currentMealPlan, setCurrentMealPlan] = useState<MealPlan | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch meal plans on mount
+  // Fetch meal plan and enrich with recipe info
   useEffect(() => {
-    fetchMealPlans();
-  }, []);
+    if (!mealPlan) return;
 
-  // --------------------
-  // Context actions
-  // --------------------
+    const mappedEntries = mealPlan.entries.map((entry) => {
+      const recipe = recipes.find((r) => r._id === entry.recipeId);
+      return {
+        ...entry,
+        recipeTitle: recipe?.title,
+        recipeImage: recipe?.image,
+      };
+    });
 
-  /** Fetch all meal plans and update state */
-  const fetchMealPlans = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchMealPlansAPI();
-      setMealPlans(data);
-      // Optionally set first plan as current if none selected
-      if (!currentMealPlan && data.length > 0) setCurrentMealPlan(data[0]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /** Create a new meal plan and refresh list */
-  const createMealPlan = async (plan: Partial<MealPlan>) => {
-    await createMealPlanAPI(plan);
-    await fetchMealPlans();
-  };
-
-  /** Delete a meal plan by ID */
-  const deleteMealPlan = async (id: string) => {
-    await deleteMealPlanAPI(id);
-    setMealPlans((prev) => prev.filter((p) => p._id !== id));
-    // Reset current plan if it was deleted
-    if (currentMealPlan?._id === id) setCurrentMealPlan(null);
-  };
-
-  // --------------------
-  // Context value
-  // --------------------
-  const value: MealPlanContextType = {
-    mealPlans,
-    currentMealPlan,
-    loading,
-    fetchMealPlans,
-    createMealPlan,
-    deleteMealPlan,
-    setCurrentMealPlan,
-  };
+    const today = new Date().toISOString().slice(0, 10);
+    setTodayMeals(mappedEntries.filter((e) => e.date === today));
+  }, [mealPlan, recipes]);
 
   return (
-    <MealPlanContext.Provider value={value}>
+    <MealPlanContext.Provider value={{ todayMeals, setTodayMeals }}>
       {children}
     </MealPlanContext.Provider>
   );
-};
-
-// --------------------
-// Hook for consuming MealPlanContext safely
-// --------------------
-export const useMealPlan = (): MealPlanContextType => {
-  const context = useContext(MealPlanContext);
-  if (!context)
-    throw new Error("useMealPlan must be used within MealPlanProvider");
-  return context;
 };

@@ -1,14 +1,15 @@
 // src/components/RecipeCard.tsx
 import React, { useState } from "react";
 import { useRecipes } from "@/context/RecipeContext";
+import MealCard from "./MealCard"; // reuse mini-card style
 
 /**
  * RecipeCard
- * Displays a list of recipes from RecipeContext with delete & favorite buttons
- * Includes a toggle to filter by favorites
+ * Displays a list of recipes in mini-card style
+ * Toggle to show all or only favorites
  */
 export const RecipeCard: React.FC = () => {
-  const { recipes, deleteRecipe, toggleFavorite } = useRecipes();
+  const { recipes, toggleFavorite } = useRecipes();
   const [showFavorites, setShowFavorites] = useState(false);
 
   const filteredRecipes = showFavorites
@@ -17,7 +18,14 @@ export const RecipeCard: React.FC = () => {
 
   if (!filteredRecipes.length) {
     return (
-      <div>
+      <div
+        style={{
+          padding: "16px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          backgroundColor: "#fafafa",
+        }}
+      >
         {showFavorites
           ? "No favorite recipes yet. ⭐ Mark some to see them here!"
           : "No recipes found. Add some to get started!"}
@@ -34,7 +42,7 @@ export const RecipeCard: React.FC = () => {
         backgroundColor: "#fafafa",
       }}
     >
-      {/* Header */}
+      {/* Header with toggle button */}
       <div
         style={{
           display: "flex",
@@ -58,53 +66,22 @@ export const RecipeCard: React.FC = () => {
         </button>
       </div>
 
-      {/* Recipe List */}
-      <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+      {/* Recipe List using mini-card style */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+          gap: "12px",
+        }}
+      >
         {filteredRecipes.map((recipe) => (
-          <li
+          <MealCard
             key={recipe._id}
-            style={{
-              marginBottom: "8px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span>
-              {recipe.title}{" "}
-              {recipe.favorite && <span style={{ color: "gold" }}>⭐</span>}
-            </span>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                onClick={() => toggleFavorite(recipe._id)}
-                style={{
-                  padding: "4px 8px",
-                  backgroundColor: recipe.favorite ? "#ffcc00" : "#ccc",
-                  color: "black",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-              >
-                {recipe.favorite ? "Unfavorite" : "Favorite"}
-              </button>
-              <button
-                onClick={() => deleteRecipe(recipe._id)}
-                style={{
-                  padding: "4px 8px",
-                  backgroundColor: "red",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          </li>
+            name={recipe.title}
+            // optional: could add recipe.image if available
+          />
         ))}
-      </ul>
+      </div>
     </div>
   );
 };

@@ -1,12 +1,44 @@
 // src/components/FavoritesCard.tsx
 import React from "react";
 import { useFavorites } from "@/context/FavoritesContext";
+import MealCard from "./MealCard";
 
+/**
+ * FavoritesCard
+ * Shows all favorite recipes in mini-card style
+ */
 export const FavoritesCard: React.FC = () => {
   const { favorites, toggleFavorite, loading } = useFavorites();
 
-  if (loading) return <div>Loading favorites...</div>;
-  if (!favorites.length) return <div>No favorites yet.</div>;
+  if (loading) {
+    return (
+      <div
+        style={{
+          padding: "16px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          backgroundColor: "#fafafa",
+        }}
+      >
+        Loading favorites...
+      </div>
+    );
+  }
+
+  if (!favorites.length) {
+    return (
+      <div
+        style={{
+          padding: "16px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          backgroundColor: "#fafafa",
+        }}
+      >
+        No favorites yet. ⭐ Add some to see them here!
+      </div>
+    );
+  }
 
   return (
     <div
@@ -18,34 +50,22 @@ export const FavoritesCard: React.FC = () => {
       }}
     >
       <h2 style={{ fontSize: "20px", marginBottom: "12px" }}>Favorites</h2>
-      <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+          gap: "12px",
+        }}
+      >
         {favorites.map((recipe) => (
-          <li
+          <MealCard
             key={recipe._id}
-            style={{
-              marginBottom: "8px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span>{recipe.title}</span>
-            <button
-              onClick={() => toggleFavorite(recipe._id)}
-              style={{
-                padding: "4px 8px",
-                backgroundColor: "orange",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Unfavorite
-            </button>
-          </li>
+            name={recipe.title}
+            // optional: could add recipe.image if available
+          />
         ))}
-      </ul>
+      </div>
     </div>
   );
 };
