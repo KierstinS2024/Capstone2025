@@ -4,13 +4,15 @@
 import React from "react";
 import { AuthProvider } from "@/context/AuthContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
+import { RecipeProvider } from "@/context/RecipeContext";
 import { MealPlanProvider } from "@/context/MealPlanContext";
 import { GuestProvider } from "@/context/GuestContext";
+import Navbar from "@/components/Navbar";
 
 /**
  * RootLayout
  * Wraps the entire app in all context providers
- * Ensures all children components can safely access auth, favorites, meal plan, and guest contexts
+ * Includes Navbar for navigation
  */
 export default function RootLayout({
   children,
@@ -22,9 +24,15 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <FavoritesProvider>
-            <MealPlanProvider>
-              <GuestProvider>{children}</GuestProvider>
-            </MealPlanProvider>
+            <RecipeProvider>
+              <MealPlanProvider>
+                <GuestProvider>
+                  {/* ✅ Navbar is always visible */}
+                  <Navbar />
+                  <main>{children}</main>
+                </GuestProvider>
+              </MealPlanProvider>
+            </RecipeProvider>
           </FavoritesProvider>
         </AuthProvider>
       </body>

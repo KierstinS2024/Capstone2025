@@ -1,27 +1,31 @@
-// ============================
-// src/context/AppProviders.tsx
-// Wraps the app in all contexts
-// Order matters: Auth -> User -> Recipe -> Favorites -> MealPlan -> ShoppingList
-// ============================
-
+// Path: src/context/AppProviders.tsx
 "use client";
-import { ReactNode } from "react";
+
+import React, { ReactNode } from "react";
 import { AuthProvider } from "./AuthContext";
-import { RecipeProvider } from "./RecipeContext";
 import { FavoritesProvider } from "./FavoritesContext";
 import { MealPlanProvider } from "./MealPlanContext";
-import { ShoppingListProvider } from "./ShoppingListContext";
+import { RecipeProvider } from "./RecipeContext";
+import { GuestProvider } from "./GuestContext";
 
-type AppProvidersProps = { children: ReactNode };
+interface AppProvidersProps {
+  children: ReactNode;
+}
 
-export const AppProviders = ({ children }: AppProvidersProps) => (
-  <AuthProvider>
-    <RecipeProvider>
+/**
+ * Wraps the entire app with all necessary context providers.
+ * Guest mode will bypass Auth and MealPlanProvider automatically.
+ */
+export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
+  return (
+    <AuthProvider>
       <FavoritesProvider>
         <MealPlanProvider>
-          <ShoppingListProvider>{children}</ShoppingListProvider>
+          <RecipeProvider>
+            <GuestProvider>{children}</GuestProvider>
+          </RecipeProvider>
         </MealPlanProvider>
       </FavoritesProvider>
-    </RecipeProvider>
-  </AuthProvider>
-);
+    </AuthProvider>
+  );
+};

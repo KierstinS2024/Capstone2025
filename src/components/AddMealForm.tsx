@@ -1,24 +1,39 @@
 // Path: src/components/AddMealForm.tsx
 "use client";
 
-import React from "react";
-import { useGuest } from "@/context/GuestContext";
+import React, { useState } from "react";
+import { useRecipes } from "@/context/RecipeContext";
+import { useMealPlan } from "@/context/MealPlanContext";
 import type { MealType } from "@/types/mealPlan";
+import type { Recipe } from "@/types/recipe";
 
 interface AddMealFormProps {
-  mealType: MealType; // the meal type being edited (Breakfast/Lunch/Dinner)
-  onClose: () => void; // callback to close the modal
+  mealType: MealType;
+  onClose: () => void;
 }
 
 export const AddMealForm: React.FC<AddMealFormProps> = ({
   mealType,
   onClose,
 }) => {
-  const { guestRecipes, addMealToGuestPlan } = useGuest();
+  const { recipes } = useRecipes();
+  const { addMeal } = useMealPlan();
 
-  // Handle selecting a recipe for the meal
-  const handleSelectRecipe = (recipeId: string) => {
-    addMealToGuestPlan(mealType, recipeId);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string>("");
+
+  const handleAdd = () => {
+    const recipe = recipes.find((r) => r._id === selectedRecipeId);
+    if (!recipe) return;
+
+    addMeal({
+      date: new Date().toISOString(),
+      mealType,
+      recipeId: recipe._id,
+      recipeTitle: recipe.title,
+      recipeImage: recipe.image,
+      ingredients: recipe.ingredients,
+    });
+
     onClose();
   };
 
@@ -32,81 +47,72 @@ export const AddMealForm: React.FC<AddMealFormProps> = ({
         height: "100vh",
         backgroundColor: "rgba(0,0,0,0.5)",
         display: "flex",
-        justifyContent: "center",
         alignItems: "center",
+        justifyContent: "center",
         zIndex: 1000,
       }}
     >
       <div
         style={{
           backgroundColor: "#fff",
-          padding: "24px",
-          borderRadius: "10px",
-          minWidth: "350px",
-          maxHeight: "80vh",
-          overflowY: "auto",
+          borderRadius: 10,
+          padding: 24,
+          maxWidth: 500,
+          width: "90%",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
         }}
       >
-        <h2
-          style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "16px" }}
-        >
-          Select a recipe for {mealType}
+        <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>
+          Add {mealType}
         </h2>
 
-        {/* Guest recipe selection */}
-        <div
+        <select
+          value={selectedRecipeId}
+          onChange={(e) => setSelectedRecipeId(e.target.value)}
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr",
-            gap: "12px",
+            width: "100%",
+            padding: "8px 12px",
+            borderRadius: 6,
+            border: "1px solid #ccc",
+            marginBottom: 16,
           }}
         >
-          {guestRecipes.map((recipe) => (
-            <div
-              key={recipe._id}
-              onClick={() => handleSelectRecipe(recipe._id)}
-              style={{
-                padding: "12px",
-                border: "1px solid #d8cfc4",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                cursor: "pointer",
-                backgroundColor: "#f9f6f2",
-              }}
-            >
-              {recipe.image && (
-                <img
-                  src={recipe.image}
-                  alt={recipe.title}
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    borderRadius: "6px",
-                    objectFit: "cover",
-                  }}
-                />
-              )}
-              <span>{recipe.title}</span>
-            </div>
+          <option value="">Select a recipe</option>
+          {recipes.map((recipe: Recipe) => (
+            <option key={recipe._id} value={recipe._id}>
+              {recipe.title}
+            </option>
           ))}
-        </div>
+        </select>
 
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          style={{
-            marginTop: "16px",
-            padding: "8px 16px",
-            borderRadius: "6px",
-            backgroundColor: "#ccc",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Cancel
-        </button>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 6,
+              border: "1px solid #ccc",
+              backgroundColor: "#f4f4f4",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleAdd}
+            disabled={!selectedRecipeId}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 6,
+              border: "none",
+              backgroundColor: "#3b82f6",
+              color: "#fff",
+              cursor: selectedRecipeId ? "pointer" : "not-allowed",
+            }}
+          >
+            Add
+          </button>
+        </div>
       </div>
     </div>
   );

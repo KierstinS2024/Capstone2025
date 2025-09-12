@@ -1,48 +1,64 @@
 // Path: src/components/MealCard.tsx
+// Mini card for a single meal: shows recipe title/image or + Add Meal
+
 "use client";
 
 import React from "react";
-import RecipeCard from "./RecipeCard";
-import type { MealPlanEntry } from "@/types/mealPlan";
-import type { Recipe } from "@/types/recipe";
+import type { MealPlanEntry, MealType } from "@/types/mealPlan";
+import { useRouter } from "next/navigation";
 
-// Props designed for guest or authenticated mode
 interface MealCardProps {
+  mealType: MealType;
   meal: MealPlanEntry;
-  recipe: Recipe; // Full recipe object for authenticated users
-  isGuest?: boolean; // Disable actions requiring backend
+  isGuest?: boolean;
 }
 
-const MealCard: React.FC<MealCardProps> = ({
-  meal,
-  recipe,
-  isGuest = false,
-}) => {
+const MealCard: React.FC<MealCardProps> = ({ mealType, meal, isGuest }) => {
+  const router = useRouter();
+
+  const handleClick = () => {
+    if (meal.recipeId) {
+      router.push(`/recipes/${meal.recipeId}`);
+    }
+  };
+
   return (
     <div
+      onClick={handleClick}
       style={{
+        minWidth: "180px",
         padding: "12px",
-        border: "1px solid #d8cfc4",
         borderRadius: "10px",
-        backgroundColor: "#f4f1ed",
-        display: "flex",
-        flexDirection: "column",
+        border: meal.recipeId ? "1px solid #c0b49f" : "1px dashed #c0b49f",
+        backgroundColor: "#faf7f2",
+        cursor: meal.recipeId ? "pointer" : isGuest ? "default" : "pointer",
+        textAlign: "center",
       }}
     >
-      {/* Meal type header */}
-      <h3
-        style={{
-          fontSize: "16px",
-          fontWeight: "bold",
-          marginBottom: "8px",
-          color: "#6b4c3b",
-        }}
-      >
-        {meal.mealType}
-      </h3>
-
-      {/* RecipeCard */}
-      <RecipeCard recipe={recipe} isGuest={isGuest} />
+      {meal.recipeId ? (
+        <>
+          {meal.recipeImage && (
+            <img
+              src={meal.recipeImage}
+              alt={meal.recipeTitle}
+              style={{
+                width: "100%",
+                height: "100px",
+                objectFit: "cover",
+                borderRadius: "8px",
+                marginBottom: "8px",
+              }}
+            />
+          )}
+          <div style={{ fontWeight: 500, color: "#6b4c3b" }}>
+            {meal.recipeTitle}
+          </div>
+        </>
+      ) : (
+        <div style={{ color: "#8b7d70", fontWeight: 500 }}>
+          + Add {mealType}
+        </div>
+      )}
     </div>
   );
 };

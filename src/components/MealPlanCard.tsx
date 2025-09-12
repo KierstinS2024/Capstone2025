@@ -2,54 +2,108 @@
 "use client";
 
 import React, { useState } from "react";
-import type { MealPlanEntry, MealType } from "@/types/mealPlan";
-import RecipeCard from "./RecipeCard";
+import { useMealPlan } from "@/context/MealPlanContext";
+import { useGuest } from "@/context/GuestContext";
 import { AddMealForm } from "./AddMealForm";
+import type { MealPlanEntry, MealType } from "@/types/mealPlan";
+import { useRouter } from "next/navigation";
 
 interface MealPlanCardProps {
-  meal: MealPlanEntry;
   isGuest?: boolean;
 }
 
-const MealPlanCard: React.FC<MealPlanCardProps> = ({
-  meal,
-  isGuest = false,
-}) => {
-  const [editingMealType, setEditingMealType] = useState<MealType | null>(null);
+const MEAL_TYPES: MealType[] = ["Breakfast", "Lunch", "Dinner"];
+
+const MealPlanCard: React.FC<MealPlanCardProps> = ({ isGuest = false }) => {
+  const { todayMeals } = useMealPlan();
+  const { guestMealPlan } = useGuest();
+  const router = useRouter();
+
+  const entries = isGuest ? guestMealPlan : todayMeals;
+
+  const [modalMealType, setModalMealType] = useState<MealType | null>(null);
+
+  // Map entries to mealType for quick access
+  const mealsByType: Record<MealType, MealPlanEntry | null> = {
+    Breakfast: null,
+    Lunch: null,
+    Dinner: null,
+  };
+
+  entries.forEach((entry) => {
+    mealsByType[entry.mealType] = entry;
+  });
+
+  const handleMealClick = (meal: MealPlanEntry) => {
+    if (meal?.recipeId) {
+      router.push(`/recipes/${meal.recipeId}`);
+    }
+  };
 
   return (
     <div
       style={{
-        padding: "16px",
         border: "1px solid #d8cfc4",
-        borderRadius: 10,
-        backgroundColor: "#f4f1ed",
+        borderRadius: 12,
+        padding: 24,
+        backgroundColor: "#f9f6f2",
+        maxWidth: 800,
+        margin: "0 auto",
       }}
     >
-      <h2 style={{ fontSize: 20, marginBottom: 12, color: "#6b4c3b" }}>
-        {meal.mealType}
+      <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>
+        Today’s Meals
       </h2>
 
-      {meal.recipeId ? (
-        <RecipeCard recipeId={meal.recipeId} />
-      ) : (
-        <div
-          onClick={() => !isGuest && setEditingMealType(meal.mealType)}
-          style={{
-            padding: 12,
-            border: "1px dashed #c0b49f",
-            borderRadius: 8,
-            cursor: isGuest ? "default" : "pointer",
-          }}
-        >
-          Add {meal.mealType}
-        </div>
-      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {MEAL_TYPES.map((mealType) => {
+          const meal = mealsByType[mealType];
 
-      {editingMealType && !isGuest && (
+          return (
+            <div
+              key={mealType}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "12px 16px",
+                borderRadius: 8,
+                backgroundColor: "#fff",
+                cursor: meal ? "pointer" : "default",
+                border: "1px solid #ccc",
+              }}
+              onClick={() => meal && handleMealClick(meal)}
+            >
+              <span style={{ fontWeight: 500 }}>{mealType}</span>
+              {meal ? (
+                <span>{meal.recipeTitle}</span>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setModalMealType(mealType);
+                  }}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 6,
+                    border: "none",
+                    backgroundColor: "#3b82f6",
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  + Add {mealType}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {modalMealType && (
         <AddMealForm
-          mealType={editingMealType}
-          onClose={() => setEditingMealType(null)}
+          mealType={modalMealType}
+          onClose={() => setModalMealType(null)}
         />
       )}
     </div>
