@@ -1,70 +1,61 @@
 // Path: src/app/recipes/page.tsx
-// Recipes Page: displays all recipes in a grid with search/filter
-
 "use client";
 
-import React, { useState, useMemo } from "react";
-import Link from "next/link";
+import React from "react";
 import { useRecipes } from "@/context/RecipeContext";
-import RecipeCard from "@/components/RecipeCard";
-import type { Recipe } from "@/types/recipe";
+import { useRouter } from "next/navigation";
 
 const RecipesPage: React.FC = () => {
   const { recipes } = useRecipes();
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const safeRecipes = Array.isArray(recipes) ? recipes : [];
-
-  const filteredRecipes = useMemo(() => {
-    return safeRecipes.filter((recipe: Recipe) =>
-      (recipe.title ?? "").toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [safeRecipes, searchQuery]);
+  const router = useRouter();
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
-      <h1 style={{ fontSize: "28px", fontWeight: 600, marginBottom: "16px" }}>
-        All Recipes 🍳
+    <div style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>
+        All Recipes
       </h1>
 
-      {/* Search bar */}
-      <div style={{ marginBottom: "24px" }}>
-        <input
-          type="text"
-          placeholder="Search recipes..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "8px 12px",
-            borderRadius: "6px",
-            border: "1px solid #ccc",
-          }}
-        />
-      </div>
-
-      {/* Recipe grid */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
+          gap: 16,
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
         }}
       >
-        {filteredRecipes.map((recipe) => (
-          <Link
+        {recipes.map((recipe) => (
+          <div
             key={recipe._id}
-            href={`/recipes/${recipe._id}`}
-            style={{ textDecoration: "none" }}
+            onClick={() => router.push(`/recipes/${recipe._id}`)}
+            style={{
+              cursor: "pointer",
+              border: "1px solid #d8cfc4",
+              borderRadius: 8,
+              padding: 16,
+              backgroundColor: "#fff",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
           >
-            <RecipeCard recipe={recipe} />
-          </Link>
+            {recipe.image && (
+              <img
+                src={recipe.image}
+                alt={recipe.title}
+                style={{
+                  width: "100%",
+                  height: 120,
+                  objectFit: "cover",
+                  borderRadius: 4,
+                  marginBottom: 8,
+                }}
+              />
+            )}
+            <span style={{ fontWeight: 600, textAlign: "center" }}>
+              {recipe.title}
+            </span>
+          </div>
         ))}
       </div>
-
-      {filteredRecipes.length === 0 && (
-        <p style={{ marginTop: "16px" }}>No recipes match your search.</p>
-      )}
     </div>
   );
 };

@@ -1,6 +1,4 @@
 // Path: src/context/RecipeContext.tsx
-// Manages recipes globally: fetch, create, and loading state
-
 "use client";
 
 import React, {
@@ -10,27 +8,31 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import type { Recipe, RecipeIngredient } from "@/types/recipe";
-import { fetchRecipesAPI, createRecipeAPI } from "@/lib/recipeApi"; // adjust paths
+import type { Recipe } from "@/types/recipe";
+import {
+  fetchRecipesAPI,
+  createRecipeAPI,
+  deleteRecipeAPI,
+} from "@/lib/recipeApi";
 
 // Context type
 interface RecipeContextType {
-  recipes: Recipe[]; // all recipes
-  loading: boolean; // loading state for API calls
-  createRecipe: (recipe: Omit<Recipe, "_id">) => Promise<void>; // create a new recipe
+  recipes: Recipe[];
+  loading: boolean;
+  createRecipe: (recipe: Omit<Recipe, "_id">) => Promise<void>;
+  deleteRecipe: (id: string) => void; // ✅ Added
+  toggleFavorite: (id: string) => void; // ✅ Added
 }
 
 // Create context
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
-// Provider
 export const RecipeProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [recipes, setRecipes] = useState<Recipe[]>([]); // all recipes state
-  const [loading, setLoading] = useState<boolean>(true); // loading state
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch recipes from API on mount
   useEffect(() => {
     const loadRecipes = async () => {
       setLoading(true);
@@ -46,7 +48,6 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({
     loadRecipes();
   }, []);
 
-  // Add a new recipe
   const createRecipe = async (recipe: Omit<Recipe, "_id">) => {
     setLoading(true);
     try {
@@ -59,14 +60,30 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  // ✅ Delete recipe
+  const deleteRecipe = (id: string) => {
+    setRecipes((prev) => prev.filter((r) => r._id !== id));
+    // Optional: call API to persist deletion
+    deleteRecipeAPI(id).catch((err) => console.error("Delete failed:", err));
+  };
+
+  // ✅ Toggle favorite
+  const toggleFavorite = (id: string) => {
+    setRecipes((prev) =>
+      prev.map((r) => (r._id === id ? { ...r, favorite: !r.favorite } : r))
+    );
+    // Optional: call API to persist favorite
+  };
+
   return (
-    <RecipeContext.Provider value={{ recipes, loading, createRecipe }}>
+    <RecipeContext.Provider
+      value={{ recipes, loading, createRecipe, deleteRecipe, toggleFavorite }}
+    >
       {children}
     </RecipeContext.Provider>
   );
 };
 
-// Hook for easy access
 export const useRecipes = (): RecipeContextType => {
   const context = useContext(RecipeContext);
   if (!context)

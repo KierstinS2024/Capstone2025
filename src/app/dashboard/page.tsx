@@ -2,20 +2,26 @@
 "use client";
 
 import React from "react";
+import { useMealPlan } from "@/context/MealPlanContext";
 import MealPlanCard from "@/components/MealPlanCard";
 
 const DashboardPage: React.FC = () => {
+  const { todayMeals } = useMealPlan(); // only today’s meals
+  const todayDate = new Date().toISOString();
+
   return (
     <div style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>
         My Meal Plan 📅
       </h1>
 
-      {/* Single “command center” card for today */}
-      <MealPlanCard />
+      <MealPlanCard todayMeals={todayMeals} mealPlanDate={todayDate} />
 
-      {/* Future sections can go below:
-          Recipe suggestions, Favorites, Shopping list, etc. */}
+      {!todayMeals?.length && (
+        <p style={{ marginTop: 24, fontStyle: "italic", color: "#8b7d70" }}>
+          No meals planned for today. Click “+ Add Meal” to get started!
+        </p>
+      )}
     </div>
   );
 };

@@ -1,18 +1,66 @@
-// Path: src/app/guest-dashboard/page.tsx
 "use client";
 
 import React from "react";
+import { useGuest } from "@/context/GuestContext";
 import MealPlanCard from "@/components/MealPlanCard";
+import "./guest-dashboard.css"; // import CSS file
 
 const GuestDashboard: React.FC = () => {
-  return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>
-        Welcome, Guest!
-      </h1>
+  const { guestMealPlan } = useGuest();
+  const todayDate = new Date().toISOString();
 
-      {/* Single “command center” card for guest today */}
-      <MealPlanCard isGuest />
+  return (
+    <div className="guest-dashboard">
+      {/* Hero Section */}
+      <section className="hero">
+        <h1>Plan Smarter, Eat Better 🍴</h1>
+        <p>
+          Get a sneak peek at how easy meal planning can be. Try out a guest
+          plan below — no account needed!
+        </p>
+        <button className="primary-btn">Get Started Free</button>
+      </section>
+
+      {/* Preview Section */}
+      <section className="preview">
+        <h2>Preview Today’s Plan</h2>
+        <MealPlanCard
+          todayMeals={guestMealPlan || []}
+          mealPlanDate={todayDate}
+          isGuest
+        />
+        {!guestMealPlan?.length && (
+          <p className="empty-text">
+            No meals planned yet — click “+ Add Meal” to explore!
+          </p>
+        )}
+      </section>
+
+      {/* Features Section */}
+      <section className="features">
+        <div className="feature">
+          <h3>Save Time</h3>
+          <p>Quickly plan your week’s meals in just a few clicks.</p>
+        </div>
+        <div className="feature">
+          <h3>Stay Organized</h3>
+          <p>Keep recipes and grocery lists all in one place.</p>
+        </div>
+        <div className="feature">
+          <h3>Eat Healthier</h3>
+          <p>Balance your meals with guided planning tools.</p>
+        </div>
+      </section>
+
+      {/* Call to Action */}
+      <section className="cta">
+        <h2>Ready to Take Control?</h2>
+        <p>
+          Create your free account today and unlock the full meal planning
+          experience.
+        </p>
+        <button className="secondary-btn">Sign Up Free</button>
+      </section>
     </div>
   );
 };

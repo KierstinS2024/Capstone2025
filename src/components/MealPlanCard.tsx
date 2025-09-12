@@ -2,108 +2,97 @@
 "use client";
 
 import React, { useState } from "react";
-import { useMealPlan } from "@/context/MealPlanContext";
-import { useGuest } from "@/context/GuestContext";
-import { AddMealForm } from "./AddMealForm";
+import AddMealForm from "./AddMealForm";
 import type { MealPlanEntry, MealType } from "@/types/mealPlan";
-import { useRouter } from "next/navigation";
 
 interface MealPlanCardProps {
+  todayMeals: MealPlanEntry[];
+  mealPlanDate: string;
   isGuest?: boolean;
 }
 
-const MEAL_TYPES: MealType[] = ["Breakfast", "Lunch", "Dinner"];
+const MealPlanCard: React.FC<MealPlanCardProps> = ({
+  todayMeals,
+  mealPlanDate,
+  isGuest = false,
+}) => {
+  const [addingMealType, setAddingMealType] = useState<MealType | null>(null);
 
-const MealPlanCard: React.FC<MealPlanCardProps> = ({ isGuest = false }) => {
-  const { todayMeals } = useMealPlan();
-  const { guestMealPlan } = useGuest();
-  const router = useRouter();
-
-  const entries = isGuest ? guestMealPlan : todayMeals;
-
-  const [modalMealType, setModalMealType] = useState<MealType | null>(null);
-
-  // Map entries to mealType for quick access
-  const mealsByType: Record<MealType, MealPlanEntry | null> = {
-    Breakfast: null,
-    Lunch: null,
-    Dinner: null,
-  };
-
-  entries.forEach((entry) => {
-    mealsByType[entry.mealType] = entry;
-  });
-
-  const handleMealClick = (meal: MealPlanEntry) => {
-    if (meal?.recipeId) {
-      router.push(`/recipes/${meal.recipeId}`);
-    }
+  const mealsByType: Record<MealType, MealPlanEntry | undefined> = {
+    Breakfast: todayMeals.find((m) => m.mealType === "Breakfast"),
+    Lunch: todayMeals.find((m) => m.mealType === "Lunch"),
+    Dinner: todayMeals.find((m) => m.mealType === "Dinner"),
   };
 
   return (
     <div
       style={{
-        border: "1px solid #d8cfc4",
+        border: "1px solid #ddd",
         borderRadius: 12,
-        padding: 24,
-        backgroundColor: "#f9f6f2",
-        maxWidth: 800,
-        margin: "0 auto",
+        padding: 20,
+        backgroundColor: "white",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
       }}
     >
-      <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>
-        Today’s Meals
+      <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>
+        Meals for {new Date(mealPlanDate).toLocaleDateString()}
       </h2>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {MEAL_TYPES.map((mealType) => {
-          const meal = mealsByType[mealType];
+      {(["Breakfast", "Lunch", "Dinner"] as MealType[]).map((mealType) => (
+        <div
+          key={mealType}
+          style={{
+            borderTop: "1px solid #eee",
+            paddingTop: 12,
+            marginTop: 12,
+          }}
+        >
+          <h3 style={{ fontSize: 18, fontWeight: 500 }}>{mealType}</h3>
 
-          return (
-            <div
-              key={mealType}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "12px 16px",
-                borderRadius: 8,
-                backgroundColor: "#fff",
-                cursor: meal ? "pointer" : "default",
-                border: "1px solid #ccc",
-              }}
-              onClick={() => meal && handleMealClick(meal)}
-            >
-              <span style={{ fontWeight: 500 }}>{mealType}</span>
-              {meal ? (
-                <span>{meal.recipeTitle}</span>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setModalMealType(mealType);
-                  }}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: 6,
-                    border: "none",
-                    backgroundColor: "#3b82f6",
-                    color: "#fff",
-                    cursor: "pointer",
-                  }}
-                >
-                  + Add {mealType}
-                </button>
+          {mealsByType[mealType] ? (
+            <div style={{ marginTop: 8 }}>
+              <p style={{ fontWeight: 500 }}>
+                {mealsByType[mealType]?.recipeTitle}
+              </p>
+              {mealsByType[mealType]?.recipeImage && (
+                <img
+                  src={mealsByType[mealType]?.recipeImage}
+                  alt={mealsByType[mealType]?.recipeTitle}
+                  style={{ width: "100%", maxWidth: 200, borderRadius: 8 }}
+                />
               )}
             </div>
-          );
-        })}
-      </div>
+          ) : (
+            <p style={{ fontStyle: "italic", color: "#777", marginTop: 4 }}>
+              No {mealType} planned.
+            </p>
+          )}
 
-      {modalMealType && (
+          {/* Show Add button ONLY if NOT guest */}
+          {!isGuest && !mealsByType[mealType] && (
+            <button
+              onClick={() => setAddingMealType(mealType)}
+              style={{
+                marginTop: 8,
+                padding: "6px 12px",
+                border: "none",
+                borderRadius: 6,
+                backgroundColor: "#3b82f6",
+                color: "white",
+                cursor: "pointer",
+              }}
+            >
+              + Add {mealType}
+            </button>
+          )}
+        </div>
+      ))}
+
+      {/* Add Meal Form Modal */}
+      {addingMealType && (
         <AddMealForm
-          mealType={modalMealType}
-          onClose={() => setModalMealType(null)}
+          mealType={addingMealType}
+          onClose={() => setAddingMealType(null)}
         />
       )}
     </div>

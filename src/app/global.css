@@ -2,18 +2,27 @@
 
 /* ========== Theme Variables ========== */
 :root {
-  /* Earthy tones */
-  --color-bg: #f4f1ed;       /* soft beige background */
-  --color-card: #fffdfb;     /* lighter background for cards */
-  --color-border: #d8cfc4;   /* warm subtle border */
-  --color-accent: #6b4c3b;   /* deep earthy accent */
-  --color-accent-light: #8b7d70;
-  --color-primary: #4f7a65;  /* muted green for CTAs */
+  /* Core Colors */
+  --color-bg: #fdfbf7;          /* soft cream background */
+  --color-card: #ffffff;        /* white cards */
+  --color-border: #e5ded6;      /* subtle warm border */
+  --color-text: #3a2d25;        /* deep brown text */
+
+  /* Brand Colors */
+  --color-primary: #4f7a65;     /* muted green (main CTA) */
   --color-primary-hover: #3d5c4d;
+
+  --color-accent: #e07a5f;      /* terracotta accent (secondary actions) */
+  --color-accent-hover: #c86652;
+
+  /* Utility Colors */
+  --color-success: #4caf50;     /* green for success */
+  --color-error: #ef4444;       /* red for errors */
+  --color-warning: #f59e0b;     /* amber for warnings */
+  --color-info: #3b82f6;        /* blue for info */
 
   /* Typography */
   --font-family: "Segoe UI", Roboto, sans-serif;
-  --font-color: #3a2d25;
 }
 
 /* ========== Reset & Base ========== */
@@ -25,7 +34,7 @@
 
 body {
   font-family: var(--font-family);
-  color: var(--font-color);
+  color: var(--color-text);
   background-color: var(--color-bg);
   line-height: 1.6;
 }
@@ -39,51 +48,33 @@ a:hover {
   color: var(--color-primary-hover);
 }
 
-/* ========== Layout Helpers ========== */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-.grid {
-  display: grid;
-  gap: 1rem;
-}
-
-.grid-3 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 /* ========== Cards ========== */
 .card {
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background-color: var(--color-card);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s, box-shadow 0.2s;
   padding: 1rem;
 }
 .card:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 /* ========== Buttons ========== */
 .btn {
   display: inline-block;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
   font-weight: 600;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
 }
 
 .btn-primary {
@@ -92,6 +83,14 @@ a:hover {
 }
 .btn-primary:hover {
   background-color: var(--color-primary-hover);
+}
+
+.btn-accent {
+  background-color: var(--color-accent);
+  color: #fff;
+}
+.btn-accent:hover {
+  background-color: var(--color-accent-hover);
 }
 
 .btn-outline {
@@ -109,7 +108,7 @@ a:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--color-accent);
+  background-color: var(--color-primary);
   color: #fff;
   padding: 0.75rem 1.5rem;
 }

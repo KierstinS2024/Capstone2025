@@ -1,6 +1,4 @@
 // Path: src/components/MealCard.tsx
-// Mini card for a single meal: shows recipe title/image or + Add Meal
-
 "use client";
 
 import React from "react";
@@ -8,17 +6,25 @@ import type { MealPlanEntry, MealType } from "@/types/mealPlan";
 import { useRouter } from "next/navigation";
 
 interface MealCardProps {
-  mealType: MealType;
   meal: MealPlanEntry;
+  mealType: MealType;
   isGuest?: boolean;
+  onAddMeal?: () => void;
 }
 
-const MealCard: React.FC<MealCardProps> = ({ mealType, meal, isGuest }) => {
+const MealCard: React.FC<MealCardProps> = ({
+  meal,
+  mealType,
+  isGuest = false,
+  onAddMeal,
+}) => {
   const router = useRouter();
 
   const handleClick = () => {
     if (meal.recipeId) {
       router.push(`/recipes/${meal.recipeId}`);
+    } else if (onAddMeal) {
+      onAddMeal();
     }
   };
 
@@ -26,13 +32,17 @@ const MealCard: React.FC<MealCardProps> = ({ mealType, meal, isGuest }) => {
     <div
       onClick={handleClick}
       style={{
-        minWidth: "180px",
-        padding: "12px",
-        borderRadius: "10px",
-        border: meal.recipeId ? "1px solid #c0b49f" : "1px dashed #c0b49f",
-        backgroundColor: "#faf7f2",
-        cursor: meal.recipeId ? "pointer" : isGuest ? "default" : "pointer",
-        textAlign: "center",
+        cursor: meal.recipeId || onAddMeal ? "pointer" : "default",
+        border: "1px solid #ccc",
+        borderRadius: 8,
+        padding: 16,
+        width: 180,
+        height: 140,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#fff",
       }}
     >
       {meal.recipeId ? (
@@ -43,21 +53,21 @@ const MealCard: React.FC<MealCardProps> = ({ mealType, meal, isGuest }) => {
               alt={meal.recipeTitle}
               style={{
                 width: "100%",
-                height: "100px",
+                height: 80,
                 objectFit: "cover",
-                borderRadius: "8px",
-                marginBottom: "8px",
+                marginBottom: 8,
+                borderRadius: 4,
               }}
             />
           )}
-          <div style={{ fontWeight: 500, color: "#6b4c3b" }}>
+          <span style={{ fontWeight: 600, textAlign: "center" }}>
             {meal.recipeTitle}
-          </div>
+          </span>
         </>
       ) : (
-        <div style={{ color: "#8b7d70", fontWeight: 500 }}>
+        <span style={{ color: "#3b82f6", fontWeight: 600 }}>
           + Add {mealType}
-        </div>
+        </span>
       )}
     </div>
   );
