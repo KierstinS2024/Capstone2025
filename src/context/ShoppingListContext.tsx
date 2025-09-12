@@ -1,74 +1,99 @@
+// Path: src/context/ShoppingListContext.tsx
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
-import type { ShoppingList } from "@/types/shoppingList";
-import {
-  fetchShoppingListsAPI,
-  createShoppingListAPI,
-  deleteShoppingListAPI,
-} from "@/lib/shoppingListApi";
+import React, { createContext, useContext, useState, ReactNode } from "react";
+import type { MealType } from "@/types/mealPlan";
 
-type ShoppingListContextType = {
-  shoppingLists: ShoppingList[];
-  loading: boolean;
-  fetchShoppingLists: () => Promise<void>;
-  createShoppingList: (list: ShoppingList) => Promise<void>;
-  deleteShoppingList: (id: string) => Promise<void>;
-};
+/**
+ * Represents a single ingredient in the shopping list
+ */
+export interface ShoppingListItem {
+  name: string;
+  quantity?: string;
+  mealTypes?: MealType[]; // meals this ingredient is associated with
+  isNew?: boolean; // flag to highlight recently added items
+}
+
+/**
+ * Context type for managing shopping list globally
+ */
+interface ShoppingListContextType {
+  shoppingList: ShoppingListItem[];
+  addItem: (item: ShoppingListItem) => void;
+  removeItem: (name: string) => void;
+  clearShoppingList: () => void;
+}
 
 const ShoppingListContext = createContext<ShoppingListContextType | undefined>(
   undefined
 );
 
-export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
-  const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
-  const [loading, setLoading] = useState(true);
+/**
+ * Provider component to wrap the app and manage shopping list state
+ */
+export const ShoppingListProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
+  const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
 
-  const fetchShoppingLists = async () => {
-    setLoading(true);
-    const lists = await fetchShoppingListsAPI();
-    setShoppingLists(lists);
-    setLoading(false);
+  /**
+   * Add a new item to the shopping list
+   * If it exists, merge meal types
+   */
+  const addItem = (newItem: ShoppingListItem) => {
+    setShoppingList((prevList) => {
+      const existingIndex = prevList.findIndex(
+        (item) => item.name === newItem.name
+      );
+      if (existingIndex > -1) {
+        const updatedList = [...prevList];
+        updatedList[existingIndex].mealTypes = Array.from(
+          new Set([
+            ...(updatedList[existingIndex].mealTypes || []),
+            ...(newItem.mealTypes || []),
+          ])
+        );
+        updatedList[existingIndex].isNew = true;
+        return updatedList;
+      } else {
+        return [...prevList, { ...newItem, isNew: true }];
+      }
+    });
   };
 
-  useEffect(() => {
-    fetchShoppingLists();
-  }, []);
-
-  const createShoppingList = async (list: ShoppingList) => {
-    await createShoppingListAPI(list);
-    await fetchShoppingLists();
+  /**
+   * Remove an item from the shopping list by name
+   */
+  const removeItem = (name: string) => {
+    setShoppingList((prevList) =>
+      prevList.filter((item) => item.name !== name)
+    );
   };
 
-  const deleteShoppingList = async (id: string) => {
-    await deleteShoppingListAPI(id);
-    await fetchShoppingLists();
+  /**
+   * Clear all items from the shopping list
+   */
+  const clearShoppingList = () => {
+    setShoppingList([]);
   };
 
   return (
     <ShoppingListContext.Provider
-      value={{
-        shoppingLists,
-        loading,
-        fetchShoppingLists,
-        createShoppingList,
-        deleteShoppingList,
-      }}
+      value={{ shoppingList, addItem, removeItem, clearShoppingList }}
     >
       {children}
     </ShoppingListContext.Provider>
   );
 };
 
-export const useShoppingList = () => {
-  const ctx = useContext(ShoppingListContext);
-  if (!ctx)
-    throw new Error("useShoppingList must be used within ShoppingListProvider");
-  return ctx;
+/**
+ * Custom hook for easy access to shopping list context
+ */
+export const useShoppingList = (): ShoppingListContextType => {
+  const context = useContext(ShoppingListContext);
+  if (!context)
+    throw new Error(
+      "useShoppingList must be used within a ShoppingListProvider"
+    );
+  return context;
 };

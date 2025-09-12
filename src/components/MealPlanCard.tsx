@@ -2,94 +2,86 @@
 "use client";
 
 import React, { useState } from "react";
-import AddMealForm from "./AddMealForm";
 import type { MealPlanEntry, MealType } from "@/types/mealPlan";
+import MealCard from "./MealCard";
+import AddMealForm from "./AddMealForm";
 
 interface MealPlanCardProps {
-  todayMeals: MealPlanEntry[];
-  mealPlanDate: string;
+  todayMeals: MealPlanEntry[]; // meals for this day
+  mealPlanDate: string; // ISO string for date
   isGuest?: boolean;
 }
+
+const MEAL_TYPES: MealType[] = ["Breakfast", "Lunch", "Dinner"];
 
 const MealPlanCard: React.FC<MealPlanCardProps> = ({
   todayMeals,
   mealPlanDate,
   isGuest = false,
 }) => {
+  // Track which meal type modal is open
   const [addingMealType, setAddingMealType] = useState<MealType | null>(null);
 
-  const mealsByType: Record<MealType, MealPlanEntry | undefined> = {
-    Breakfast: todayMeals.find((m) => m.mealType === "Breakfast"),
-    Lunch: todayMeals.find((m) => m.mealType === "Lunch"),
-    Dinner: todayMeals.find((m) => m.mealType === "Dinner"),
+  // Map today's meals by type
+  const mealsByType: Record<MealType, MealPlanEntry | null> = {
+    Breakfast: null,
+    Lunch: null,
+    Dinner: null,
   };
+  MEAL_TYPES.forEach((type) => {
+    const meal = todayMeals.find((m) => m.mealType === type);
+    mealsByType[type] = meal || null;
+  });
 
   return (
     <div
       style={{
-        border: "1px solid #ddd",
+        padding: 24,
+        border: "1px solid #d8cfc4",
         borderRadius: 12,
-        padding: 20,
-        backgroundColor: "white",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+        backgroundColor: "#f4f1ed",
+        marginBottom: 24,
       }}
     >
-      <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>
-        Meals for {new Date(mealPlanDate).toLocaleDateString()}
+      {/* Date header */}
+      <h2
+        style={{
+          fontSize: 20,
+          fontWeight: 600,
+          marginBottom: 16,
+          color: "#6b4c3b",
+        }}
+      >
+        {new Date(mealPlanDate).toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "short",
+          day: "numeric",
+        })}
       </h2>
 
-      {(["Breakfast", "Lunch", "Dinner"] as MealType[]).map((mealType) => (
-        <div
-          key={mealType}
-          style={{
-            borderTop: "1px solid #eee",
-            paddingTop: 12,
-            marginTop: 12,
-          }}
-        >
-          <h3 style={{ fontSize: 18, fontWeight: 500 }}>{mealType}</h3>
+      {/* Meal cards */}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        {MEAL_TYPES.map((mealType) => (
+          <MealCard
+            key={mealType}
+            meal={mealsByType[mealType]}
+            mealType={mealType}
+            isGuest={isGuest || !todayMeals.length}
+            onAddMeal={() => setAddingMealType(mealType)}
+          />
+        ))}
+      </div>
 
-          {mealsByType[mealType] ? (
-            <div style={{ marginTop: 8 }}>
-              <p style={{ fontWeight: 500 }}>
-                {mealsByType[mealType]?.recipeTitle}
-              </p>
-              {mealsByType[mealType]?.recipeImage && (
-                <img
-                  src={mealsByType[mealType]?.recipeImage}
-                  alt={mealsByType[mealType]?.recipeTitle}
-                  style={{ width: "100%", maxWidth: 200, borderRadius: 8 }}
-                />
-              )}
-            </div>
-          ) : (
-            <p style={{ fontStyle: "italic", color: "#777", marginTop: 4 }}>
-              No {mealType} planned.
-            </p>
-          )}
+      {/* AddMealForm modal */}
+      {addingMealType && !isGuest && (
+        <AddMealForm
+          mealType={addingMealType}
+          onClose={() => setAddingMealType(null)}
+        />
+      )}
 
-          {/* Show Add button ONLY if NOT guest */}
-          {!isGuest && !mealsByType[mealType] && (
-            <button
-              onClick={() => setAddingMealType(mealType)}
-              style={{
-                marginTop: 8,
-                padding: "6px 12px",
-                border: "none",
-                borderRadius: 6,
-                backgroundColor: "#3b82f6",
-                color: "white",
-                cursor: "pointer",
-              }}
-            >
-              + Add {mealType}
-            </button>
-          )}
-        </div>
-      ))}
-
-      {/* Add Meal Form Modal */}
-      {addingMealType && (
+      {/* Guest plan modal (optional) */}
+      {addingMealType && isGuest && (
         <AddMealForm
           mealType={addingMealType}
           onClose={() => setAddingMealType(null)}

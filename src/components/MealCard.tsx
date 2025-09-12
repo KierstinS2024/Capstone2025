@@ -1,15 +1,19 @@
 // Path: src/components/MealCard.tsx
+// Mini card for Breakfast/Lunch/Dinner
+// Shows recipe info if available, else + Add Meal placeholder
+// Handles guest mode and inline styling
+
 "use client";
 
 import React from "react";
 import type { MealPlanEntry, MealType } from "@/types/mealPlan";
-import { useRouter } from "next/navigation";
 
 interface MealCardProps {
-  meal: MealPlanEntry;
+  meal?: MealPlanEntry; // optional: meal may not exist yet
   mealType: MealType;
-  isGuest?: boolean;
-  onAddMeal?: () => void;
+  isGuest?: boolean; // disable edits for guest view
+  onAddMeal: () => void;
+  onClick?: () => void; // optional click when meal exists
 }
 
 const MealCard: React.FC<MealCardProps> = ({
@@ -17,57 +21,72 @@ const MealCard: React.FC<MealCardProps> = ({
   mealType,
   isGuest = false,
   onAddMeal,
+  onClick,
 }) => {
-  const router = useRouter();
-
-  const handleClick = () => {
-    if (meal.recipeId) {
-      router.push(`/recipes/${meal.recipeId}`);
-    } else if (onAddMeal) {
-      onAddMeal();
-    }
-  };
+  const hasMeal = !!meal;
 
   return (
     <div
-      onClick={handleClick}
       style={{
-        cursor: meal.recipeId || onAddMeal ? "pointer" : "default",
-        border: "1px solid #ccc",
-        borderRadius: 8,
-        padding: 16,
-        width: 180,
-        height: 140,
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#fff",
+        width: 200,
+        height: 180,
+        border: hasMeal ? "1px solid #d8cfc4" : "1px dashed #d8cfc4",
+        borderRadius: 12,
+        backgroundColor: hasMeal ? "#fffdfb" : "#fefcf9",
+        cursor: hasMeal && !isGuest ? "pointer" : "default",
+        padding: 12,
+        textAlign: "center",
       }}
+      onClick={hasMeal && !isGuest && onClick ? onClick : undefined}
     >
-      {meal.recipeId ? (
+      {hasMeal ? (
         <>
-          {meal.recipeImage && (
+          {meal?.recipeImage && (
             <img
               src={meal.recipeImage}
               alt={meal.recipeTitle}
               style={{
                 width: "100%",
-                height: 80,
+                height: 100,
                 objectFit: "cover",
+                borderRadius: 8,
                 marginBottom: 8,
-                borderRadius: 4,
               }}
             />
           )}
-          <span style={{ fontWeight: 600, textAlign: "center" }}>
-            {meal.recipeTitle}
-          </span>
+          <p
+            style={{
+              fontWeight: 600,
+              color: "#3a2d25",
+              fontSize: 16,
+            }}
+          >
+            {meal?.recipeTitle}
+          </p>
         </>
       ) : (
-        <span style={{ color: "#3b82f6", fontWeight: 600 }}>
-          + Add {mealType}
-        </span>
+        <>
+          <p style={{ marginBottom: 12, color: "#8b7d70" }}>
+            No {mealType.toLowerCase()} planned yet
+          </p>
+          <button
+            style={{
+              padding: "8px 12px",
+              borderRadius: 6,
+              border: "none",
+              backgroundColor: "#4f7a65",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+            onClick={onAddMeal}
+          >
+            + Add {mealType}
+          </button>
+        </>
       )}
     </div>
   );

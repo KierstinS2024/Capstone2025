@@ -1,4 +1,3 @@
-// Path: src/app/layout.tsx
 "use client";
 
 import React from "react";
@@ -7,12 +6,13 @@ import { FavoritesProvider } from "@/context/FavoritesContext";
 import { RecipeProvider } from "@/context/RecipeContext";
 import { MealPlanProvider } from "@/context/MealPlanContext";
 import { GuestProvider } from "@/context/GuestContext";
+import { ShoppingListProvider } from "@/context/ShoppingListContext";
 import Navbar from "@/components/Navbar";
 
 /**
  * RootLayout
  * Wraps the entire app in all context providers
- * Includes Navbar for navigation
+ * Ensures hooks can be safely used anywhere
  */
 export default function RootLayout({
   children,
@@ -22,17 +22,25 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        {/* AuthProvider must be outermost to provide user info */}
         <AuthProvider>
+          {/* FavoritesProvider depends on user auth */}
           <FavoritesProvider>
-            <RecipeProvider>
-              <MealPlanProvider>
-                <GuestProvider>
-                  {/* ✅ Navbar is always visible */}
-                  <Navbar />
-                  <main>{children}</main>
-                </GuestProvider>
-              </MealPlanProvider>
-            </RecipeProvider>
+            {/* MealPlanProvider can use Recipes and Auth */}
+            <MealPlanProvider>
+              {/* GuestProvider should be inside MealPlan if guest meals interact with plans */}
+              <GuestProvider>
+                {/* RecipeProvider can depend on Auth but not Guest */}
+                <RecipeProvider>
+                  {/* ShoppingListProvider should wrap components using shopping list */}
+                  <ShoppingListProvider>
+                    {/* Navbar is always visible */}
+                    <Navbar />
+                    <main>{children}</main>
+                  </ShoppingListProvider>
+                </RecipeProvider>
+              </GuestProvider>
+            </MealPlanProvider>
           </FavoritesProvider>
         </AuthProvider>
       </body>

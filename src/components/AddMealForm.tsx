@@ -1,9 +1,9 @@
 // Path: src/components/AddMealForm.tsx
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useRecipes } from "@/context/RecipeContext";
+import React, { useState, useEffect } from "react";
 import { useMealPlan } from "@/context/MealPlanContext";
+import { useGuest } from "@/context/GuestContext";
 import type { MealType, MealPlanEntry } from "@/types/mealPlan";
 
 interface AddMealFormProps {
@@ -11,38 +11,72 @@ interface AddMealFormProps {
   onClose: () => void;
 }
 
+/**
+ * Modal form to search for recipes and add meals
+ * Can add meals to user's plan or guest plan
+ */
 const AddMealForm: React.FC<AddMealFormProps> = ({ mealType, onClose }) => {
-  const { recipes } = useRecipes();
   const { addMeal } = useMealPlan();
+  const { addMealToGuestPlan } = useGuest();
 
-  const [search, setSearch] = useState("");
-  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null);
 
-  // Filter recipes by search term
-  const filteredRecipes = useMemo(() => {
-    return recipes.filter((r) =>
-      r.title.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [recipes, search]);
+  /**
+   * Fetch recipes from Spoonacular API
+   */
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      if (!searchQuery || searchQuery.length < 2) return;
+      try {
+        const res = await fetch(
+          `https://api.spoonacular.com/recipes/complexSearch?query=${encodeURIComponent(
+            searchQuery
+          )}&number=10&addRecipeInformation=true&apiKey=${
+            process.env.NEXT_PUBLIC_SPOONACULAR_KEY
+          }`
+        );
+        const data = await res.json();
+        setSearchResults(data.results || []);
+      } catch (error) {
+        console.error("Spoonacular fetch error:", error);
+      }
+    };
 
-  const selectedRecipe = recipes.find((r) => r._id === selectedRecipeId);
+    const debounce = setTimeout(fetchRecipes, 300); // 300ms debounce
+    return () => clearTimeout(debounce);
+  }, [searchQuery]);
 
-  // ✅ Add to authenticated user meal plan
+  /**
+   * Add selected recipe to user's meal plan
+   */
   const handleAddMeal = () => {
     if (!selectedRecipe) return;
 
-    const mealEntry: MealPlanEntry = {
+    const newMeal: MealPlanEntry = {
       date: new Date().toISOString(),
       mealType,
-      recipeId: selectedRecipe._id,
+      recipeId: selectedRecipe.id.toString(),
       recipeTitle: selectedRecipe.title,
       recipeImage: selectedRecipe.image,
-      ingredients: selectedRecipe.ingredients,
+      ingredients: [],
     };
 
-    addMeal(mealEntry);
+    addMeal(newMeal);
     onClose();
     alert(`${selectedRecipe.title} added to your ${mealType} plan!`);
+  };
+
+  /**
+   * Add selected recipe to guest meal plan
+   */
+  const handleAddGuestMeal = () => {
+    if (!selectedRecipe) return;
+
+    addMealToGuestPlan(mealType, selectedRecipe.id.toString());
+    onClose();
+    alert(`${selectedRecipe.title} added to guest plan!`);
   };
 
   return (
@@ -62,12 +96,12 @@ const AddMealForm: React.FC<AddMealFormProps> = ({ mealType, onClose }) => {
     >
       <div
         style={{
-          backgroundColor: "white",
+          backgroundColor: "#fff",
           borderRadius: 8,
           padding: 24,
-          maxWidth: 500,
           width: "90%",
-          maxHeight: "90vh",
+          maxWidth: 500,
+          maxHeight: "80vh",
           overflowY: "auto",
         }}
       >
@@ -75,52 +109,51 @@ const AddMealForm: React.FC<AddMealFormProps> = ({ mealType, onClose }) => {
           Add {mealType}
         </h2>
 
-        {/* Search Input */}
+        {/* Search input */}
         <input
           type="text"
           placeholder="Search recipes..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           style={{
             width: "100%",
-            padding: "8px",
-            marginBottom: "12px",
-            borderRadius: "4px",
+            padding: 8,
+            borderRadius: 4,
             border: "1px solid #ccc",
+            marginBottom: 12,
           }}
         />
 
-        {/* Recipe List */}
-        <div style={{ maxHeight: 300, overflowY: "auto", marginBottom: 16 }}>
-          {filteredRecipes.length ? (
-            filteredRecipes.map((r) => (
-              <div
-                key={r._id}
-                onClick={() => setSelectedRecipeId(r._id)}
-                style={{
-                  padding: "8px",
-                  borderRadius: "6px",
-                  marginBottom: "6px",
-                  cursor: "pointer",
-                  backgroundColor:
-                    selectedRecipeId === r._id ? "#dbeafe" : "#f9f9f9",
-                  border:
-                    selectedRecipeId === r._id
-                      ? "2px solid #3b82f6"
-                      : "1px solid #ddd",
-                }}
-              >
-                <strong>{r.title}</strong>
-              </div>
-            ))
-          ) : (
-            <p style={{ fontStyle: "italic", color: "#777" }}>
-              No recipes found.
-            </p>
-          )}
-        </div>
+        {/* Recipe results */}
+        <ul style={{ listStyle: "none", padding: 0, marginBottom: 16 }}>
+          {searchResults.map((recipe) => (
+            <li
+              key={recipe.id}
+              onClick={() => setSelectedRecipe(recipe)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 8px",
+                borderRadius: 4,
+                cursor: "pointer",
+                backgroundColor:
+                  selectedRecipe?.id === recipe.id ? "#f4f1ed" : "transparent",
+              }}
+            >
+              {recipe.image && (
+                <img
+                  src={recipe.image}
+                  alt={recipe.title}
+                  style={{ width: 40, height: 40, objectFit: "cover" }}
+                />
+              )}
+              <span>{recipe.title}</span>
+            </li>
+          ))}
+        </ul>
 
-        {/* Action Buttons */}
+        {/* Action buttons */}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
           <button
             onClick={onClose}
@@ -134,20 +167,33 @@ const AddMealForm: React.FC<AddMealFormProps> = ({ mealType, onClose }) => {
           >
             Cancel
           </button>
-
           <button
             onClick={handleAddMeal}
-            disabled={!selectedRecipeId}
+            disabled={!selectedRecipe}
             style={{
               padding: "8px 16px",
               borderRadius: 6,
               border: "none",
-              backgroundColor: selectedRecipeId ? "#3b82f6" : "#9ca3af",
-              color: "white",
-              cursor: selectedRecipeId ? "pointer" : "not-allowed",
+              backgroundColor: "#3b82f6",
+              color: "#fff",
+              cursor: selectedRecipe ? "pointer" : "not-allowed",
             }}
           >
-            Add Meal
+            Add to My Plan
+          </button>
+          <button
+            onClick={handleAddGuestMeal}
+            disabled={!selectedRecipe}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 6,
+              border: "none",
+              backgroundColor: "#22c55e",
+              color: "#fff",
+              cursor: selectedRecipe ? "pointer" : "not-allowed",
+            }}
+          >
+            Add to Guest Plan
           </button>
         </div>
       </div>

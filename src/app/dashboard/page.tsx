@@ -1,4 +1,3 @@
-// Path: src/app/dashboard/page.tsx
 "use client";
 
 import React from "react";
@@ -6,7 +5,7 @@ import { useMealPlan } from "@/context/MealPlanContext";
 import MealPlanCard from "@/components/MealPlanCard";
 
 const DashboardPage: React.FC = () => {
-  const { todayMeals } = useMealPlan(); // only today’s meals
+  const { todayMeals } = useMealPlan();
   const todayDate = new Date().toISOString();
 
   return (
@@ -17,7 +16,7 @@ const DashboardPage: React.FC = () => {
 
       <MealPlanCard todayMeals={todayMeals} mealPlanDate={todayDate} />
 
-      {!todayMeals?.length && (
+      {todayMeals.length === 0 && (
         <p style={{ marginTop: 24, fontStyle: "italic", color: "#8b7d70" }}>
           No meals planned for today. Click “+ Add Meal” to get started!
         </p>

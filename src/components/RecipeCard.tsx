@@ -1,57 +1,80 @@
 // Path: src/components/RecipeCard.tsx
-// Displays a single recipe card (full or partial)
-
 "use client";
 
 import React from "react";
 import type { Recipe } from "@/types/recipe";
+import { useShoppingList } from "@/context/ShoppingListContext";
 
 interface RecipeCardProps {
-  recipe: Partial<Recipe>; // Accept partial for guest entries
-  isGuest?: boolean;
+  recipe: Recipe;
 }
 
-const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, isGuest = false }) => {
-  const title = recipe.title ?? "Untitled Recipe";
-  const image = recipe.image ?? "/placeholder-image.png";
-  const ingredients = recipe.ingredients ?? [];
+/**
+ * Card component to display recipe information
+ * Allows adding individual ingredients to the shopping list
+ */
+const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
+  const { addItem } = useShoppingList();
+
+  /**
+   * Add a single ingredient to the shopping list
+   */
+  const handleAddIngredient = (ingredientName: string) => {
+    addItem({ name: ingredientName, mealTypes: [], isNew: true });
+    alert(`${ingredientName} added to shopping list!`);
+  };
 
   return (
     <div
       style={{
         border: "1px solid #d8cfc4",
-        borderRadius: "10px",
-        overflow: "hidden",
-        cursor: isGuest ? "default" : "pointer",
-        backgroundColor: "#f9f6f2",
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        backgroundColor: "#fffdfb",
       }}
     >
-      {/* Recipe image */}
-      {image && (
+      <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>
+        {recipe.title}
+      </h3>
+      {recipe.image && (
         <img
-          src={image}
-          alt={title}
-          style={{ width: "100%", height: "150px", objectFit: "cover" }}
+          src={recipe.image}
+          alt={recipe.title}
+          style={{ width: "100%", borderRadius: 8, marginBottom: 8 }}
         />
       )}
 
-      {/* Recipe title */}
-      <div style={{ padding: "12px" }}>
-        <h2 style={{ fontSize: "16px", fontWeight: "bold", color: "#6b4c3b" }}>
-          {title}
-        </h2>
-      </div>
-
-      {/* Ingredients list */}
-      {ingredients.length > 0 && (
-        <ul style={{ paddingLeft: "16px", marginBottom: "12px" }}>
-          {ingredients.map((ing, idx) => (
-            <li key={idx}>
-              {ing.quantity} {ing.unit ?? ""} {ing.name}
-            </li>
-          ))}
-        </ul>
-      )}
+      <h4 style={{ fontSize: 16, fontWeight: 500 }}>Ingredients:</h4>
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {recipe.ingredients.map((ingredient) => (
+          <li
+            key={ingredient.name}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "4px 0",
+            }}
+          >
+            <span>
+              {ingredient.quantity} {ingredient.name}
+            </span>
+            <button
+              onClick={() => handleAddIngredient(ingredient.name)}
+              style={{
+                padding: "2px 6px",
+                borderRadius: 4,
+                border: "none",
+                backgroundColor: "#3b82f6",
+                color: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              Add
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

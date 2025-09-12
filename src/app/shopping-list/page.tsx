@@ -2,72 +2,77 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { useMealPlan } from "@/context/MealPlanContext";
 import { useShoppingList } from "@/context/ShoppingListContext";
 
-/**
- * ShoppingListPage
- * Shows all shopping lists for the user with options to delete.
- */
 const ShoppingListPage: React.FC = () => {
-  const { shoppingLists, loading, fetchShoppingLists, deleteShoppingList } =
-    useShoppingList(); // Shopping list context
+  const { meals } = useMealPlan();
+  const { items, generateFromMeals, toggleItem, clearList } = useShoppingList();
 
-  // Fetch shopping lists on mount
   useEffect(() => {
-    fetchShoppingLists();
-  }, []);
+    if (meals.length > 0) {
+      generateFromMeals(meals);
+    }
+  }, [meals]);
 
   return (
-    <div style={{ padding: 24, maxWidth: 1000, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 28, marginBottom: 24 }}>Shopping Lists</h1>
+    <div style={{ padding: 24, maxWidth: 800, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 16 }}>
+        Shopping List
+      </h1>
 
-      {loading ? (
-        <p>Loading shopping lists...</p>
-      ) : shoppingLists.length === 0 ? (
-        <p>No shopping lists yet. Generate one from your meal plan!</p>
+      {items.length === 0 ? (
+        <p>No items yet. Add meals to your plan to generate a list!</p>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 16,
-          }}
-        >
-          {shoppingLists.map((list) => (
-            <div
-              key={list._id}
-              style={{
-                padding: 16,
-                border: "1px solid #ccc",
-                borderRadius: 8,
-                backgroundColor: "#fafafa",
-              }}
-            >
-              <h2 style={{ fontSize: 20, marginBottom: 8 }}>{list.title}</h2>
-              <ul>
-                {list.items.map((item, idx) => (
-                  <li key={idx}>
-                    {item.ingredient} - {item.quantity} {item.unit || ""}
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={() => deleteShoppingList(list._id)}
+        <>
+          <ul style={{ listStyle: "none", padding: 0 }}>
+            {items.map((item) => (
+              <li
+                key={item.id}
+                onClick={() => toggleItem(item.id)}
                 style={{
-                  marginTop: 8,
-                  padding: "6px 12px",
-                  backgroundColor: "#ef4444",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 4,
+                  padding: "8px 12px",
+                  marginBottom: 6,
+                  borderRadius: 6,
+                  border: "1px solid #ddd",
+                  display: "flex",
+                  justifyContent: "space-between",
                   cursor: "pointer",
+                  backgroundColor: item.checked ? "#e5e7eb" : "#fff",
                 }}
               >
-                Delete
-              </button>
-            </div>
-          ))}
-        </div>
+                <span>
+                  {item.name}{" "}
+                  {item.quantity && (
+                    <span style={{ fontSize: 14, color: "#555" }}>
+                      ({item.quantity} {item.unit})
+                    </span>
+                  )}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={item.checked}
+                  onChange={() => toggleItem(item.id)}
+                  style={{ pointerEvents: "none" }}
+                />
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={clearList}
+            style={{
+              marginTop: 16,
+              padding: "8px 16px",
+              borderRadius: 6,
+              border: "none",
+              backgroundColor: "#ef4444",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Clear List
+          </button>
+        </>
       )}
     </div>
   );

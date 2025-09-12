@@ -1,103 +1,68 @@
 // Path: src/context/MealPlanContext.tsx
-// Context for managing authenticated user's meal plans and daily meals
-
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import type { MealPlan, MealPlanEntry } from "@/types/mealPlan";
-import type { CreateMealPlanPayload } from "@/types/mealPlan";
+import type { MealPlanEntry } from "@/types/mealPlan";
 
-// Context type for authenticated users
+/**
+ * Context type for meal plan management
+ */
 interface MealPlanContextType {
-  mealPlans: MealPlan[]; // All meal plans for the user
-  currentMealPlan: MealPlan | null; // Currently active meal plan
-  todayMeals: MealPlanEntry[]; // Meals scheduled for today
-  addMeal: (meal: MealPlanEntry) => void; // Add a meal to current plan & todayMeals
-  createMealPlan: (payload: CreateMealPlanPayload) => Promise<void>; // Create a new meal plan
+  entries: MealPlanEntry[];
+  todayMeals: MealPlanEntry[];
+  addMeal: (meal: MealPlanEntry) => void;
+  removeMeal: (recipeId: string) => void;
 }
 
-// Create context with optional default
-const MealPlanContext = createContext<MealPlanContextType | undefined>(undefined);
+const MealPlanContext = createContext<MealPlanContextType | undefined>(
+  undefined
+);
 
-// Hook to consume MealPlanContext safely
-export const useMealPlan = () => {
-  const context = useContext(MealPlanContext);
-  if (!context)
-    throw new Error("useMealPlan must be used within a MealPlanProvider");
-  return context;
-};
+/**
+ * Provider to wrap the app and manage meal plan state
+ */
+export const MealPlanProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
+  const [entries, setEntries] = useState<MealPlanEntry[]>([]);
 
-// Provider component
-export const MealPlanProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // All meal plans for authenticated user
-  const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
-  // Currently active meal plan (e.g., this week)
-  const [currentMealPlan, setCurrentMealPlan] = useState<MealPlan | null>(null);
-  // Meals scheduled for today
-  const [todayMeals, setTodayMeals] = useState<MealPlanEntry[]>([]);
+  // Today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split("T")[0];
 
   /**
-   * Add a meal to current meal plan
-   * Updates currentMealPlan entries, mealPlans array, and todayMeals
+   * Compute meals scheduled for today
+   */
+  const todayMeals = entries.filter((meal) => meal.date.startsWith(today));
+
+  /**
+   * Add a meal to the plan
    */
   const addMeal = (meal: MealPlanEntry) => {
-    setMealPlans((prevPlans) => {
-      if (!currentMealPlan) return prevPlans;
-
-      // Update the relevant meal plan in the mealPlans array
-      const updatedPlans = prevPlans.map((plan) =>
-        plan._id === currentMealPlan._id
-          ? { ...plan, entries: [...plan.entries, meal] }
-          : plan
-      );
-
-      // Update currentMealPlan state
-      setCurrentMealPlan((prev) =>
-        prev ? { ...prev, entries: [...prev.entries, meal] } : null
-      );
-
-      // Update today's meals
-      setTodayMeals((prev) => [...prev, meal]);
-
-      return updatedPlans;
-    });
+    setEntries((prev) => [...prev, meal]);
   };
 
   /**
-   * Create a new meal plan
-   * Simulates API call and updates context state
+   * Remove a meal by recipeId
    */
-  const createMealPlan = async (payload: CreateMealPlanPayload) => {
-    const newPlan: MealPlan = {
-      _id: `plan-${Date.now()}`,
-      userId: "current-user",
-      title: payload.title,
-      startDate: payload.startDate,
-      endDate: payload.endDate,
-      entries: payload.entries || [],
-    };
-
-    // Add new plan to the array of meal plans
-    setMealPlans((prev) => [...prev, newPlan]);
-    // Set as current active plan
-    setCurrentMealPlan(newPlan);
-
-    // Update today's meals based on new plan
-    const todayISO = new Date().toISOString().split("T")[0];
-    setTodayMeals(newPlan.entries.filter((e) => e.date === todayISO));
+  const removeMeal = (recipeId: string) => {
+    setEntries((prev) => prev.filter((meal) => meal.recipeId !== recipeId));
   };
 
   return (
     <MealPlanContext.Provider
-      value={{
-        mealPlans,
-        currentMealPlan,
-        todayMeals,
-        addMeal,
-        createMealPlan,
-      }}
+      value={{ entries, todayMeals, addMeal, removeMeal }}
     >
       {children}
     </MealPlanContext.Provider>
   );
+};
+
+/**
+ * Hook to use meal plan context
+ */
+export const useMealPlan = (): MealPlanContextType => {
+  const context = useContext(MealPlanContext);
+  if (!context)
+    throw new Error("useMealPlan must be used within a MealPlanProvider");
+  return context;
 };

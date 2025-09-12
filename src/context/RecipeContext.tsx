@@ -1,57 +1,41 @@
 // Path: src/context/RecipeContext.tsx
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
-import type { Recipe } from "@/types/recipe";
-import {
-  fetchRecipesAPI,
-  createRecipeAPI,
-  deleteRecipeAPI,
-} from "@/lib/recipeApi";
+import React, { createContext, useContext, useState, ReactNode } from "react";
+import type { Recipe, RecipeIngredient, RecipeSource } from "@/types/recipe";
+import { searchRecipes as spoonacularSearch } from "@/lib/spoonacularApi";
+import { useMealPlan } from "./MealPlanContext";
+import { useGuest } from "./GuestContext";
 
-// Context type
 interface RecipeContextType {
   recipes: Recipe[];
+  spoonacularResults: Recipe[];
   loading: boolean;
   createRecipe: (recipe: Omit<Recipe, "_id">) => Promise<void>;
-  deleteRecipe: (id: string) => void; // ✅ Added
-  toggleFavorite: (id: string) => void; // ✅ Added
+  searchSpoonacularRecipes: (query: string) => Promise<void>;
 }
 
-// Create context
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
 export const RecipeProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [spoonacularResults, setSpoonacularResults] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const loadRecipes = async () => {
-      setLoading(true);
-      try {
-        const fetchedRecipes = await fetchRecipesAPI();
-        setRecipes(fetchedRecipes);
-      } catch (error) {
-        console.error("Error fetching recipes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadRecipes();
-  }, []);
+  const { addMeal } = useMealPlan();
+  const { addMealToGuestPlan } = useGuest();
 
+  // Add a new local recipe
   const createRecipe = async (recipe: Omit<Recipe, "_id">) => {
     setLoading(true);
     try {
-      const newRecipe = await createRecipeAPI(recipe);
+      const newRecipe: Recipe = {
+        ...recipe,
+        _id: crypto.randomUUID(),
+        favorite: false,
+      };
       setRecipes((prev) => [...prev, newRecipe]);
     } catch (error) {
       console.error("Error creating recipe:", error);
@@ -60,24 +44,43 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // ✅ Delete recipe
-  const deleteRecipe = (id: string) => {
-    setRecipes((prev) => prev.filter((r) => r._id !== id));
-    // Optional: call API to persist deletion
-    deleteRecipeAPI(id).catch((err) => console.error("Delete failed:", err));
-  };
-
-  // ✅ Toggle favorite
-  const toggleFavorite = (id: string) => {
-    setRecipes((prev) =>
-      prev.map((r) => (r._id === id ? { ...r, favorite: !r.favorite } : r))
-    );
-    // Optional: call API to persist favorite
+  // Search Spoonacular
+  const searchSpoonacularRecipes = async (query: string) => {
+    setLoading(true);
+    try {
+      const results = await spoonacularSearch(query);
+      // Map SpoonacularRecipe to Recipe type
+      const mapped: Recipe[] = results.map((r) => ({
+        _id: `spoonacular-${r.id}`,
+        userId: "spoonacular",
+        title: r.title,
+        ingredients: r.ingredients.map((i) => ({
+          name: i.name,
+          quantity: i.quantity || "",
+          unit: "", // Spoonacular quantity already in string
+        })),
+        instructions: r.instructions || "",
+        source: "spoonacular",
+        favorite: false,
+        image: r.image,
+      }));
+      setSpoonacularResults(mapped);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <RecipeContext.Provider
-      value={{ recipes, loading, createRecipe, deleteRecipe, toggleFavorite }}
+      value={{
+        recipes,
+        spoonacularResults,
+        loading,
+        createRecipe,
+        searchSpoonacularRecipes,
+      }}
     >
       {children}
     </RecipeContext.Provider>

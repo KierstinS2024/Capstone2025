@@ -1,25 +1,13 @@
-// src/types/shoppingList.d.ts
-// Type definitions for ShoppingList model
-
-import type { Types } from "mongoose";
-
-export type ShoppingCategory = "produce" | "meat" | "dairy" | "frozen" | "other";
-
+// Single item in a shopping list
 export interface ShoppingItem {
-  ingredient: string;
-  quantity: string;
-  category: ShoppingCategory;
-  checked: boolean;
+  name: string;
+  quantity: string; // string for simplicity; can be numeric + unit
+  category?: string; // optional, e.g., produce, dairy
+  mealTypes: string[]; // Breakfast, Lunch, Dinner
 }
 
+// Full shopping list for a given day
 export interface ShoppingList {
-  _id: string;
-  userId: string; // reference to User._id
-  title: string;
+  date: string; // ISO date string
   items: ShoppingItem[];
-}
-
-export interface CreateShoppingListPayload {
-  title: string;
-  items?: ShoppingItem[];
 }
