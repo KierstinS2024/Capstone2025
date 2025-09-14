@@ -1,27 +1,51 @@
-/* src/styles/mealPlans.css */
+.meal-plans-page {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-title {
+  font-size: 28px;
+  margin-bottom: 16px;
+}
+
 .meal-plan-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  list-style: none;
+  padding: 0;
 }
 
 .meal-plan-card {
   border: 1px solid #ccc;
-  padding: 1rem;
   border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
 }
 
-.add-meal-form {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+.meal-plan-date {
+  font-weight: bold;
+  margin-bottom: 8px;
 }
 
-.add-meal-form input {
-  flex: 1;
-  padding: 0.5rem;
+.meals-list {
+  list-style: none;
+  padding-left: 0;
 }
 
-.add-meal-form button {
-  padding: 0.5rem 1rem;
+.meal-item {
+  margin-bottom: 6px;
+}
+
+.empty-state {
+  color: #666;
+  font-style: italic;
+}
+
+.no-meals {
+  color: #999;
+  font-size: 14px;
+}
+
+.loading {
+  text-align: center;
+  font-size: 16px;
 }

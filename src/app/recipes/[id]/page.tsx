@@ -1,54 +1,93 @@
+// path: src/app/recipes/[id]/page.tsx
 "use client";
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useRecipe } from "@/context/RecipeContext";
+import { useAuth } from "@/context/AuthContext";
 import { getRecipeById } from "@/lib/spoonacularApi";
-import { RecipeDetail } from "@/types/recipe";
+import "@/styles/recipe-detail.css";
+
+interface RecipeDetailPageProps {
+  id: string;
+}
 
 export default function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const { recipes } = useRecipe();
+
+  const [recipe, setRecipe] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (!authLoading && !user) router.push("/login");
+  }, [authLoading, user, router]);
+
+  // Fetch recipe data
   useEffect(() => {
     async function fetchRecipe() {
       try {
-        const data = await getRecipeById(id);
-        setRecipe(data);
+        setLoading(true);
+
+        // Check local recipes first
+        const localRecipe = recipes.find((r) => r._id === id);
+        if (localRecipe) {
+          setRecipe(localRecipe);
+          return;
+        }
+
+        // Otherwise, fetch from Spoonacular
+        if (id) {
+          const data = await getRecipeById(id);
+          setRecipe(data);
+        }
       } catch (err: any) {
         setError(err.message || "Failed to load recipe");
       } finally {
         setLoading(false);
       }
     }
-    if (id) fetchRecipe();
-  }, [id]);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
-  if (!recipe) return <p>Recipe not found.</p>;
+    if (user) fetchRecipe();
+  }, [id, recipes, user]);
+
+  if (authLoading || loading)
+    return <p className="loading">Loading recipe...</p>;
+  if (!user) return null;
+  if (error) return <p className="error">{error}</p>;
+  if (!recipe) return <p className="empty-state">Recipe not found.</p>;
 
   return (
-    <div className="py-8">
-      <h2 className="text-4xl font-bold mb-4">{recipe.title}</h2>
-      <img
-        src={recipe.image}
-        alt={recipe.title}
-        className="w-full max-h-96 object-cover rounded mb-6"
-      />
-      <h3 className="text-2xl font-semibold mb-3">Ingredients</h3>
-      <ul className="list-disc ml-6 mb-6">
-        {recipe.extendedIngredients.map((ing) => (
-          <li key={ing.id}>{ing.original}</li>
-        ))}
-      </ul>
-      <h3 className="text-2xl font-semibold mb-3">Instructions</h3>
-      <div
-        className="prose"
-        dangerouslySetInnerHTML={{
-          __html: recipe.instructions || "No instructions available.",
-        }}
-      />
+    <div className="recipe-detail-page">
+      <h1 className="recipe-title">{recipe.title}</h1>
+      {recipe.image && (
+        <img src={recipe.image} alt={recipe.title} className="recipe-image" />
+      )}
+
+      {recipe.extendedIngredients && (
+        <>
+          <h2>Ingredients</h2>
+          <ul className="ingredients-list">
+            {recipe.extendedIngredients.map((ing: any) => (
+              <li key={ing.id}>{ing.original}</li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {recipe.instructions && (
+        <>
+          <h2>Instructions</h2>
+          <div
+            className="instructions"
+            dangerouslySetInnerHTML={{ __html: recipe.instructions }}
+          />
+        </>
+      )}
     </div>
   );
 }

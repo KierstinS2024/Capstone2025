@@ -1,3 +1,4 @@
+// path: src/context/MealPlanContext.tsx
 "use client";
 
 import React, {
@@ -17,6 +18,7 @@ interface MealPlanContextValue {
   addMealToPlan: (meal: Meal, date: string) => Promise<void>;
   removeMealFromPlan: (mealId: string) => Promise<void>;
   refreshPlans: () => Promise<void>;
+  getAllMealNames: () => string[]; // NEW helper
 }
 
 const MealPlanContext = createContext<MealPlanContextValue | undefined>(
@@ -62,6 +64,11 @@ export const MealPlanProvider = ({
     );
   }, []);
 
+  // NEW: Collect all meal names for shopping list generation
+  const getAllMealNames = useCallback(() => {
+    return mealPlans.flatMap((plan) => plan.meals.map((meal) => meal.name));
+  }, [mealPlans]);
+
   return (
     <MealPlanContext.Provider
       value={{
@@ -70,6 +77,7 @@ export const MealPlanProvider = ({
         addMealToPlan,
         removeMealFromPlan,
         refreshPlans,
+        getAllMealNames,
       }}
     >
       {children}

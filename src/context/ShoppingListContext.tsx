@@ -1,3 +1,4 @@
+// path: src/context/ShoppingListContext.tsx
 "use client";
 
 import React, {
@@ -26,6 +27,7 @@ interface ShoppingListContextValue {
   removeItem: (id: string) => Promise<void>;
   toggleItem: (id: string) => Promise<void>;
   refreshList: () => Promise<void>;
+  addMultipleItems: (names: string[]) => Promise<void>; // NEW
 }
 
 const ShoppingListContext = createContext<ShoppingListContextValue | undefined>(
@@ -74,6 +76,17 @@ export const ShoppingListProvider = ({
     setShoppingList((prev) => prev.map((i) => (i.id === id ? updated : i)));
   }, []);
 
+  // NEW: Batch add
+  const addMultipleItems = useCallback(
+    async (names: string[]) => {
+      for (const name of names) {
+        if (!name) continue;
+        await addItem(name, "other");
+      }
+    },
+    [addItem]
+  );
+
   return (
     <ShoppingListContext.Provider
       value={{
@@ -83,6 +96,7 @@ export const ShoppingListProvider = ({
         removeItem,
         toggleItem,
         refreshList,
+        addMultipleItems,
       }}
     >
       {children}

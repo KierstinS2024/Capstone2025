@@ -1,6 +1,9 @@
 /* src/styles/dashboard.css */
 .dashboard-container {
   padding: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: sans-serif;
 }
 
 .mealplan-grid {
@@ -13,4 +16,10 @@
   border: 1px solid #ccc;
   border-radius: 6px;
   padding: 1rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mealplan-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }

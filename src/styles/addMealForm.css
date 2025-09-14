@@ -1,0 +1,38 @@
+.add-meal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.input:disabled {
+  background-color: #f5f5f5;
+}
+
+.button {
+  background-color: #0070f3;
+  color: white;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.button:disabled {
+  background-color: #a0c4ff;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #ff4d4f;
+  font-size: 13px;
+  margin-bottom: -8px;
+}

@@ -1,46 +1,95 @@
+// path: src/app/shopping-list/page.tsx
 "use client";
+
+import React, { useState, useEffect } from "react";
 import { useShoppingList } from "@/context/ShoppingListContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import "@/styles/shoppingList.css";
 
 export default function ShoppingListPage() {
-  const { shoppingList, toggleItem, removeItem } = useShoppingList();
-  const { user, loading } = useAuth();
+  const { shoppingList, addItem, toggleItem, removeItem, loading } =
+    useShoppingList();
+  const { user } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !user) router.push("/login");
-  }, [loading, user, router]);
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemCategory, setNewItemCategory] = useState("other");
 
-  if (loading) return <p>Loading...</p>;
+  useEffect(() => {
+    if (!user && !loading) router.push("/login");
+  }, [user, loading, router]);
+
+  const handleAddItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newItemName.trim()) return;
+    await addItem(newItemName.trim(), newItemCategory);
+    setNewItemName("");
+    setNewItemCategory("other");
+  };
+
+  const navigateToGenerator = () => {
+    router.push("/shopping-list/from-meal-plan");
+  };
+
+  if (loading) return <p className="loading">Loading shopping list...</p>;
   if (!user) return null;
 
   return (
-    <div className="py-8">
-      <h2 className="text-3xl font-bold mb-6">Shopping List</h2>
+    <div className="shopping-list-page">
+      <h1 className="page-title">Shopping List</h1>
+
+      {/* Generate from Meal Plan */}
+      <button className="button" onClick={navigateToGenerator}>
+        Generate from Meal Plan
+      </button>
+
+      {/* Add Item Form */}
+      <form className="add-item-form" onSubmit={handleAddItem}>
+        <input
+          type="text"
+          placeholder="Item name"
+          value={newItemName}
+          onChange={(e) => setNewItemName(e.target.value)}
+          className="input"
+          required
+        />
+        <select
+          value={newItemCategory}
+          onChange={(e) => setNewItemCategory(e.target.value)}
+          className="select"
+        >
+          <option value="produce">Produce</option>
+          <option value="meat">Meat</option>
+          <option value="dairy">Dairy</option>
+          <option value="frozen">Frozen</option>
+          <option value="other">Other</option>
+        </select>
+        <button type="submit" className="button">
+          Add
+        </button>
+      </form>
+
+      {/* Shopping List */}
       {shoppingList.length === 0 ? (
-        <p className="text-gray-600">Your shopping list is empty.</p>
+        <p className="empty-state">Your shopping list is empty.</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="shopping-items">
           {shoppingList.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-center gap-3 border p-3 rounded"
-            >
-              <input
-                type="checkbox"
-                checked={item.checked}
-                onChange={() => toggleItem(item.id)}
-              />
-              <span
-                className={item.checked ? "line-through text-gray-400" : ""}
-              >
-                {item.name}
-              </span>
+            <li key={item.id} className="shopping-item">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={item.purchased}
+                  onChange={() => toggleItem(item.id)}
+                />
+                <span className={item.purchased ? "purchased" : ""}>
+                  {item.name} ({item.category})
+                </span>
+              </label>
               <button
+                className="remove-button"
                 onClick={() => removeItem(item.id)}
-                className="ml-auto text-red-600"
               >
                 Remove
               </button>

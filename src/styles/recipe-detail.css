@@ -1,0 +1,38 @@
+/* src/styles/recipe-detail.css */
+.recipe-detail-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.recipe-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.recipe-image {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.ingredients-list {
+  list-style: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.instructions {
+  line-height: 1.6;
+}
+
+.loading,
+.error,
+.empty-state {
+  color: #e63946;
+  font-weight: 500;
+  margin-top: 1rem;
+}
