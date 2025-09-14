@@ -1,31 +1,25 @@
-// src/app/api/auth/me/route.ts
 import { NextResponse } from "next/server";
-import { connectToDB } from "@/lib/db";
-import { User } from "@/models/User";
-import { Types } from "mongoose";
+import jwt from "jsonwebtoken";
+import { db } from "@/lib/db";
 
 export async function GET(req: Request) {
   try {
-    await connectToDB();
+    const token = req.cookies.get("token")?.value;
+    if (!token) {
+      return NextResponse.json({ user: null }, { status: 200 });
+    }
 
-    const cookie = req.headers.get("cookie") || "";
-    const match = cookie.match(/session=([a-f0-9]+)/);
-    const userId = match?.[1];
-    if (!userId) return NextResponse.json(null, { status: 200 });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: string;
+    };
+    const user = await db.user.findUnique({ where: { id: decoded.id } });
 
-    const userDoc = await User.findById(userId);
-    if (!userDoc) return NextResponse.json(null, { status: 200 });
+    if (!user) {
+      return NextResponse.json({ user: null }, { status: 200 });
+    }
 
-    return NextResponse.json({
-      _id: userDoc._id.toString(),
-      name: userDoc.name,
-      email: userDoc.email,
-      favorites: (userDoc.favorites as Types.ObjectId[]).map(
-        (f: Types.ObjectId) => f.toString()
-      ),
-    });
-  } catch (err: any) {
-    console.error("Fetch current user error:", err);
-    return NextResponse.json(null, { status: 500 });
+    return NextResponse.json({ user: { id: user.id, email: user.email } });
+  } catch {
+    return NextResponse.json({ user: null }, { status: 200 });
   }
 }

@@ -1,31 +1,23 @@
-// Path: src/context/AppProviders.tsx
 "use client";
 
-import React, { ReactNode } from "react";
+import React from "react";
 import { AuthProvider } from "./AuthContext";
-import { FavoritesProvider } from "./FavoritesContext";
 import { MealPlanProvider } from "./MealPlanContext";
+import { ShoppingListProvider } from "./ShoppingListContext";
 import { RecipeProvider } from "./RecipeContext";
-import { GuestProvider } from "./GuestContext";
 
-interface AppProvidersProps {
-  children: ReactNode;
-}
-
-/**
- * Wraps the entire app with all necessary context providers.
- * Guest mode will bypass Auth and MealPlanProvider automatically.
- */
-export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
+export default function AppProviders({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <AuthProvider>
-      <FavoritesProvider>
-        <MealPlanProvider>
-          <RecipeProvider>
-            <GuestProvider>{children}</GuestProvider>
-          </RecipeProvider>
-        </MealPlanProvider>
-      </FavoritesProvider>
+      <MealPlanProvider>
+        <ShoppingListProvider>
+          <RecipeProvider>{children}</RecipeProvider>
+        </ShoppingListProvider>
+      </MealPlanProvider>
     </AuthProvider>
   );
-};
+}

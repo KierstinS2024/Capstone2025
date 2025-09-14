@@ -1,70 +1,47 @@
-// Path: src/app/signup/page.tsx
 "use client";
-
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SignupPage() {
   const { signup } = useAuth();
   const router = useRouter();
-  const [name, setName] = useState(""); // NEW: capture name
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await signup(name, email, password); // Pass all 3 args
-    router.push("/dashboard");
-  };
+    try {
+      await signup(email, password);
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Signup failed");
+    }
+  }
 
   return (
-    <div className="container center" style={{ height: "100vh" }}>
-      <form
-        className="card"
-        style={{ maxWidth: "400px", width: "100%" }}
-        onSubmit={handleSubmit}
-      >
-        <h2 style={{ marginBottom: "1rem" }}>Signup</h2>
-
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          style={{ marginBottom: "1rem", padding: "0.5rem" }}
-        />
-
+    <div className="max-w-md mx-auto py-12">
+      <h2 className="text-3xl font-bold mb-6">Sign Up</h2>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
           type="email"
-          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          className="border p-2 rounded"
           required
-          style={{ marginBottom: "1rem", padding: "0.5rem" }}
         />
-
         <input
           type="password"
-          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          className="border p-2 rounded"
           required
-          style={{ marginBottom: "1rem", padding: "0.5rem" }}
         />
-
-        <button type="submit" className="btn btn-primary">
-          Signup
-        </button>
-
-        <p style={{ marginTop: "1rem", textAlign: "center" }}>
-          Already have an account? <Link href="/login">Login</Link>
-        </p>
-        <p style={{ marginTop: "0.5rem", textAlign: "center" }}>
-          Or continue in <Link href="/guest-dashboard">Guest Mode</Link>
-        </p>
+        <button className="bg-blue-600 text-white py-2 rounded">Sign Up</button>
       </form>
     </div>
   );

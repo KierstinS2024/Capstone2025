@@ -1,96 +1,54 @@
-// Path: src/app/recipes/[id]/page.tsx
 "use client";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { getRecipeById } from "@/lib/spoonacularApi";
+import { RecipeDetail } from "@/types/recipe";
 
-import React, { useEffect, useState } from "react";
-import { useRecipes } from "@/context/RecipeContext";
-import { useParams, useRouter } from "next/navigation";
-import type { Recipe } from "@/types/recipe";
-
-const RecipePage: React.FC = () => {
-  const { id } = useParams() as { id: string };
-  const { recipes, toggleFavorite, deleteRecipe } = useRecipes();
-  const router = useRouter();
-
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
+export default function RecipeDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const found = recipes.find((r) => r._id === id) || null;
-    setRecipe(found);
-  }, [id, recipes]);
+    async function fetchRecipe() {
+      try {
+        const data = await getRecipeById(id);
+        setRecipe(data);
+      } catch (err: any) {
+        setError(err.message || "Failed to load recipe");
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (id) fetchRecipe();
+  }, [id]);
 
-  if (!recipe) {
-    return <p style={{ padding: 24 }}>Recipe not found.</p>;
-  }
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
+  if (!recipe) return <p>Recipe not found.</p>;
 
   return (
-    <div style={{ padding: 24, maxWidth: 800, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 16 }}>
-        {recipe.title}
-      </h1>
-      {recipe.image && (
-        <img
-          src={recipe.image}
-          alt={recipe.title}
-          style={{
-            width: "100%",
-            height: 300,
-            objectFit: "cover",
-            borderRadius: 8,
-            marginBottom: 16,
-          }}
-        />
-      )}
-
-      <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>
-        Ingredients
-      </h2>
-      <ul style={{ marginBottom: 16 }}>
-        {recipe.ingredients.map((ing, idx) => (
-          <li key={idx}>
-            {ing.quantity} {ing.name}
-          </li>
+    <div className="py-8">
+      <h2 className="text-4xl font-bold mb-4">{recipe.title}</h2>
+      <img
+        src={recipe.image}
+        alt={recipe.title}
+        className="w-full max-h-96 object-cover rounded mb-6"
+      />
+      <h3 className="text-2xl font-semibold mb-3">Ingredients</h3>
+      <ul className="list-disc ml-6 mb-6">
+        {recipe.extendedIngredients.map((ing) => (
+          <li key={ing.id}>{ing.original}</li>
         ))}
       </ul>
-
-      <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>
-        Instructions
-      </h2>
-      <p style={{ marginBottom: 16 }}>{recipe.instructions}</p>
-
-      <div style={{ display: "flex", gap: 12 }}>
-        <button
-          onClick={() => toggleFavorite(recipe._id)}
-          style={{
-            padding: "8px 16px",
-            borderRadius: 6,
-            border: "none",
-            backgroundColor: recipe.favorite ? "#facc15" : "#3b82f6",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-        >
-          {recipe.favorite ? "Unfavorite" : "Favorite"}
-        </button>
-
-        <button
-          onClick={() => {
-            deleteRecipe(recipe._id);
-            router.back();
-          }}
-          style={{
-            padding: "8px 16px",
-            borderRadius: 6,
-            border: "none",
-            backgroundColor: "#ef4444",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-        >
-          Delete
-        </button>
-      </div>
+      <h3 className="text-2xl font-semibold mb-3">Instructions</h3>
+      <div
+        className="prose"
+        dangerouslySetInnerHTML={{
+          __html: recipe.instructions || "No instructions available.",
+        }}
+      />
     </div>
   );
-};
-
-export default RecipePage;
+}

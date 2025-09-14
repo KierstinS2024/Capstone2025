@@ -1,76 +1,57 @@
-// Path: src/components/Navbar.tsx
-// Navigation bar: links for Home, Recipes, Dashboard, Guest Mode, Login/Signup, Logout
-
+// path: src/components/Navbar.tsx
 "use client";
-
 import Link from "next/link";
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
 
-const Navbar: React.FC = () => {
-  const { user, logout } = useAuth(); // Get authentication state
+export default function Navbar() {
+  const { user, logout } = useAuth();
 
   return (
-    <nav
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "12px 24px",
-        backgroundColor: "#faf7f2",
-        borderBottom: "1px solid #d8cfc4",
-      }}
-    >
-      {/* Left section: Logo / Home */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <Link
-          href="/"
-          style={{ fontWeight: "bold", fontSize: "18px", color: "#6b4c3b" }}
-        >
-          Springboard
+    <nav className="navbar">
+      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        <Link href="/" className="link" aria-label="Home">
+          🍽️ Meal Planner
         </Link>
-        <Link href="/recipes" style={{ color: "#6b4c3b" }}>
-          Recipes
-        </Link>
-      </div>
-
-      {/* Right section: User actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        {user ? (
-          <>
-            <Link href="/dashboard" style={{ color: "#6b4c3b" }}>
+        {user && (
+          <div className="nav-links">
+            <Link href="/dashboard" className="link">
               Dashboard
             </Link>
-            <button
-              onClick={logout}
-              style={{
-                padding: "6px 12px",
-                borderRadius: 6,
-                border: "1px solid #6b4c3b",
-                backgroundColor: "white",
-                color: "#6b4c3b",
-                cursor: "pointer",
-              }}
-            >
+            <Link href="/meal-plans" className="link">
+              Meal Plans
+            </Link>
+            <Link href="/recipes" className="link">
+              Recipes
+            </Link>
+            <Link href="/shopping-list" className="link">
+              Shopping List
+            </Link>
+          </div>
+        )}
+      </div>
+
+      <div>
+        {user ? (
+          <>
+            <span className="small muted" style={{ marginRight: 12 }}>
+              {user.email}
+            </span>
+            <button className="button" onClick={() => logout()}>
               Logout
             </button>
           </>
         ) : (
           <>
-            <Link href="/login" style={{ color: "#6b4c3b" }}>
+            <Link href="/login" className="link">
               Login
             </Link>
-            <Link href="/signup" style={{ color: "#6b4c3b" }}>
-              Signup
-            </Link>
-            <Link href="/guest-dashboard" style={{ color: "#6b4c3b" }}>
-              Guest Mode
+            <Link href="/signup" className="link" style={{ marginLeft: 8 }}>
+              Sign up
             </Link>
           </>
         )}
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

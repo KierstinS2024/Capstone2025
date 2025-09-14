@@ -1,95 +1,56 @@
-// Path: src/context/RecipeContext.tsx
+// path: src/context/RecipeContext.tsx
 "use client";
+import React, { createContext, useContext, useState } from "react";
+import { Recipe } from "@/types/recipe";
+import * as api from "@/lib/spoonacularApi";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import type { Recipe, RecipeIngredient, RecipeSource } from "@/types/recipe";
-import { searchRecipes as spoonacularSearch } from "@/lib/spoonacularApi";
-import { useMealPlan } from "./MealPlanContext";
-import { useGuest } from "./GuestContext";
-
-interface RecipeContextType {
+type RecipeValue = {
   recipes: Recipe[];
-  spoonacularResults: Recipe[];
   loading: boolean;
-  createRecipe: (recipe: Omit<Recipe, "_id">) => Promise<void>;
-  searchSpoonacularRecipes: (query: string) => Promise<void>;
-}
+  search: (q: string) => Promise<void>;
+  getById: (id: string) => Promise<Recipe | null>;
+};
 
-const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
+const RecipeContext = createContext<RecipeValue | undefined>(undefined);
 
-export const RecipeProvider: React.FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+export function RecipeProvider({ children }: { children: React.ReactNode }) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [spoonacularResults, setSpoonacularResults] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const { addMeal } = useMealPlan();
-  const { addMealToGuestPlan } = useGuest();
-
-  // Add a new local recipe
-  const createRecipe = async (recipe: Omit<Recipe, "_id">) => {
+  const search = async (q: string) => {
     setLoading(true);
     try {
-      const newRecipe: Recipe = {
-        ...recipe,
-        _id: crypto.randomUUID(),
-        favorite: false,
-      };
-      setRecipes((prev) => [...prev, newRecipe]);
-    } catch (error) {
-      console.error("Error creating recipe:", error);
+      const r = await api.searchRecipes(q);
+      setRecipes(r);
+    } catch (err) {
+      console.error("searchRecipes", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Search Spoonacular
-  const searchSpoonacularRecipes = async (query: string) => {
+  const getById = async (id: string) => {
     setLoading(true);
     try {
-      const results = await spoonacularSearch(query);
-      // Map SpoonacularRecipe to Recipe type
-      const mapped: Recipe[] = results.map((r) => ({
-        _id: `spoonacular-${r.id}`,
-        userId: "spoonacular",
-        title: r.title,
-        ingredients: r.ingredients.map((i) => ({
-          name: i.name,
-          quantity: i.quantity || "",
-          unit: "", // Spoonacular quantity already in string
-        })),
-        instructions: r.instructions || "",
-        source: "spoonacular",
-        favorite: false,
-        image: r.image,
-      }));
-      setSpoonacularResults(mapped);
-    } catch (err) {
-      console.error(err);
-    } finally {
+      const r = await api.getRecipeById(id);
       setLoading(false);
+      return r;
+    } catch (err) {
+      console.error("getRecipeById", err);
+      setLoading(false);
+      return null;
     }
   };
 
   return (
-    <RecipeContext.Provider
-      value={{
-        recipes,
-        spoonacularResults,
-        loading,
-        createRecipe,
-        searchSpoonacularRecipes,
-      }}
-    >
+    <RecipeContext.Provider value={{ recipes, loading, search, getById }}>
       {children}
     </RecipeContext.Provider>
   );
-};
+}
 
-export const useRecipes = (): RecipeContextType => {
-  const context = useContext(RecipeContext);
-  if (!context)
-    throw new Error("useRecipes must be used within RecipeProvider");
-  return context;
-};
+export function useRecipes() {
+  const ctx = useContext(RecipeContext);
+  if (!ctx) throw new Error("useRecipes must be used within RecipeProvider");
+  return ctx;
+}

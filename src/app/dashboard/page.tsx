@@ -1,28 +1,46 @@
 "use client";
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-import React from "react";
-import { useMealPlan } from "@/context/MealPlanContext";
-import MealPlanCard from "@/components/MealPlanCard";
+export default function DashboardPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
-const DashboardPage: React.FC = () => {
-  const { todayMeals } = useMealPlan();
-  const todayDate = new Date().toISOString();
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [loading, user, router]);
+
+  if (loading) return <p>Loading...</p>;
+  if (!user) return null;
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>
-        My Meal Plan 📅
-      </h1>
-
-      <MealPlanCard todayMeals={todayMeals} mealPlanDate={todayDate} />
-
-      {todayMeals.length === 0 && (
-        <p style={{ marginTop: 24, fontStyle: "italic", color: "#8b7d70" }}>
-          No meals planned for today. Click “+ Add Meal” to get started!
-        </p>
-      )}
+    <div className="py-8">
+      <h2 className="text-3xl font-bold mb-4">Welcome, {user.email}</h2>
+      <p className="text-gray-600 mb-6">What would you like to do today?</p>
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+        <Link
+          href="/meal-plans"
+          className="p-6 border rounded-lg shadow hover:bg-gray-50"
+        >
+          Manage Meal Plans
+        </Link>
+        <Link
+          href="/recipes"
+          className="p-6 border rounded-lg shadow hover:bg-gray-50"
+        >
+          Discover Recipes
+        </Link>
+        <Link
+          href="/shopping-list"
+          className="p-6 border rounded-lg shadow hover:bg-gray-50"
+        >
+          View Shopping List
+        </Link>
+      </div>
     </div>
   );
-};
-
-export default DashboardPage;
+}

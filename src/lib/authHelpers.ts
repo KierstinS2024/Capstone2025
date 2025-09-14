@@ -1,65 +1,27 @@
-import type { User } from "@/types/user";
+import { apiFetch } from "./api";
+import { User } from "@/types/user";
 
-const API_BASE = "/api/auth";
-
-/**
- * Login API call
- */
-export async function loginAPI(email: string, password: string): Promise<User> {
-  const res = await fetch(`${API_BASE}/login`, {
+export async function loginApi(email: string, password: string): Promise<User> {
+  return apiFetch<User>("/api/auth/login", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({ message: "Login failed" }));
-    throw new Error(data.message || "Login failed");
-  }
-
-  const user: User = await res.json();
-  return user;
 }
 
-/**
- * Signup API call
- */
-export async function signupAPI(
-  name: string,
+export async function signupApi(
   email: string,
   password: string
 ): Promise<User> {
-  const res = await fetch(`${API_BASE}/signup`, {
+  return apiFetch<User>("/api/auth/signup", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ email, password }),
   });
-
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({ message: "Signup failed" }));
-    throw new Error(data.message || "Signup failed");
-  }
-
-  const user: User = await res.json();
-  return user;
 }
 
-/**
- * Logout API call
- */
-export async function logoutAPI(): Promise<void> {
-  const res = await fetch(`${API_BASE}/logout`, { method: "POST" });
-  if (!res.ok) {
-    throw new Error("Logout failed");
-  }
+export async function logoutApi(): Promise<void> {
+  return apiFetch<void>("/api/auth/logout", { method: "POST" });
 }
 
-/**
- * Fetch currently logged-in user (from session/cookie)
- */
-export async function fetchCurrentUserAPI(): Promise<User | null> {
-  const res = await fetch(`${API_BASE}/me`);
-  if (!res.ok) return null;
-  const user: User | null = await res.json();
-  return user;
+export async function meApi(): Promise<User> {
+  return apiFetch<User>("/api/auth/me");
 }

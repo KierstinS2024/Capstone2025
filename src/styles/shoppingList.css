@@ -1,0 +1,23 @@
+/* src/styles/shoppingList.css */
+.shopping-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.shopping-list-card {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.add-item-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.add-item-form input {
+  flex: 1;
+  padding: 0.5rem;
+}

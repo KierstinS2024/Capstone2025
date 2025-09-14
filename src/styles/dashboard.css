@@ -1,0 +1,16 @@
+/* src/styles/dashboard.css */
+.dashboard-container {
+  padding: 1rem;
+}
+
+.mealplan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.mealplan-card {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 1rem;
+}

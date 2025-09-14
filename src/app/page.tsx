@@ -1,96 +1,39 @@
-// Path: src/app/page.tsx
-"use client"; // Required for client-side navigation
+"use client";
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
-import React from "react";
+export default function HomePage() {
+  const { user } = useAuth();
 
-const LandingPage: React.FC = () => {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#f9f6f2",
-        padding: "20px",
-      }}
-    >
-      <h1
-        style={{
-          fontSize: "2.5rem",
-          marginBottom: "20px",
-          color: "#6b4c3b",
-          textAlign: "center",
-        }}
-      >
-        Welcome to Meal Planner
-      </h1>
-      <p
-        style={{
-          marginBottom: "40px",
-          fontSize: "1.2rem",
-          textAlign: "center",
-          color: "#4a3c2f",
-        }}
-      >
-        Organize your meals, save recipes, and plan your week with ease.
+    <div className="flex flex-col items-center justify-center text-center py-12">
+      <h1 className="text-5xl font-bold mb-6">Welcome to MealMate</h1>
+      <p className="text-lg mb-8 text-gray-600">
+        Plan your meals, discover recipes, and manage your shopping list.
       </p>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          width: "100%",
-          maxWidth: "300px",
-        }}
-      >
-        <a
-          href="/login"
-          style={{
-            padding: "12px",
-            textAlign: "center",
-            borderRadius: "8px",
-            backgroundColor: "#6b4c3b",
-            color: "#fff",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
+      {user ? (
+        <Link
+          href="/dashboard"
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-md"
         >
-          Login
-        </a>
-        <a
-          href="/signup"
-          style={{
-            padding: "12px",
-            textAlign: "center",
-            borderRadius: "8px",
-            backgroundColor: "#8a6b56",
-            color: "#fff",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Sign Up
-        </a>
-        <a
-          href="/guest-dashboard"
-          style={{
-            padding: "12px",
-            textAlign: "center",
-            borderRadius: "8px",
-            backgroundColor: "#b49e8a",
-            color: "#fff",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Try Guest Mode
-        </a>
-      </div>
+          Go to Dashboard
+        </Link>
+      ) : (
+        <div className="flex gap-4">
+          <Link
+            href="/login"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-md"
+          >
+            Log In
+          </Link>
+          <Link
+            href="/signup"
+            className="bg-gray-200 px-6 py-3 rounded-lg shadow-md"
+          >
+            Sign Up
+          </Link>
+        </div>
+      )}
     </div>
   );
-};
-
-export default LandingPage;
+}

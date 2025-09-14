@@ -1,68 +1,84 @@
-// Path: src/context/MealPlanContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import type { MealPlanEntry } from "@/types/mealPlan";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
+import { MealPlan, Meal } from "@/types/mealPlan";
+import { fetchMealPlans, addMeal, removeMeal } from "@/lib/mealPlanApi";
+import { useAuth } from "./AuthContext";
 
-/**
- * Context type for meal plan management
- */
-interface MealPlanContextType {
-  entries: MealPlanEntry[];
-  todayMeals: MealPlanEntry[];
-  addMeal: (meal: MealPlanEntry) => void;
-  removeMeal: (recipeId: string) => void;
+interface MealPlanContextValue {
+  mealPlans: MealPlan[];
+  loading: boolean;
+  addMealToPlan: (meal: Meal, date: string) => Promise<void>;
+  removeMealFromPlan: (mealId: string) => Promise<void>;
+  refreshPlans: () => Promise<void>;
 }
 
-const MealPlanContext = createContext<MealPlanContextType | undefined>(
+const MealPlanContext = createContext<MealPlanContextValue | undefined>(
   undefined
 );
 
-/**
- * Provider to wrap the app and manage meal plan state
- */
-export const MealPlanProvider: React.FC<{ children: ReactNode }> = ({
+export const MealPlanProvider = ({
   children,
+}: {
+  children: React.ReactNode;
 }) => {
-  const [entries, setEntries] = useState<MealPlanEntry[]>([]);
+  const { user } = useAuth();
+  const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Today's date in YYYY-MM-DD format
-  const today = new Date().toISOString().split("T")[0];
+  const refreshPlans = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const plans = await fetchMealPlans();
+      setMealPlans(plans);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
-  /**
-   * Compute meals scheduled for today
-   */
-  const todayMeals = entries.filter((meal) => meal.date.startsWith(today));
+  useEffect(() => {
+    refreshPlans();
+  }, [refreshPlans]);
 
-  /**
-   * Add a meal to the plan
-   */
-  const addMeal = (meal: MealPlanEntry) => {
-    setEntries((prev) => [...prev, meal]);
-  };
+  const addMealToPlan = useCallback(async (meal: Meal, date: string) => {
+    const newPlan = await addMeal(meal, date);
+    setMealPlans((prev) => [
+      ...prev.filter((p) => p.date !== newPlan.date),
+      newPlan,
+    ]);
+  }, []);
 
-  /**
-   * Remove a meal by recipeId
-   */
-  const removeMeal = (recipeId: string) => {
-    setEntries((prev) => prev.filter((meal) => meal.recipeId !== recipeId));
-  };
+  const removeMealFromPlan = useCallback(async (mealId: string) => {
+    const updated = await removeMeal(mealId);
+    setMealPlans((prev) =>
+      prev.map((p) => (p.id === updated.id ? updated : p))
+    );
+  }, []);
 
   return (
     <MealPlanContext.Provider
-      value={{ entries, todayMeals, addMeal, removeMeal }}
+      value={{
+        mealPlans,
+        loading,
+        addMealToPlan,
+        removeMealFromPlan,
+        refreshPlans,
+      }}
     >
       {children}
     </MealPlanContext.Provider>
   );
 };
 
-/**
- * Hook to use meal plan context
- */
-export const useMealPlan = (): MealPlanContextType => {
-  const context = useContext(MealPlanContext);
-  if (!context)
-    throw new Error("useMealPlan must be used within a MealPlanProvider");
-  return context;
-};
+export function useMealPlan() {
+  const ctx = useContext(MealPlanContext);
+  if (!ctx) throw new Error("useMealPlan must be used inside MealPlanProvider");
+  return ctx;
+}

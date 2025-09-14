@@ -1,52 +1,36 @@
-// Path: src/app/meal-plans/page.tsx
 "use client";
-
-import React, { useState } from "react";
 import { useMealPlan } from "@/context/MealPlanContext";
-import MealPlanCard from "@/components/MealPlanCard";
-import type { MealPlanEntry } from "@/types/mealPlan";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-/**
- * MealPlansPage
- * Displays the current user's meal plan with options to add/edit meals.
- */
-const MealPlansPage: React.FC = () => {
-  const { currentMealPlan, todayMeals } = useMealPlan(); // Meal plan context
-  const [isAddingMeal, setIsAddingMeal] = useState<boolean>(false); // Modal state
+export default function MealPlansPage() {
+  const { mealPlans } = useMealPlan();
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
-  if (!currentMealPlan) {
-    return (
-      <div style={{ padding: 24, maxWidth: 800, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 28, marginBottom: 16 }}>Meal Plans</h1>
-        <p>No meal plan found. Start by creating a new plan!</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!loading && !user) router.push("/login");
+  }, [loading, user, router]);
+
+  if (loading) return <p>Loading...</p>;
+  if (!user) return null;
 
   return (
-    <div style={{ padding: 24, maxWidth: 1000, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 28, marginBottom: 24 }}>
-        Meal Plan: {currentMealPlan.title}
-      </h1>
-
-      {/* Today's meals */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 16,
-        }}
-      >
-        {todayMeals.length === 0 ? (
-          <div>No meals for today. Add some!</div>
-        ) : (
-          todayMeals.map((meal: MealPlanEntry) => (
-            <MealPlanCard key={meal.recipeId} meal={meal} />
-          ))
-        )}
-      </div>
+    <div>
+      <h2 className="text-3xl font-bold mb-6">Meal Plans</h2>
+      {mealPlans.length === 0 ? (
+        <p className="text-gray-600">No meals added yet.</p>
+      ) : (
+        <ul className="space-y-2">
+          {mealPlans.map((plan) => (
+            <li key={plan.id} className="p-4 border rounded">
+              <span className="font-semibold">{plan.meal.name}</span> on{" "}
+              {plan.date}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
-};
-
-export default MealPlansPage;
+}

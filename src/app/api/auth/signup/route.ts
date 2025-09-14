@@ -1,69 +1,44 @@
-// src/app/api/auth/signup/route.ts
 import { NextResponse } from "next/server";
-import { connectToDB } from "@/lib/db";
-import { User } from "@/models/User";
-import bcrypt from "bcrypt";
-
-type SignupRequestBody = { name: string; email: string; password: string };
+import { db } from "@/lib/db";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export async function POST(req: Request) {
   try {
-    const body: SignupRequestBody = await req.json();
-    const { name, email, password } = body;
+    const { email, password } = await req.json();
 
-    if (!name || !email || !password) {
+    const existing = await db.user.findUnique({ where: { email } });
+    if (existing) {
       return NextResponse.json(
-        { message: "Name, email and password are required" },
+        { error: "User already exists" },
         { status: 400 }
       );
     }
 
-    await connectToDB();
-
-    // Check for duplicate email
-    const existingUser = await User.findOne({ email }).select("+passwordHash");
-    if (existingUser) {
-      return NextResponse.json(
-        { message: "Email already in use" },
-        { status: 409 }
-      );
-    }
-
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      name,
-      email,
-      passwordHash,
-      favorites: [],
-      createdAt: new Date(), // optional
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await db.user.create({
+      data: { email, password: hashedPassword },
     });
 
-    await newUser.save();
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET!,
+      {
+        expiresIn: "7d",
+      }
+    );
 
-    // Create response with HttpOnly session cookie
-    const response = NextResponse.json({
-      user: {
-        _id: newUser._id.toString(),
-        name: newUser.name,
-        email: newUser.email,
-        favorites: [],
-      },
-    });
-
-    response.cookies.set({
-      name: "session",
-      value: newUser._id.toString(),
+    const res = NextResponse.json({ user: { id: user.id, email: user.email } });
+    res.cookies.set("token", token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
       path: "/",
-      maxAge: 60 * 60 * 24, // 1 day
-      secure: process.env.NODE_ENV === "production", // optional
+      maxAge: 7 * 24 * 60 * 60,
     });
 
-    return response;
-  } catch (err: any) {
-    console.error("Signup error:", err);
-    return NextResponse.json({ message: "Signup failed" }, { status: 500 });
+    return res;
+  } catch (err) {
+    return NextResponse.json({ error: "Signup failed" }, { status: 500 });
   }
 }
