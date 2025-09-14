@@ -1,17 +1,23 @@
+// path: src/components/ShoppingListPanel.tsx
 "use client";
+
 import React from "react";
 import { useShoppingList } from "@/context/ShoppingListContext";
+import "@/styles/shoppingList.css";
 
 export default function ShoppingListPanel() {
-  const { shoppingList, toggleItem, removeItem } = useShoppingList();
+  const { shoppingList, toggleItem, removeItem, loading } = useShoppingList();
+
+  if (loading) return <p className="loading">Loading shopping list...</p>;
 
   return (
-    <div className="shopping-panel">
-      <h3>Shopping List</h3>
+    <div className="shopping-list-panel">
+      <h3 className="panel-title">Shopping List</h3>
+
       {shoppingList.length === 0 ? (
-        <p>Your shopping list is empty.</p>
+        <p className="empty-state">Your shopping list is empty.</p>
       ) : (
-        <ul>
+        <ul className="shopping-items">
           {shoppingList.map((item) => (
             <li key={item.id} className="shopping-item">
               <label>
@@ -24,7 +30,12 @@ export default function ShoppingListPanel() {
                   {item.name}
                 </span>
               </label>
-              <button onClick={() => removeItem(item.id)}>Remove</button>
+              <button
+                className="remove-button"
+                onClick={() => removeItem(item.id)}
+              >
+                Remove
+              </button>
             </li>
           ))}
         </ul>

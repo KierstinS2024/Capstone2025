@@ -2,74 +2,74 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { useMealPlans } from "@/context/MealPlanContext";
-import { AddMealForm } from "@/components/AddMealForm";
-import { Meal } from "@/types/mealPlan";
+import { useMealPlan } from "@/context/MealPlanContext";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import MealCard from "@/components/MealCard";
+import AddMealForm from "@/components/AddMealForm";
 import "@/styles/mealplan-detail.css";
 
-export default function MealPlanDetailPage() {
-  const { id: mealPlanId } = useParams();
-  const { mealPlans, fetchMealPlans, addMeal, removeMeal } = useMealPlans();
+interface MealPlanDetailPageProps {
+  params: { id: string };
+}
 
-  const [mealPlan, setMealPlan] = useState(
-    mealPlans.find((mp) => mp._id === mealPlanId)
+export default function MealPlanDetailPage({
+  params,
+}: MealPlanDetailPageProps) {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { mealPlans, addMealToPlan, removeMealFromPlan, refreshPlans } =
+    useMealPlan();
+
+  const [currentPlan, setCurrentPlan] = useState<(typeof mealPlans)[0] | null>(
+    null
   );
-  const [loading, setLoading] = useState(!mealPlan);
 
+  // Redirect if not logged in
   useEffect(() => {
-    if (!mealPlan) {
-      setLoading(true);
-      fetchMealPlans().finally(() => {
-        setMealPlan(mealPlans.find((mp) => mp._id === mealPlanId));
-        setLoading(false);
-      });
+    if (!authLoading && !user) router.push("/login");
+  }, [authLoading, user, router]);
+
+  // Refresh plan and find current plan by id
+  useEffect(() => {
+    if (user) {
+      refreshPlans();
+      const plan = mealPlans.find((p) => p._id === params.id);
+      setCurrentPlan(plan || null);
     }
-  }, [mealPlan, mealPlanId, fetchMealPlans, mealPlans]);
+  }, [mealPlans, params.id, refreshPlans, user]);
 
-  const handleAddMeal = (meal: Meal) => {
-    addMeal(mealPlanId!, meal);
-    setMealPlan((prev) =>
-      prev ? { ...prev, meals: [...prev.meals, meal] } : prev
-    );
-  };
-
-  const handleRemoveMeal = (mealId: string) => {
-    removeMeal(mealPlanId!, mealId);
-    setMealPlan((prev) =>
-      prev
-        ? { ...prev, meals: prev.meals.filter((m) => m.id !== mealId) }
-        : prev
-    );
-  };
-
-  if (loading) return <p className="loading">Loading meal plan...</p>;
-  if (!mealPlan) return <p className="empty-state">Meal plan not found.</p>;
+  if (authLoading || !currentPlan)
+    return <p className="loading">Loading meal plan...</p>;
+  if (!user) return null;
 
   return (
     <div className="mealplan-detail-page">
-      <h1 className="page-title">{mealPlan.date}</h1>
+      <h1 className="page-title">
+        Meal Plan: {currentPlan.startDate} → {currentPlan.endDate}
+      </h1>
 
-      <AddMealForm onAdd={handleAddMeal} />
+      {/* Meals Section */}
+      <div className="meals-section">
+        {["breakfast", "lunch", "dinner"].map((type) => {
+          const meal = currentPlan.meals.find((m) => m.type === type);
+          return (
+            <MealCard
+              key={type}
+              type={type}
+              meal={meal || null}
+              onRemove={(mealId) => removeMealFromPlan(mealId)}
+              onOpen={(meal) => console.log("Open recipe:", meal)}
+            />
+          );
+        })}
+      </div>
 
-      {mealPlan.meals.length === 0 ? (
-        <p className="no-meals">No meals yet in this plan.</p>
-      ) : (
-        <ul className="meals-list">
-          {mealPlan.meals.map((meal) => (
-            <li key={meal.id} className="meal-item">
-              <strong>{meal.name}</strong>
-              {meal.description && `: ${meal.description}`}
-              <button
-                className="remove-button"
-                onClick={() => handleRemoveMeal(meal.id)}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Add Meal Form */}
+      <AddMealForm
+        planId={currentPlan._id}
+        onAdd={(meal, date) => addMealToPlan(meal, date)}
+      />
     </div>
   );
 }

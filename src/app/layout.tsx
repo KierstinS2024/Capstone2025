@@ -1,48 +1,27 @@
 // src/app/layout.tsx
-import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
-import { MealPlanProvider } from "@/context/MealPlanContext";
-import { ShoppingListProvider } from "@/context/ShoppingListContext";
+import "./global.css";
 import Navbar from "@/components/Navbar";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { usePathname } from "next/navigation";
+import AppProviders from "@/context/AppProviders";
 
 export const metadata = {
   title: "MealMate",
   description: "Plan meals, discover recipes, and manage shopping lists",
 };
 
+// Keep layout as server component to allow metadata export
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-
-  // Pages that do not require authentication
-  const publicPaths = ["/login", "/signup", "/"];
-  const isPublic = publicPaths.includes(pathname || "/");
-
-  const content = isPublic ? (
-    // Render public pages without protection
-    children
-  ) : (
-    // Wrap protected pages
-    <ProtectedRoute>{children}</ProtectedRoute>
-  );
-
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          <MealPlanProvider>
-            <ShoppingListProvider>
-              {/* Navbar is shown only for authenticated users */}
-              {!isPublic && <Navbar />}
-              <main className="max-w-5xl mx-auto p-4">{content}</main>
-            </ShoppingListProvider>
-          </MealPlanProvider>
-        </AuthProvider>
+        {/* All client-side context providers live inside AppProviders */}
+        <AppProviders>
+          <Navbar />
+          <main className="max-w-5xl mx-auto p-4">{children}</main>
+        </AppProviders>
       </body>
     </html>
   );

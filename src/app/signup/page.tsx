@@ -1,62 +1,49 @@
-// src/app/signup/page.tsx
+// path: src/app/signup/page.tsx
 "use client";
+
+import React, { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 import "@/styles/auth.css";
 
-import React, { useState, FormEvent } from "react";
-import { useAuth } from "../../context/AuthContext";
-import "./signup.css"; // CSS-only styling
-
 export default function SignupPage() {
-  const { signup, loading } = useAuth(); // Get signup method and loading state
+  const { signup } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-
+    setError("");
     try {
       await signup(email, password);
-      // Redirect handled in AuthContext
-    } catch (err: any) {
-      setError(err.message || "Signup failed");
+      router.push("/dashboard");
+    } catch (err) {
+      setError("Signup failed");
     }
   };
 
   return (
-    <div className="auth-container">
-      <h1 className="auth-title">Sign Up</h1>
-      <form className="auth-form" onSubmit={handleSubmit}>
-        {error && <div className="auth-error">{error}</div>}
-
-        <label className="auth-label" htmlFor="email">
-          Email
-        </label>
+    <div className="auth-page">
+      <h1>Create Account</h1>
+      <form className="auth-form" onSubmit={handleSignup}>
         <input
-          id="email"
           type="email"
-          className="auth-input"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-
-        <label className="auth-label" htmlFor="password">
-          Password
-        </label>
         <input
-          id="password"
           type="password"
-          className="auth-input"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-
-        <button type="submit" className="auth-button" disabled={loading}>
-          {loading ? "Signing up..." : "Sign Up"}
-        </button>
+        {error && <p className="error">{error}</p>}
+        <button type="submit">Sign Up</button>
       </form>
     </div>
   );

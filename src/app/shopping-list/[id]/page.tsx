@@ -1,127 +1,68 @@
-// src/app/shopping-list/[id]/page.tsx
+// path: src/app/shopping-list/[id]/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import { useShoppingList } from "@/context/ShoppingListContext";
-import { AddShoppingListForm } from "@/components/AddShoppingListForm";
-import {
-  ShoppingListItem,
-  ShoppingList as ShoppingListType,
-} from "@/types/shoppingList";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import "@/styles/shoppinglist-detail.css";
 
-/**
- * Shopping List Detail Page
- * Displays all items in a single shopping list and allows:
- * - Adding new items
- * - Removing items
- * - Toggling purchased state
- */
-export default function ShoppingListDetailPage() {
-  // Get shopping list ID from URL
-  const { id: shoppingListId } = useParams();
+interface ShoppingListDetailPageProps {
+  params: { id: string };
+}
 
-  // Access shopping list state and functions from context
-  const { shoppingLists, fetchShoppingLists, addItem, removeItem, toggleItem } =
+export default function ShoppingListDetailPage({
+  params,
+}: ShoppingListDetailPageProps) {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { shoppingList, toggleItem, removeItem, refreshList, loading } =
     useShoppingList();
 
-  // Local state for current shopping list
-  const [shoppingList, setShoppingList] = useState<
-    ShoppingListType | undefined
-  >(shoppingLists.find((sl) => sl._id === shoppingListId));
-  const [loading, setLoading] = useState(!shoppingList);
+  const [listItem, setListItem] = useState<(typeof shoppingList)[0] | null>(
+    null
+  );
 
-  // Fetch the shopping list if it's not already in context
+  const itemId = params.id;
+
+  // Redirect unauthenticated users
   useEffect(() => {
-    if (!shoppingList) {
-      setLoading(true);
-      fetchShoppingLists().finally(() => {
-        setShoppingList(shoppingLists.find((sl) => sl._id === shoppingListId));
-        setLoading(false);
-      });
-    }
-  }, [shoppingList, shoppingListId, fetchShoppingLists, shoppingLists]);
+    if (!authLoading && !user) router.push("/login");
+  }, [authLoading, user, router]);
 
-  // Add a new item to the shopping list
-  const handleAddItem = (item: ShoppingListItem) => {
-    addItem(shoppingListId!, item);
-    setShoppingList((prev) =>
-      prev ? { ...prev, items: [...prev.items, item] } : prev
-    );
-  };
+  // Refresh and find specific item
+  useEffect(() => {
+    if (user) refreshList();
+  }, [user, refreshList]);
 
-  // Remove an item from the shopping list
-  const handleRemoveItem = (itemId: string) => {
-    removeItem(shoppingListId!, itemId);
-    setShoppingList((prev) =>
-      prev
-        ? { ...prev, items: prev.items.filter((i) => i.id !== itemId) }
-        : prev
-    );
-  };
+  useEffect(() => {
+    const item = shoppingList.find((i) => i.id === itemId) || null;
+    setListItem(item);
+  }, [shoppingList, itemId]);
 
-  // Toggle the purchased state of an item
-  const handleToggleItem = (itemId: string) => {
-    toggleItem(shoppingListId!, itemId);
-    setShoppingList((prev) =>
-      prev
-        ? {
-            ...prev,
-            items: prev.items.map((i) =>
-              i.id === itemId ? { ...i, purchased: !i.purchased } : i
-            ),
-          }
-        : prev
-    );
-  };
-
-  // Show loading state
-  if (loading) return <p>Loading shopping list...</p>;
-
-  // Handle case where shopping list is not found
-  if (!shoppingList) return <p>Shopping list not found.</p>;
+  if (authLoading || loading) return <p className="loading">Loading item...</p>;
+  if (!user) return null;
+  if (!listItem) return <p className="empty-state">Item not found.</p>;
 
   return (
-    <div style={{ padding: "24px", maxWidth: "700px", margin: "0 auto" }}>
-      {/* Shopping list title */}
-      <h1 style={{ marginBottom: "16px" }}>{shoppingList.name}</h1>
+    <div className="shoppinglist-detail-page">
+      <h1 className="page-title">{listItem.name}</h1>
+      <p className="item-category">Category: {listItem.category}</p>
+      <p className="item-status">
+        Status: {listItem.purchased ? "Purchased ✅" : "Pending ⏳"}
+      </p>
 
-      {/* Form to add new items */}
-      <AddShoppingListForm onAdd={handleAddItem} />
-
-      {/* Render list of items */}
-      {shoppingList.items.length === 0 ? (
-        <p>No items yet.</p>
-      ) : (
-        <ul>
-          {shoppingList.items.map((item) => (
-            <li key={item.id} style={{ marginBottom: "8px" }}>
-              <label
-                style={{
-                  textDecoration: item.purchased ? "line-through" : "none",
-                }}
-              >
-                {/* Checkbox to toggle purchased state */}
-                <input
-                  type="checkbox"
-                  checked={item.purchased}
-                  onChange={() => handleToggleItem(item.id)}
-                  style={{ marginRight: "8px" }}
-                />
-                {item.name}
-              </label>
-
-              {/* Button to remove item */}
-              <button
-                onClick={() => handleRemoveItem(item.id)}
-                style={{ marginLeft: "12px" }}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="item-actions">
+        <button className="button" onClick={() => toggleItem(listItem.id)}>
+          {listItem.purchased ? "Mark as Pending" : "Mark as Purchased"}
+        </button>
+        <button
+          className="button remove-button"
+          onClick={() => removeItem(listItem.id)}
+        >
+          Remove Item
+        </button>
+      </div>
     </div>
   );
 }

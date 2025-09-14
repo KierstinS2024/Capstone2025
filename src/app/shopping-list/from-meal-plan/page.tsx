@@ -1,113 +1,40 @@
 // path: src/app/shopping-list/from-meal-plan/page.tsx
 "use client";
 
-import React, { useState } from "react";
-import { useShoppingList } from "@/context/ShoppingListContext";
-import { useMealPlan } from "@/context/MealPlanContext";
+import React, { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useMealPlan } from "@/context/MealPlanContext";
+import { useShoppingList } from "@/context/ShoppingListContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import "@/styles/shoppingList.css";
 
-export default function ShoppingListPage() {
-  const {
-    shoppingList,
-    addItem,
-    toggleItem,
-    removeItem,
-    refreshList,
-    loading,
-  } = useShoppingList();
-  const { mealPlans } = useMealPlan();
-  const { user } = useAuth();
+export default function GenerateShoppingListPage() {
+  const { user, loading: authLoading } = useAuth();
+  const { getAllMealNames } = useMealPlan();
+  const { addMultipleItems } = useShoppingList();
   const router = useRouter();
 
-  const [newItemName, setNewItemName] = useState("");
-  const [generating, setGenerating] = useState(false);
-
+  // Redirect if not logged in
   useEffect(() => {
-    if (!user && !loading) router.push("/login");
-  }, [user, loading, router]);
+    if (!authLoading && !user) router.push("/login");
+  }, [authLoading, user, router]);
 
-  const handleAddItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newItemName.trim()) return;
-    await addItem(newItemName.trim(), "other"); // category ignored for now
-    setNewItemName("");
+  const handleGenerateList = async () => {
+    const mealNames = getAllMealNames();
+    await addMultipleItems(mealNames);
   };
 
-  const handleGenerateFromMealPlans = async () => {
-    setGenerating(true);
-    try {
-      for (const plan of mealPlans) {
-        for (const meal of plan.meals) {
-          await addItem(meal.name, "other");
-        }
-      }
-      await refreshList();
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  if (loading) return <p className="loading">Loading shopping list...</p>;
-  if (!user) return null;
+  if (authLoading || !user) return <p className="loading">Loading...</p>;
 
   return (
     <div className="shopping-list-page">
-      <h1 className="page-title">Shopping List</h1>
-
-      {/* Generate Button */}
-      <button
-        onClick={handleGenerateFromMealPlans}
-        className="button generate-button"
-        disabled={generating}
-      >
-        {generating ? "Generating..." : "Generate from Meal Plans"}
+      <h1 className="page-title">Generate Shopping List from Meal Plans</h1>
+      <p className="subtitle">
+        Add all ingredients from your meal plans to your shopping list.
+      </p>
+      <button className="button" onClick={handleGenerateList}>
+        Add All Ingredients
       </button>
-
-      {/* Add Item Form */}
-      <form className="add-item-form" onSubmit={handleAddItem}>
-        <input
-          type="text"
-          placeholder="Item name"
-          value={newItemName}
-          onChange={(e) => setNewItemName(e.target.value)}
-          className="input"
-          required
-        />
-        <button type="submit" className="button">
-          Add
-        </button>
-      </form>
-
-      {/* Shopping List */}
-      {shoppingList.length === 0 ? (
-        <p className="empty-state">Your shopping list is empty.</p>
-      ) : (
-        <ul className="shopping-items">
-          {shoppingList.map((item) => (
-            <li key={item.id} className="shopping-item">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={item.purchased}
-                  onChange={() => toggleItem(item.id)}
-                />
-                <span className={item.purchased ? "purchased" : ""}>
-                  {item.name}
-                </span>
-              </label>
-              <button
-                className="remove-button"
-                onClick={() => removeItem(item.id)}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

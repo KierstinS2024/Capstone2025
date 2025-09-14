@@ -1,4 +1,3 @@
-// path: src/context/ShoppingListContext.tsx
 "use client";
 
 import React, {
@@ -7,6 +6,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  ReactNode,
 } from "react";
 import { ShoppingListItem } from "@/types/shoppingList";
 import {
@@ -27,18 +27,14 @@ interface ShoppingListContextValue {
   removeItem: (id: string) => Promise<void>;
   toggleItem: (id: string) => Promise<void>;
   refreshList: () => Promise<void>;
-  addMultipleItems: (names: string[]) => Promise<void>; // NEW
+  addMultipleItems: (names: string[]) => Promise<void>;
 }
 
 const ShoppingListContext = createContext<ShoppingListContextValue | undefined>(
   undefined
 );
 
-export const ShoppingListProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
+export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -76,7 +72,6 @@ export const ShoppingListProvider = ({
     setShoppingList((prev) => prev.map((i) => (i.id === id ? updated : i)));
   }, []);
 
-  // NEW: Batch add
   const addMultipleItems = useCallback(
     async (names: string[]) => {
       for (const name of names) {

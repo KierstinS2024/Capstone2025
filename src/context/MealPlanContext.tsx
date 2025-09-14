@@ -1,4 +1,3 @@
-// path: src/context/MealPlanContext.tsx
 "use client";
 
 import React, {
@@ -7,6 +6,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  ReactNode,
 } from "react";
 import { MealPlan, Meal } from "@/types/mealPlan";
 import { fetchMealPlans, addMeal, removeMeal } from "@/lib/mealPlanApi";
@@ -18,18 +18,14 @@ interface MealPlanContextValue {
   addMealToPlan: (meal: Meal, date: string) => Promise<void>;
   removeMealFromPlan: (mealId: string) => Promise<void>;
   refreshPlans: () => Promise<void>;
-  getAllMealNames: () => string[]; // NEW helper
+  getAllMealNames: () => string[];
 }
 
 const MealPlanContext = createContext<MealPlanContextValue | undefined>(
   undefined
 );
 
-export const MealPlanProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
+export const MealPlanProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,7 +48,7 @@ export const MealPlanProvider = ({
   const addMealToPlan = useCallback(async (meal: Meal, date: string) => {
     const newPlan = await addMeal(meal, date);
     setMealPlans((prev) => [
-      ...prev.filter((p) => p.date !== newPlan.date),
+      ...prev.filter((p) => p._id !== newPlan._id),
       newPlan,
     ]);
   }, []);
@@ -60,11 +56,10 @@ export const MealPlanProvider = ({
   const removeMealFromPlan = useCallback(async (mealId: string) => {
     const updated = await removeMeal(mealId);
     setMealPlans((prev) =>
-      prev.map((p) => (p.id === updated.id ? updated : p))
+      prev.map((p) => (p._id === updated._id ? updated : p))
     );
   }, []);
 
-  // NEW: Collect all meal names for shopping list generation
   const getAllMealNames = useCallback(() => {
     return mealPlans.flatMap((plan) => plan.meals.map((meal) => meal.name));
   }, [mealPlans]);

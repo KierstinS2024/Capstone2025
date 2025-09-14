@@ -1,4 +1,3 @@
-// src/context/AuthContext.tsx
 "use client";
 
 import React, {
@@ -9,8 +8,8 @@ import React, {
   ReactNode,
   useCallback,
 } from "react";
-import { User } from "../types/user"; // Type for user
-import { useRouter } from "next/navigation"; // Optional redirect
+import { User } from "@/types/user";
+import { useRouter } from "next/navigation";
 
 interface AuthContextValue {
   user: User | null;
@@ -48,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  // Login user
+  // Login
   const login = useCallback(
     async (email: string, password: string) => {
       setLoading(true);
@@ -62,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!res.ok) throw new Error("Login failed");
         const data = await res.json();
         setUser(data.user);
-        router.push("/dashboard"); // Optional redirect after login
+        router.push("/dashboard");
       } catch (error) {
         console.error(error);
         throw error;
@@ -73,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [router]
   );
 
-  // Signup user
+  // Signup
   const signup = useCallback(
     async (email: string, password: string) => {
       setLoading(true);
@@ -87,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!res.ok) throw new Error("Signup failed");
         const data = await res.json();
         setUser(data.user);
-        router.push("/dashboard"); // Optional redirect after signup
+        router.push("/dashboard");
       } catch (error) {
         console.error(error);
         throw error;
@@ -98,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [router]
   );
 
-  // Logout user
+  // Logout
   const logout = useCallback(async () => {
     setLoading(true);
     try {
@@ -108,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) throw new Error("Logout failed");
       setUser(null);
-      router.push("/login"); // Optional redirect after logout
+      router.push("/login");
     } catch (error) {
       console.error(error);
     } finally {
@@ -123,7 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook to access AuthContext
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");

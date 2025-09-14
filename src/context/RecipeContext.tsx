@@ -1,29 +1,29 @@
-// path: src/context/RecipeContext.tsx
 "use client";
-import React, { createContext, useContext, useState } from "react";
+
+import React, { createContext, useContext, useState, ReactNode } from "react";
 import { Recipe } from "@/types/recipe";
 import * as api from "@/lib/spoonacularApi";
 
-type RecipeValue = {
+type RecipeContextValue = {
   recipes: Recipe[];
   loading: boolean;
-  search: (q: string) => Promise<void>;
+  search: (query: string) => Promise<void>;
   getById: (id: string) => Promise<Recipe | null>;
 };
 
-const RecipeContext = createContext<RecipeValue | undefined>(undefined);
+const RecipeContext = createContext<RecipeContextValue | undefined>(undefined);
 
-export function RecipeProvider({ children }: { children: React.ReactNode }) {
+export function RecipeProvider({ children }: { children: ReactNode }) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const search = async (q: string) => {
+  const search = async (query: string) => {
     setLoading(true);
     try {
-      const r = await api.searchRecipes(q);
-      setRecipes(r);
+      const results = await api.searchRecipes(query);
+      setRecipes(results);
     } catch (err) {
-      console.error("searchRecipes", err);
+      console.error("searchRecipes failed:", err);
     } finally {
       setLoading(false);
     }
@@ -32,11 +32,11 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   const getById = async (id: string) => {
     setLoading(true);
     try {
-      const r = await api.getRecipeById(id);
+      const recipe = await api.getRecipeById(id);
       setLoading(false);
-      return r;
+      return recipe;
     } catch (err) {
-      console.error("getRecipeById", err);
+      console.error("getRecipeById failed:", err);
       setLoading(false);
       return null;
     }

@@ -1,3 +1,4 @@
+// src/context/AppProviders.tsx
 "use client";
 
 import React from "react";
@@ -6,6 +7,7 @@ import { MealPlanProvider } from "./MealPlanContext";
 import { ShoppingListProvider } from "./ShoppingListContext";
 import { RecipeProvider } from "./RecipeContext";
 
+// Wrap all client-side contexts here
 export default function AppProviders({
   children,
 }: {

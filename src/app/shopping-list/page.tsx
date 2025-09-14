@@ -9,16 +9,28 @@ import GenerateShoppingList from "@/components/GenerateShoppingList";
 import "@/styles/shoppingList.css";
 
 export default function ShoppingListPage() {
-  const { shoppingList, addItem, toggleItem, removeItem, loading } =
-    useShoppingList();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const {
+    shoppingList,
+    addItem,
+    toggleItem,
+    removeItem,
+    loading,
+    refreshList,
+  } = useShoppingList();
 
   const [newItemName, setNewItemName] = useState("");
 
+  // Redirect if not logged in
   useEffect(() => {
-    if (!user && !loading) router.push("/login");
-  }, [user, loading, router]);
+    if (!authLoading && !user) router.push("/login");
+  }, [authLoading, user, router]);
+
+  // Refresh shopping list on mount
+  useEffect(() => {
+    if (user) refreshList();
+  }, [user, refreshList]);
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +39,8 @@ export default function ShoppingListPage() {
     setNewItemName("");
   };
 
-  if (loading) return <p className="loading">Loading shopping list...</p>;
+  if (authLoading || loading)
+    return <p className="loading">Loading shopping list...</p>;
   if (!user) return null;
 
   return (

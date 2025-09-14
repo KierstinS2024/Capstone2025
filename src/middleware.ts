@@ -1,15 +1,15 @@
+// src/middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
-  const userCookie = req.cookies.get("auth-token");
-  const isLoggedIn = Boolean(userCookie);
+  const token = req.cookies.get("token")?.value; // consistent with auth routes
   const { pathname } = req.nextUrl;
 
   const protectedPaths = ["/dashboard", "/meal-plans", "/shopping-list"];
   const isProtected = protectedPaths.some((path) => pathname.startsWith(path));
 
-  if (isProtected && !isLoggedIn) {
+  if (isProtected && !token) {
     const loginUrl = new URL("/login", req.url);
     return NextResponse.redirect(loginUrl);
   }
