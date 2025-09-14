@@ -1,56 +1,41 @@
-// src/app/meal-plans/[id]/page.tsx
+// path: src/app/meal-plans/[id]/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { useMealPlan } from "@/context/MealPlanContext";
-import { AddMealForm } from "@/components/AddMealForrm";
+import { useMealPlans } from "@/context/MealPlanContext";
+import { AddMealForm } from "@/components/AddMealForm";
 import { Meal } from "@/types/mealPlan";
+import "@/styles/mealplan-detail.css";
 
-/**
- * Meal Plan Detail Page
- * Displays meals in a single plan and allows adding/removing meals.
- */
 export default function MealPlanDetailPage() {
-  // Get the meal plan ID from the URL
   const { id: mealPlanId } = useParams();
+  const { mealPlans, fetchMealPlans, addMeal, removeMeal } = useMealPlans();
 
-  // Destructure context functions and state
-  const { mealPlans, fetchMealPlans, addMeal, removeMeal } = useMealPlan();
-
-  // Local state for the current meal plan
   const [mealPlan, setMealPlan] = useState(
     mealPlans.find((mp) => mp._id === mealPlanId)
   );
-
-  // Loading state while fetching data
   const [loading, setLoading] = useState(!mealPlan);
 
-  // Fetch the meal plan if it is not yet in context
   useEffect(() => {
     if (!mealPlan) {
       setLoading(true);
       fetchMealPlans().finally(() => {
-        // Update local state with fetched meal plan
         setMealPlan(mealPlans.find((mp) => mp._id === mealPlanId));
         setLoading(false);
       });
     }
   }, [mealPlan, mealPlanId, fetchMealPlans, mealPlans]);
 
-  // Handler to add a new meal to this meal plan
   const handleAddMeal = (meal: Meal) => {
-    addMeal(mealPlanId!, meal); // update context
-    // Optimistically update local state to show immediately
+    addMeal(mealPlanId!, meal);
     setMealPlan((prev) =>
       prev ? { ...prev, meals: [...prev.meals, meal] } : prev
     );
   };
 
-  // Handler to remove a meal from this meal plan
   const handleRemoveMeal = (mealId: string) => {
-    removeMeal(mealPlanId!, mealId); // update context
-    // Update local state to reflect removal
+    removeMeal(mealPlanId!, mealId);
     setMealPlan((prev) =>
       prev
         ? { ...prev, meals: prev.meals.filter((m) => m.id !== mealId) }
@@ -58,32 +43,26 @@ export default function MealPlanDetailPage() {
     );
   };
 
-  // Show loading state while fetching
-  if (loading) return <p>Loading meal plan...</p>;
-
-  // Show message if meal plan not found
-  if (!mealPlan) return <p>Meal plan not found.</p>;
+  if (loading) return <p className="loading">Loading meal plan...</p>;
+  if (!mealPlan) return <p className="empty-state">Meal plan not found.</p>;
 
   return (
-    <div style={{ padding: "24px", maxWidth: "700px", margin: "0 auto" }}>
-      {/* Meal plan title */}
-      <h1 style={{ marginBottom: "16px" }}>{mealPlan.name}</h1>
+    <div className="mealplan-detail-page">
+      <h1 className="page-title">{mealPlan.date}</h1>
 
-      {/* Add Meal Form */}
       <AddMealForm onAdd={handleAddMeal} />
 
-      {/* List of meals in the plan */}
       {mealPlan.meals.length === 0 ? (
-        <p>No meals yet in this plan.</p>
+        <p className="no-meals">No meals yet in this plan.</p>
       ) : (
-        <ul>
+        <ul className="meals-list">
           {mealPlan.meals.map((meal) => (
-            <li key={meal.id} style={{ marginBottom: "8px" }}>
-              <strong>{meal.name}</strong>: {meal.description}
-              {/* Remove meal button */}
+            <li key={meal.id} className="meal-item">
+              <strong>{meal.name}</strong>
+              {meal.description && `: ${meal.description}`}
               <button
+                className="remove-button"
                 onClick={() => handleRemoveMeal(meal.id)}
-                style={{ marginLeft: "12px" }}
               >
                 Remove
               </button>

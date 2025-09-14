@@ -1,32 +1,40 @@
+// path: src/app/meal-plans/page.tsx
 "use client";
-import { useMealPlan } from "@/context/MealPlanContext";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+
+import React from "react";
+import { useMealPlans } from "@/context/MealPlanContext";
+import "@/styles/mealPlans.css";
 
 export default function MealPlansPage() {
-  const { mealPlans } = useMealPlan();
-  const { user, loading } = useAuth();
-  const router = useRouter();
+  const { mealPlans, loading } = useMealPlans();
 
-  useEffect(() => {
-    if (!loading && !user) router.push("/login");
-  }, [loading, user, router]);
-
-  if (loading) return <p>Loading...</p>;
-  if (!user) return null;
+  if (loading) return <p className="loading">Loading meal plans...</p>;
 
   return (
-    <div>
-      <h2 className="text-3xl font-bold mb-6">Meal Plans</h2>
+    <div className="meal-plans-page">
+      <h1 className="page-title">Meal Plans</h1>
+
       {mealPlans.length === 0 ? (
-        <p className="text-gray-600">No meals added yet.</p>
+        <p className="empty-state">
+          No meal plans yet. Add one to get started!
+        </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="meal-plan-list">
           {mealPlans.map((plan) => (
-            <li key={plan.id} className="p-4 border rounded">
-              <span className="font-semibold">{plan.meal.name}</span> on{" "}
-              {plan.date}
+            <li key={plan._id} className="meal-plan-card">
+              <h2 className="meal-plan-date">{plan.date}</h2>
+              {plan.meals.length === 0 ? (
+                <p className="no-meals">No meals yet in this plan.</p>
+              ) : (
+                <ul className="meals-list">
+                  {plan.meals.map((meal) => (
+                    <li key={meal.id} className="meal-item">
+                      <strong>{meal.name}</strong>
+                      {meal.description && `: ${meal.description}`}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>

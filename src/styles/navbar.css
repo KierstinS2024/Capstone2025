@@ -1,0 +1,64 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #0070f3;
+  padding: 12px 24px;
+  color: white;
+  border-radius: 6px;
+  margin-bottom: 24px;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.navbar-logo {
+  font-weight: bold;
+  font-size: 20px;
+  color: white;
+  text-decoration: none;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 12px;
+}
+
+.navbar-link {
+  color: white;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.navbar-link:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.navbar-link.active {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-email {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.navbar-link.logout {
+  background-color: #ff4d4f;
+  cursor: pointer;
+}
+
+.navbar-link.logout:hover {
+  background-color: #ff7875;
+}
