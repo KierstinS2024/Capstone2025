@@ -1,44 +1,60 @@
-// src/models/MealPlan.ts
-// Mongoose schema and model for meal plans
+// path: src/models/MealPlan.ts
+import { Schema, model, models, type Document } from "mongoose";
 
-import mongoose, { Schema, Document, Types } from "mongoose";
-import type { IUser } from "./User";
-import type { IRecipe } from "./Recipe";
+// Define meal types
+export type MealType = "breakfast" | "lunch" | "dinner";
 
-export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
-
-export interface IMealPlanEntry {
-  date: Date;
-  mealType: MealType;
-  recipeId: Types.ObjectId | IRecipe;
+// Meal subdocument schema
+export interface IMeal {
+  type: MealType;
+  date: string; // ISO string
+  name: string;
+  recipeId?: string; // links to Recipe
+  image?: string;
+  source?: "spoonacular" | "custom";
+  description?: string;
+  notes?: string;
 }
 
+// MealPlan document interface
 export interface IMealPlan extends Document {
-  userId: Types.ObjectId | IUser;
-  title: string;
-  startDate: Date;
-  endDate: Date;
-  entries: IMealPlanEntry[];
+  userId: string;
+  startDate: string;
+  endDate: string;
+  meals: IMeal[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const mealPlanSchema = new Schema<IMealPlan>({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  title: { type: String, required: true },
-  startDate: { type: Date, required: true },
-  endDate: { type: Date, required: true },
-  entries: [
-    {
-      date: { type: Date, required: true },
-      mealType: {
-        type: String,
-        enum: ["breakfast", "lunch", "dinner", "snack"],
-        required: true,
-      },
-      recipeId: { type: Schema.Types.ObjectId, ref: "Recipe", required: true },
+// Meal schema
+const MealSchema = new Schema<IMeal>(
+  {
+    type: {
+      type: String,
+      enum: ["breakfast", "lunch", "dinner"],
+      required: true,
     },
-  ],
-});
+    date: { type: String, required: true },
+    name: { type: String, required: true },
+    recipeId: { type: Schema.Types.ObjectId, ref: "Recipe" },
+    image: { type: String },
+    source: { type: String, enum: ["spoonacular", "custom"] },
+    description: { type: String },
+    notes: { type: String },
+  },
+  { _id: false }
+);
+
+// MealPlan schema
+const MealPlanSchema = new Schema<IMealPlan>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    startDate: { type: String, required: true },
+    endDate: { type: String, required: true },
+    meals: { type: [MealSchema], default: [] },
+  },
+  { timestamps: true }
+);
 
 export const MealPlan =
-  mongoose.models.MealPlan ||
-  mongoose.model<IMealPlan>("MealPlan", mealPlanSchema);
+  models.MealPlan || model<IMealPlan>("MealPlan", MealPlanSchema);

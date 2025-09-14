@@ -1,14 +1,43 @@
+/* src/styles/shoppingList.css */
+
+/* Container */
 .shopping-list-page {
   max-width: 700px;
   margin: 0 auto;
   padding: 24px;
 }
 
+/* Page title */
 .page-title {
   font-size: 28px;
   margin-bottom: 16px;
 }
 
+/* Generate Shopping List */
+.generate-button-container {
+  margin-bottom: 16px; /* space between generator and Add Item form */
+}
+
+.generate-button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  background-color: #0070f3;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.generate-button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}
+
+.generate-button:hover:not(:disabled) {
+  background-color: #005bb5;
+}
+
+/* Add Item Form */
 .add-item-form {
   display: flex;
   gap: 8px;
@@ -17,12 +46,6 @@
 
 .input {
   flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-.select {
   padding: 8px 12px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -41,6 +64,7 @@
   background-color: #005bb5;
 }
 
+/* Shopping List Items */
 .shopping-items {
   list-style: none;
   padding: 0;
@@ -72,6 +96,7 @@
   background-color: #ff7875;
 }
 
+/* Empty / loading states */
 .empty-state {
   color: #666;
   font-style: italic;
@@ -80,25 +105,4 @@
 .loading {
   text-align: center;
   font-size: 16px;
-}
-/* src/styles/shoppingList.css additions */
-.select {
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  margin-top: 0.5rem;
-}
-
-.button {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
-  background-color: #1d4ed8;
-  color: #fff;
-  cursor: pointer;
-}
-
-.button:disabled {
-  background-color: #94a3b8;
-  cursor: not-allowed;
 }

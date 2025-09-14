@@ -1,50 +1,29 @@
-// Path: src/types/mealPlan.d.ts
-// Type definitions for meal planning feature
+// path: src/types/mealPlan.ts
+// Type definitions for Meal Plans and Meals
 
 /**
- * Meal types for UI/UX consistency
+ * Represents a meal inside a meal plan.
  */
-export type MealType = "Breakfast" | "Lunch" | "Dinner";
-
-/**
- * Ingredient used in a meal plan entry
- */
-export interface MealIngredient {
-  name: string;
-  quantity: string;
-  category?: string; // optional: e.g., produce, dairy
+export interface Meal {
+  id: string; // Unique identifier within the plan
+  type: "breakfast" | "lunch" | "dinner"; // Meal type
+  date: string; // ISO date string for which day in the plan
+  name: string; // Display name
+  recipeId?: string; // Optional link to Recipe (_id)
+  source?: "spoonacular" | "custom"; // Recipe source
+  image?: string; // Optional image
+  description?: string; // Optional description
 }
 
 /**
- * Single meal entry in a meal plan
- */
-export interface MealPlanEntry {
-  date: string; // ISO date string
-  mealType: MealType;
-  recipeId: string;
-  recipeTitle?: string; // optional, for UI display
-  recipeImage?: string; // optional, for UI display
-  ingredients: MealIngredient[];
-}
-
-/**
- * Meal plan type
+ * A meal plan document.
  */
 export interface MealPlan {
-  _id: string;
-  userId: string;
-  title: string;
-  startDate: string; // ISO date string
-  endDate: string; // ISO date string
-  entries: MealPlanEntry[];
-}
-
-/**
- * Payload for creating a new meal plan
- */
-export interface CreateMealPlanPayload {
-  title: string;
-  startDate: string;
-  endDate: string;
-  entries?: MealPlanEntry[];
+  _id: string; // MongoDB ObjectId
+  userId: string; // Owner of the meal plan
+  startDate: string; // ISO string
+  endDate: string; // ISO string
+  meals: Meal[]; // All meals within the date range
+  createdAt?: string; // Optional timestamp
+  updatedAt?: string; // Optional timestamp
 }

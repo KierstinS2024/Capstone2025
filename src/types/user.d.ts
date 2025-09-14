@@ -1,21 +1,25 @@
-// src/types/user.d.ts
-// Type definitions for User model
+// path: src/types/user.d.ts
+// Type definitions for User and authentication payloads
 
-import type { Types } from "mongoose";
-
+/**
+ * Represents a registered user.
+ */
 export interface User {
-  _id: string;
-  email: string;
-  name: string;
-  favorites: string[]; // Array of Recipe._id as strings
+  _id: string; // MongoDB ObjectId as string
+  email: string; // User's email
 }
 
+/**
+ * Payload required for user signup.
+ */
 export interface SignupPayload {
-  name: string;
-  email: string;
-  password: string;
+  email: string; // Email address
+  password: string; // Plaintext password (will be hashed server-side)
 }
 
+/**
+ * Payload required for user login.
+ */
 export interface LoginPayload {
   email: string;
   password: string;

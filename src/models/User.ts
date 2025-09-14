@@ -1,22 +1,24 @@
-// src/models/User.ts
-// Mongoose schema and model for application users
+// path: src/models/User.ts
+import { Schema, model, models, type Document } from "mongoose";
 
-import mongoose, { Schema, Document, Types } from "mongoose";
-import type { Recipe } from "./Recipe";
-
+// TypeScript interface for User documents
 export interface IUser extends Document {
   email: string;
-  passwordHash: string;
   name: string;
-  favorites: Types.ObjectId[]; // References Recipe._id
+  password: string; // stored as hashed
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const userSchema = new Schema<IUser>({
-  email: { type: String, required: true, unique: true },
-  passwordHash: { type: String, required: true, select: false },
-  name: { type: String, required: true },
-  favorites: [{ type: Schema.Types.ObjectId, ref: "Recipe", default: [] }],
-});
+// User schema definition
+const UserSchema = new Schema<IUser>(
+  {
+    email: { type: String, required: true, unique: true, lowercase: true },
+    name: { type: String, required: true },
+    password: { type: String, required: true }, // store only hashed
+  },
+  { timestamps: true } // adds createdAt + updatedAt automatically
+);
 
-export const User =
-  mongoose.models.User || mongoose.model<IUser>("User", userSchema);
+// Export User model (reuse existing if already compiled)
+export const User = models.User || model<IUser>("User", UserSchema);

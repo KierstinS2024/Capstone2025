@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useShoppingList } from "@/context/ShoppingListContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import GenerateShoppingList from "@/components/GenerateShoppingList";
 import "@/styles/shoppingList.css";
 
 export default function ShoppingListPage() {
@@ -14,7 +15,6 @@ export default function ShoppingListPage() {
   const router = useRouter();
 
   const [newItemName, setNewItemName] = useState("");
-  const [newItemCategory, setNewItemCategory] = useState("other");
 
   useEffect(() => {
     if (!user && !loading) router.push("/login");
@@ -23,13 +23,8 @@ export default function ShoppingListPage() {
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemName.trim()) return;
-    await addItem(newItemName.trim(), newItemCategory);
+    await addItem(newItemName.trim(), "other");
     setNewItemName("");
-    setNewItemCategory("other");
-  };
-
-  const navigateToGenerator = () => {
-    router.push("/shopping-list/from-meal-plan");
   };
 
   if (loading) return <p className="loading">Loading shopping list...</p>;
@@ -40,9 +35,7 @@ export default function ShoppingListPage() {
       <h1 className="page-title">Shopping List</h1>
 
       {/* Generate from Meal Plan */}
-      <button className="button" onClick={navigateToGenerator}>
-        Generate from Meal Plan
-      </button>
+      <GenerateShoppingList />
 
       {/* Add Item Form */}
       <form className="add-item-form" onSubmit={handleAddItem}>
@@ -54,23 +47,12 @@ export default function ShoppingListPage() {
           className="input"
           required
         />
-        <select
-          value={newItemCategory}
-          onChange={(e) => setNewItemCategory(e.target.value)}
-          className="select"
-        >
-          <option value="produce">Produce</option>
-          <option value="meat">Meat</option>
-          <option value="dairy">Dairy</option>
-          <option value="frozen">Frozen</option>
-          <option value="other">Other</option>
-        </select>
         <button type="submit" className="button">
           Add
         </button>
       </form>
 
-      {/* Shopping List */}
+      {/* Shopping List Items */}
       {shoppingList.length === 0 ? (
         <p className="empty-state">Your shopping list is empty.</p>
       ) : (
@@ -84,7 +66,7 @@ export default function ShoppingListPage() {
                   onChange={() => toggleItem(item.id)}
                 />
                 <span className={item.purchased ? "purchased" : ""}>
-                  {item.name} ({item.category})
+                  {item.name}
                 </span>
               </label>
               <button

@@ -1,46 +1,53 @@
-// src/models/ShoppingList.ts
-// Mongoose schema and model for shopping lists
+// path: src/models/ShoppingList.ts
+import { Schema, model, models, type Document } from "mongoose";
 
-import mongoose, { Schema, Document, Types } from "mongoose";
-import type { IUser } from "./User";
+// Define valid meal types
+export type MealType = "breakfast" | "lunch" | "dinner";
 
-export type ShoppingCategory =
-  | "produce"
-  | "meat"
-  | "dairy"
-  | "frozen"
-  | "other";
-
+// Shopping item subdocument
 export interface IShoppingItem {
-  ingredient: string;
+  name: string;
   quantity: string;
-  category: ShoppingCategory;
-  checked: boolean;
+  category?: string;
+  mealTypes: MealType[];
+  purchased: boolean;
 }
 
+// Shopping list document interface
 export interface IShoppingList extends Document {
-  userId: Types.ObjectId | IUser;
-  title: string;
+  userId: string;
+  date?: string; // optional ISO date string
   items: IShoppingItem[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const shoppingListSchema = new Schema<IShoppingList>({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  title: { type: String, required: true },
-  items: [
-    {
-      ingredient: { type: String, required: true },
-      quantity: { type: String, required: true },
-      category: {
-        type: String,
-        enum: ["produce", "meat", "dairy", "frozen", "other"],
-        required: true,
-      },
-      checked: { type: Boolean, default: false },
+// ShoppingItem schema
+const ShoppingItemSchema = new Schema<IShoppingItem>(
+  {
+    name: { type: String, required: true },
+    quantity: { type: String, required: true },
+    category: { type: String },
+    mealTypes: {
+      type: [String],
+      enum: ["breakfast", "lunch", "dinner"],
+      default: [],
     },
-  ],
-});
+    purchased: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
+// ShoppingList schema
+const ShoppingListSchema = new Schema<IShoppingList>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    date: { type: String }, // optional
+    items: { type: [ShoppingItemSchema], default: [] },
+  },
+  { timestamps: true }
+);
 
 export const ShoppingList =
-  mongoose.models.ShoppingList ||
-  mongoose.model<IShoppingList>("ShoppingList", shoppingListSchema);
+  models.ShoppingList ||
+  model<IShoppingList>("ShoppingList", ShoppingListSchema);

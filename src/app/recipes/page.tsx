@@ -2,83 +2,43 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRecipe } from "@/context/RecipeContext";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
-import { getRecipesFromSpoonacular } from "@/lib/spoonacularApi";
+import { getRecipes } from "@/lib/spoonacularApi"; // your wrapper to fetch recipes
+import { Recipe } from "@/types/recipe";
 import RecipeCard from "@/components/RecipeCard";
 import "@/styles/recipes.css";
 
 export default function RecipesPage() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-
-  const { recipes, fetchRecipes } = useRecipe();
-  const [spoonacularRecipes, setSpoonacularRecipes] = useState<any[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Redirect if not logged in
   useEffect(() => {
-    if (!authLoading && !user) router.push("/login");
-  }, [authLoading, user, router]);
-
-  // Fetch local and Spoonacular recipes
-  useEffect(() => {
-    async function loadRecipes() {
+    async function fetchRecipes() {
       try {
-        setLoading(true);
-        await fetchRecipes(); // local recipes from context
-        const spoonData = await getRecipesFromSpoonacular();
-        setSpoonacularRecipes(spoonData);
+        const data = await getRecipes();
+        setRecipes(data);
       } catch (err: any) {
-        setError(err.message || "Failed to load recipes");
+        setError(err.message || "Failed to load recipes.");
       } finally {
         setLoading(false);
       }
     }
+    fetchRecipes();
+  }, []);
 
-    if (user) loadRecipes();
-  }, [user, fetchRecipes]);
-
-  if (authLoading || loading)
-    return <p className="loading">Loading recipes...</p>;
-  if (!user) return null;
+  if (loading) return <p className="loading">Loading recipes...</p>;
   if (error) return <p className="error">{error}</p>;
+  if (recipes.length === 0)
+    return <p className="empty-state">No recipes found.</p>;
 
   return (
     <div className="recipes-page">
       <h1 className="page-title">Recipes</h1>
-
-      <h2 className="section-title">Your Recipes</h2>
-      {recipes.length === 0 ? (
-        <p className="empty-state">You have no saved recipes yet.</p>
-      ) : (
-        <div className="recipe-grid">
-          {recipes.map((recipe) => (
-            <RecipeCard key={recipe._id} recipe={recipe} />
-          ))}
-        </div>
-      )}
-
-      <h2 className="section-title">Discover Recipes (Spoonacular)</h2>
-      {spoonacularRecipes.length === 0 ? (
-        <p className="empty-state">No recipes found from Spoonacular.</p>
-      ) : (
-        <div className="recipe-grid">
-          {spoonacularRecipes.map((recipe) => (
-            <RecipeCard
-              key={recipe.id}
-              recipe={{
-                id: recipe.id.toString(),
-                title: recipe.title,
-                image: recipe.image,
-                source: "spoonacular",
-              }}
-            />
-          ))}
-        </div>
-      )}
+      <div className="recipes-grid">
+        {recipes.map((recipe) => (
+          <RecipeCard key={recipe.id} recipe={recipe} />
+        ))}
+      </div>
     </div>
   );
 }
