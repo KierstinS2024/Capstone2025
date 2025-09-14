@@ -1,47 +1,62 @@
+// src/app/login/page.tsx
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+
+import React, { useState, FormEvent } from "react";
+import { useAuth } from "../../context/AuthContext";
+import "./login.css"; // CSS-only styling
+import "@/styles/auth.css";
 
 export default function LoginPage() {
-  const { login } = useAuth();
-  const router = useRouter();
+  const { login, loading } = useAuth(); // Get login method and loading state from context
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     try {
       await login(email, password);
-      router.push("/dashboard");
+      // Redirect handled in AuthContext
     } catch (err: any) {
       setError(err.message || "Login failed");
     }
-  }
+  };
 
   return (
-    <div className="max-w-md mx-auto py-12">
-      <h2 className="text-3xl font-bold mb-6">Log In</h2>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <div className="auth-container">
+      <h1 className="auth-title">Log In</h1>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        {error && <div className="auth-error">{error}</div>}
+
+        <label className="auth-label" htmlFor="email">
+          Email
+        </label>
         <input
+          id="email"
           type="email"
+          className="auth-input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          className="border p-2 rounded"
           required
         />
+
+        <label className="auth-label" htmlFor="password">
+          Password
+        </label>
         <input
+          id="password"
           type="password"
+          className="auth-input"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          className="border p-2 rounded"
           required
         />
-        <button className="bg-blue-600 text-white py-2 rounded">Log In</button>
+
+        <button type="submit" className="auth-button" disabled={loading}>
+          {loading ? "Logging in..." : "Log In"}
+        </button>
       </form>
     </div>
   );
