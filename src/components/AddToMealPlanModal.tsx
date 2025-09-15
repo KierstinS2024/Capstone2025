@@ -1,64 +1,36 @@
-// path: src/components/AddToMealPlanModal.tsx
+// src/components/AddToMealPlanModal.tsx
 "use client";
 
 import React, { useState } from "react";
 import { Meal } from "@/types/mealPlan";
 import { useMealPlan } from "@/context/MealPlanContext";
-import "@/styles/addToMealPlanModal.css";
 
 interface AddToMealPlanModalProps {
-  recipeId: string;
-  recipeName: string;
-  recipeImage?: string;
+  meal: Meal;
   onClose: () => void;
 }
 
 export default function AddToMealPlanModal({
-  recipeId,
-  recipeName,
-  recipeImage,
+  meal,
   onClose,
 }: AddToMealPlanModalProps) {
   const { addMealToPlan } = useMealPlan();
-
-  const [selectedDate, setSelectedDate] = useState<string>(
+  const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
   const [mealType, setMealType] = useState<"breakfast" | "lunch" | "dinner">(
     "breakfast"
   );
-  const [loading, setLoading] = useState(false);
 
   const handleAdd = async () => {
-    setLoading(true);
-    try {
-      const meal: Meal = {
-        id: crypto.randomUUID(),
-        type: mealType,
-        date: selectedDate,
-        name: recipeName,
-        recipeId,
-        image: recipeImage,
-        source: "spoonacular",
-      };
-      await addMealToPlan(meal, selectedDate);
-      onClose();
-    } catch (err) {
-      console.error("Failed to add meal:", err);
-    } finally {
-      setLoading(false);
-    }
+    await addMealToPlan({ ...meal, type: mealType }, selectedDate);
+    onClose();
   };
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-card">
-        <h3>Add to Meal Plan</h3>
-        {recipeImage && (
-          <img src={recipeImage} alt={recipeName} className="recipe-thumb" />
-        )}
-        <p>{recipeName}</p>
-
+      <div className="modal-content">
+        <h3>Add {meal.name} to Meal Plan</h3>
         <label>
           Date:
           <input
@@ -67,28 +39,20 @@ export default function AddToMealPlanModal({
             onChange={(e) => setSelectedDate(e.target.value)}
           />
         </label>
-
         <label>
-          Meal Type:
+          Type:
           <select
             value={mealType}
-            onChange={(e) =>
-              setMealType(e.target.value as "breakfast" | "lunch" | "dinner")
-            }
+            onChange={(e) => setMealType(e.target.value as any)}
           >
             <option value="breakfast">Breakfast</option>
             <option value="lunch">Lunch</option>
             <option value="dinner">Dinner</option>
           </select>
         </label>
-
         <div className="modal-actions">
-          <button onClick={onClose} disabled={loading}>
-            Cancel
-          </button>
-          <button onClick={handleAdd} disabled={loading}>
-            {loading ? "Adding..." : "Add"}
-          </button>
+          <button onClick={handleAdd}>Add</button>
+          <button onClick={onClose}>Cancel</button>
         </div>
       </div>
     </div>

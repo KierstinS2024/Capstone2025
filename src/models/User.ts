@@ -1,24 +1,21 @@
-// path: src/models/User.ts
-import { Schema, model, models, type Document } from "mongoose";
+// src/models/User.ts
+import { Schema, model, models, Document, Types } from "mongoose";
 
-// TypeScript interface for User documents
+// User document interface
 export interface IUser extends Document {
   email: string;
-  name: string;
-  password: string; // stored as hashed
+  password: string; // hashed
   createdAt: Date;
   updatedAt: Date;
 }
 
-// User schema definition
 const UserSchema = new Schema<IUser>(
   {
-    email: { type: String, required: true, unique: true, lowercase: true },
-    name: { type: String, required: true },
-    password: { type: String, required: true }, // store only hashed
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
   },
-  { timestamps: true } // adds createdAt + updatedAt automatically
+  { timestamps: true }
 );
 
-// Export User model (reuse existing if already compiled)
-export const User = models.User || model<IUser>("User", UserSchema);
+const User = models.User || model<IUser>("User", UserSchema);
+export default User;

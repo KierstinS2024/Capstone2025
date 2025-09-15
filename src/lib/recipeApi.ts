@@ -1,41 +1,32 @@
 // src/lib/recipeApi.ts
-// Recipe API helpers (type-safe)
+import { connectDb } from "./db";
+import Recipe, { IRecipe } from "@/models/Recipe";
+import { Types } from "mongoose";
 
-import type { Recipe } from "@/types/recipe";
-import { apiFetch } from "./api";
+// Fetch recipe by ID
+export async function getRecipeById(id: string): Promise<IRecipe | null> {
+  await connectDb();
+  const recipe = await Recipe.findById(id);
+  return recipe ? recipe.toObject() : null;
+}
 
-/** Fetch all recipes */
-export const fetchRecipesAPI = async (): Promise<Recipe[]> => {
-  return apiFetch<Recipe[]>("/recipes");
-};
+// Search recipes by name
+export async function searchRecipes(query: string): Promise<IRecipe[]> {
+  await connectDb();
+  const regex = new RegExp(query, "i");
+  const recipes = await Recipe.find({ name: regex }).limit(20);
+  return recipes.map((r) => r.toObject());
+}
 
-/** Create a new recipe */
-export const createRecipeAPI = async (
-  recipe: Partial<Recipe>
-): Promise<Recipe> => {
-  return apiFetch<Recipe>("/recipes", {
-    method: "POST",
-    body: JSON.stringify(recipe),
-  });
-};
-
-/** Update an existing recipe by ID */
-export const updateRecipeAPI = async (
-  id: string,
-  recipe: Partial<Recipe>
-): Promise<Recipe> => {
-  return apiFetch<Recipe>(`/recipes/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(recipe),
-  });
-};
-
-/** Delete recipe by ID */
-export const deleteRecipeAPI = async (id: string): Promise<void> => {
-  return apiFetch<void>(`/recipes/${id}`, { method: "DELETE" });
-};
-
-/** Toggle favorite status for recipe */
-export const toggleFavoriteAPI = async (id: string): Promise<void> => {
-  return apiFetch<void>(`/recipes/${id}/favorite`, { method: "POST" });
-};
+// Toggle favorite
+export async function toggleFavorite(
+  recipeId: string,
+  userId: string
+): Promise<IRecipe | null> {
+  await connectDb();
+  const recipe = await Recipe.findOne({ _id: recipeId, userId });
+  if (!recipe) return null;
+  recipe.favorite = !recipe.favorite;
+  await recipe.save();
+  return recipe.toObject();
+}

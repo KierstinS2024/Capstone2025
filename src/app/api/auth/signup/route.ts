@@ -1,47 +1,33 @@
 // src/app/api/auth/signup/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { connectToDB } from "@/lib/db";
-import { User } from "@/models/User";
+import { connectDb } from "@/lib/db";
+import User from "@/models/User";
+import { signJwt } from "@/lib/serverAuth";
 
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
-
-    await connectToDB();
+    await connectDb();
 
     const existing = await User.findOne({ email });
-    if (existing) {
-      return NextResponse.json(
-        { error: "User already exists" },
-        { status: 400 }
-      );
-    }
+    if (existing)
+      return NextResponse.json({ error: "User exists" }, { status: 400 });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, password: hashedPassword });
-
-    const token = jwt.sign(
-      { id: user._id.toString(), email: user.email },
-      process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
-    );
+    const newUser = await User.create({ email, password });
+    const token = signJwt({ userId: newUser._id });
 
     const res = NextResponse.json({
-      user: { id: user._id.toString(), email: user.email },
+      user: { email: newUser.email, id: newUser._id },
     });
     res.cookies.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
       path: "/",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 7 * 24 * 60 * 60,
     });
 
     return res;
   } catch (err) {
-    console.error("Signup error:", err);
     return NextResponse.json({ error: "Signup failed" }, { status: 500 });
   }
 }

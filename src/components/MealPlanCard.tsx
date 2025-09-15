@@ -1,77 +1,45 @@
-// path: src/components/MealPlanCard.tsx
+// src/components/MealPlanCard.tsx
 "use client";
 
 import React from "react";
-import MealCard from "./MealCard";
 import { MealPlan } from "@/types/mealPlan";
-import { useShoppingList } from "@/context/ShoppingListContext";
+import MealCard from "./MealCard";
+import { useMealPlan } from "@/context/MealPlanContext";
 
 interface MealPlanCardProps {
-  mealPlan: MealPlan;
-  onOpenMealPlan?: (planId: string) => void;
+  plan: MealPlan;
+  selectedDate: string;
+  onSelectPlan: (id: string) => void;
+  isSelected: boolean;
 }
 
 export default function MealPlanCard({
-  mealPlan,
-  onOpenMealPlan,
+  plan,
+  selectedDate,
+  onSelectPlan,
+  isSelected,
 }: MealPlanCardProps) {
-  const { addItem } = useShoppingList();
+  const { removeMealFromPlan } = useMealPlan();
 
-  const today = new Date().toISOString().split("T")[0];
-  const mealsToday = mealPlan.meals.filter((m) => m.date === today);
-
-  const handleAddAllIngredients = () => {
-    mealsToday.forEach((meal) => {
-      if (meal.recipeId) {
-        // fetch ingredients from recipe API or context
-        // pseudo: addItem(name)
-        // keep thin, we can wire actual integration later
-      }
-    });
-  };
+  const mealsForDate = plan.meals.filter((m) => m.date === selectedDate);
 
   return (
     <div
-      className="mealplan-card"
-      style={{
-        padding: 16,
-        borderRadius: 8,
-        border: "1px solid #ccc",
-        marginBottom: 16,
-      }}
+      className={`mealplan-card ${isSelected ? "selected" : ""}`}
+      onClick={() => onSelectPlan(plan._id)}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h3>
-          {mealPlan.startDate} → {mealPlan.endDate}
-        </h3>
-        <button onClick={handleAddAllIngredients}>Add Ingredients</button>
-      </div>
-      <div
-        style={{ display: "flex", gap: 8, marginTop: 12, overflowX: "auto" }}
-      >
+      <p>
+        {plan.startDate} → {plan.endDate}
+      </p>
+      <div className="meals-preview">
         {["breakfast", "lunch", "dinner"].map((type) => {
-          const meal = mealsToday.find((m) => m.type === type);
+          const meal = mealsForDate.find((m) => m.type === type);
           return (
             <MealCard
               key={type}
-              meal={
-                meal || {
-                  id: `${type}-empty`,
-                  type: type as any,
-                  date: today,
-                  name: "",
-                  source: undefined,
-                }
-              }
-              onRemove={(id) => {}}
-              onSwap={(id) => {}}
-              onOpenRecipe={(recipeId) => {}}
+              type={type as any}
+              meal={meal || null}
+              onRemove={meal ? (id) => removeMealFromPlan(id) : undefined}
             />
           );
         })}

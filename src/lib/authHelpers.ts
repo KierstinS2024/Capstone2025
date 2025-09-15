@@ -1,27 +1,16 @@
-import { apiFetch } from "./api";
-import { User } from "@/types/user";
+// path: src/lib/authHelpers.ts
+import bcrypt from "bcrypt";
 
-export async function loginApi(email: string, password: string): Promise<User> {
-  return apiFetch<User>("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+// Hash a password
+export async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
 }
 
-export async function signupApi(
-  email: string,
-  password: string
-): Promise<User> {
-  return apiFetch<User>("/api/auth/signup", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-}
-
-export async function logoutApi(): Promise<void> {
-  return apiFetch<void>("/api/auth/logout", { method: "POST" });
-}
-
-export async function meApi(): Promise<User> {
-  return apiFetch<User>("/api/auth/me");
+// Compare password with hash
+export async function comparePasswords(
+  password: string,
+  hash: string
+): Promise<boolean> {
+  return bcrypt.compare(password, hash);
 }

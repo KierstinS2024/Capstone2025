@@ -1,24 +1,19 @@
-export function normalizeName(name: string): string {
-  return name.trim().toLowerCase();
+// src/lib/helpers.ts
+export function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-export function mapCategory(
-  raw: string
-): "produce" | "meat" | "dairy" | "frozen" | "other" {
-  const lower = raw.toLowerCase();
-  if (lower.includes("vegetable") || lower.includes("fruit")) return "produce";
-  if (
-    lower.includes("chicken") ||
-    lower.includes("beef") ||
-    lower.includes("pork")
-  )
-    return "meat";
-  if (
-    lower.includes("milk") ||
-    lower.includes("cheese") ||
-    lower.includes("yogurt")
-  )
-    return "dairy";
-  if (lower.includes("frozen")) return "frozen";
-  return "other";
+export function generateId(): string {
+  return Math.random().toString(36).substring(2, 10);
+}
+
+export function isToday(dateStr: string): boolean {
+  const today = new Date();
+  const date = new Date(dateStr);
+  return date.toDateString() === today.toDateString();
 }

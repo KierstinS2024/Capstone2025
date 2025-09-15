@@ -1,75 +1,74 @@
 // path: src/app/meal-plans/[id]/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useMealPlan } from "@/context/MealPlanContext";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useShoppingList } from "@/context/ShoppingListContext";
 import MealCard from "@/components/MealCard";
-import AddMealForm from "@/components/AddMealForm";
 import "@/styles/mealplan-detail.css";
 
-interface MealPlanDetailPageProps {
-  params: { id: string };
-}
-
-export default function MealPlanDetailPage({
-  params,
-}: MealPlanDetailPageProps) {
-  const { user, loading: authLoading } = useAuth();
+export default function MealPlanDetailPage() {
+  const { id: planId } = useParams<{ id: string }>();
   const router = useRouter();
-  const { mealPlans, addMealToPlan, removeMealFromPlan, refreshPlans } =
-    useMealPlan();
 
-  const [currentPlan, setCurrentPlan] = useState<(typeof mealPlans)[0] | null>(
-    null
+  const { mealPlans, addMealToPlan, removeMealFromPlan } = useMealPlan();
+  const { addItem } = useShoppingList();
+
+  const [mealPlan, setMealPlan] = useState(
+    mealPlans.find((p) => p.id === planId) || null
   );
 
-  // Redirect if not logged in
+  // Update local state if mealPlans changes
   useEffect(() => {
-    if (!authLoading && !user) router.push("/login");
-  }, [authLoading, user, router]);
+    const foundPlan = mealPlans.find((p) => p.id === planId) || null;
+    setMealPlan(foundPlan);
+  }, [mealPlans, planId]);
 
-  // Refresh plan and find current plan by id
-  useEffect(() => {
-    if (user) {
-      refreshPlans();
-      const plan = mealPlans.find((p) => p._id === params.id);
-      setCurrentPlan(plan || null);
-    }
-  }, [mealPlans, params.id, refreshPlans, user]);
+  if (!mealPlan) return <p>Loading meal plan...</p>;
 
-  if (authLoading || !currentPlan)
-    return <p className="loading">Loading meal plan...</p>;
-  if (!user) return null;
+  const handleAddAllIngredients = () => {
+    mealPlan.meals.forEach((meal) => {
+      meal.ingredients?.forEach((ing) => {
+        addItem(ing.name, "other");
+      });
+    });
+  };
 
   return (
     <div className="mealplan-detail-page">
-      <h1 className="page-title">
-        Meal Plan: {currentPlan.startDate} → {currentPlan.endDate}
-      </h1>
+      <div className="plan-header">
+        <h2>
+          Meal Plan ({mealPlan.startDate} - {mealPlan.endDate})
+        </h2>
+        <button className="add-all-button" onClick={handleAddAllIngredients}>
+          Add All Ingredients to Shopping List
+        </button>
+      </div>
 
-      {/* Meals Section */}
-      <div className="meals-section">
+      <div className="meals-grid">
         {["breakfast", "lunch", "dinner"].map((type) => {
-          const meal = currentPlan.meals.find((m) => m.type === type);
+          const meal = mealPlan.meals.find((m) => m.type === type);
           return (
             <MealCard
               key={type}
               type={type}
               meal={meal || null}
-              onRemove={(mealId) => removeMealFromPlan(mealId)}
-              onOpen={(meal) => console.log("Open recipe:", meal)}
+              onRemove={(mealId: string) =>
+                removeMealFromPlan(mealPlan.id, mealId)
+              }
+              onOpen={(meal) => console.log("Open recipe", meal)}
             />
           );
         })}
       </div>
 
-      {/* Add Meal Form */}
-      <AddMealForm
-        planId={currentPlan._id}
-        onAdd={(meal, date) => addMealToPlan(meal, date)}
-      />
+      <button
+        className="back-button"
+        onClick={() => router.push("/meal-plans")}
+      >
+        Back to All Meal Plans
+      </button>
     </div>
   );
 }

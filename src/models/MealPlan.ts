@@ -1,24 +1,19 @@
-// path: src/models/MealPlan.ts
-import { Schema, model, models, type Document } from "mongoose";
+// src/models/MealPlan.ts
+import { Schema, model, models, Document, Types } from "mongoose";
 
-// Define meal types
-export type MealType = "breakfast" | "lunch" | "dinner";
-
-// Meal subdocument schema
+// Meal document interface
 export interface IMeal {
-  type: MealType;
-  date: string; // ISO string
   name: string;
-  recipeId?: string; // links to Recipe
+  type: "breakfast" | "lunch" | "dinner";
+  date: string; // ISO string YYYY-MM-DD
+  recipeId?: Types.ObjectId;
   image?: string;
-  source?: "spoonacular" | "custom";
-  description?: string;
-  notes?: string;
+  ingredients?: { name: string; quantity?: string }[];
 }
 
 // MealPlan document interface
 export interface IMealPlan extends Document {
-  userId: string;
+  userId: Types.ObjectId;
   startDate: string;
   endDate: string;
   meals: IMeal[];
@@ -26,26 +21,22 @@ export interface IMealPlan extends Document {
   updatedAt: Date;
 }
 
-// Meal schema
 const MealSchema = new Schema<IMeal>(
   {
+    name: { type: String, required: true },
     type: {
       type: String,
       enum: ["breakfast", "lunch", "dinner"],
       required: true,
     },
     date: { type: String, required: true },
-    name: { type: String, required: true },
     recipeId: { type: Schema.Types.ObjectId, ref: "Recipe" },
     image: { type: String },
-    source: { type: String, enum: ["spoonacular", "custom"] },
-    description: { type: String },
-    notes: { type: String },
+    ingredients: { type: [{ name: String, quantity: String }], default: [] },
   },
-  { _id: false }
+  { _id: true }
 );
 
-// MealPlan schema
 const MealPlanSchema = new Schema<IMealPlan>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -56,5 +47,6 @@ const MealPlanSchema = new Schema<IMealPlan>(
   { timestamps: true }
 );
 
-export const MealPlan =
+const MealPlan =
   models.MealPlan || model<IMealPlan>("MealPlan", MealPlanSchema);
+export default MealPlan;

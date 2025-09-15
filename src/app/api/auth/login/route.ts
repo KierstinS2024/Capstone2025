@@ -1,52 +1,36 @@
 // src/app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { connectToDB } from "@/lib/db";
-import { User } from "@/models/User";
+import { connectDb } from "@/lib/db";
+import User from "@/models/User";
+import { signJwt } from "@/lib/serverAuth";
 
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
-
-    await connectToDB();
+    await connectDb();
 
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user || !(await user.comparePassword(password))) {
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
       );
     }
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
-    }
-
-    const token = jwt.sign(
-      { id: user._id.toString(), email: user.email },
-      process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
-    );
-
+    const token = signJwt({ userId: user._id });
     const res = NextResponse.json({
-      user: { id: user._id.toString(), email: user.email },
+      user: { email: user.email, id: user._id },
     });
+
     res.cookies.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
       path: "/",
-      maxAge: 7 * 24 * 60 * 60,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
     return res;
   } catch (err) {
-    console.error("Login error:", err);
     return NextResponse.json({ error: "Login failed" }, { status: 500 });
   }
 }

@@ -1,31 +1,35 @@
+// src/context/MealPlanContext.tsx
 "use client";
-
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-  ReactNode,
-} from "react";
-import { MealPlan, Meal } from "@/types/mealPlan";
-import { fetchMealPlans, addMeal, removeMeal } from "@/lib/mealPlanApi";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import { useAuth } from "./AuthContext";
+import {
+  fetchMealPlans,
+  createMealPlan,
+  addMeal,
+  removeMeal,
+  deleteMealPlan,
+} from "@/lib/mealPlanApi";
+import { MealPlan, Meal } from "@/types/mealPlan";
 
-interface MealPlanContextValue {
+interface MealPlanContextType {
   mealPlans: MealPlan[];
   loading: boolean;
-  addMealToPlan: (meal: Meal, date: string) => Promise<void>;
-  removeMealFromPlan: (mealId: string) => Promise<void>;
-  refreshPlans: () => Promise<void>;
-  getAllMealNames: () => string[];
+  refreshPlans: () => void;
+  createPlan: (startDate: string, endDate: string) => void;
+  addMealToPlan: (planId: string, meal: Meal) => void;
+  removeMealFromPlan: (planId: string, mealId: string) => void;
+  deletePlan: (planId: string) => void;
 }
 
-const MealPlanContext = createContext<MealPlanContextValue | undefined>(
-  undefined
+const MealPlanContext = createContext<MealPlanContextType>(
+  {} as MealPlanContextType
 );
 
-export const MealPlanProvider = ({ children }: { children: ReactNode }) => {
+export const MealPlanProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const { user } = useAuth();
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,46 +37,49 @@ export const MealPlanProvider = ({ children }: { children: ReactNode }) => {
   const refreshPlans = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    try {
-      const plans = await fetchMealPlans();
-      setMealPlans(plans);
-    } finally {
-      setLoading(false);
-    }
+    const plans = await fetchMealPlans(user.id);
+    setMealPlans(plans);
+    setLoading(false);
   }, [user]);
 
-  useEffect(() => {
-    refreshPlans();
-  }, [refreshPlans]);
+  const createPlan = async (startDate: string, endDate: string) => {
+    if (!user) return;
+    const newPlan = await createMealPlan(user.id, startDate, endDate);
+    setMealPlans((prev) => [...prev, newPlan]);
+  };
 
-  const addMealToPlan = useCallback(async (meal: Meal, date: string) => {
-    const newPlan = await addMeal(meal, date);
-    setMealPlans((prev) => [
-      ...prev.filter((p) => p._id !== newPlan._id),
-      newPlan,
-    ]);
-  }, []);
-
-  const removeMealFromPlan = useCallback(async (mealId: string) => {
-    const updated = await removeMeal(mealId);
+  const addMealToPlan = async (planId: string, meal: Meal) => {
+    if (!user) return;
+    const updatedPlan = await addMeal(user.id, planId, meal);
     setMealPlans((prev) =>
-      prev.map((p) => (p._id === updated._id ? updated : p))
+      prev.map((p) => (p._id === planId ? updatedPlan : p))
     );
-  }, []);
+  };
 
-  const getAllMealNames = useCallback(() => {
-    return mealPlans.flatMap((plan) => plan.meals.map((meal) => meal.name));
-  }, [mealPlans]);
+  const removeMealFromPlan = async (planId: string, mealId: string) => {
+    if (!user) return;
+    const updatedPlan = await removeMeal(user.id, planId, mealId);
+    setMealPlans((prev) =>
+      prev.map((p) => (p._id === planId ? updatedPlan : p))
+    );
+  };
+
+  const deletePlan = async (planId: string) => {
+    if (!user) return;
+    await deleteMealPlan(user.id, planId);
+    setMealPlans((prev) => prev.filter((p) => p._id !== planId));
+  };
 
   return (
     <MealPlanContext.Provider
       value={{
         mealPlans,
         loading,
+        refreshPlans,
+        createPlan,
         addMealToPlan,
         removeMealFromPlan,
-        refreshPlans,
-        getAllMealNames,
+        deletePlan,
       }}
     >
       {children}
@@ -80,8 +87,4 @@ export const MealPlanProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export function useMealPlan() {
-  const ctx = useContext(MealPlanContext);
-  if (!ctx) throw new Error("useMealPlan must be used inside MealPlanProvider");
-  return ctx;
-}
+export const useMealPlan = () => useContext(MealPlanContext);

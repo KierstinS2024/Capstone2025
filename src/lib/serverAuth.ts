@@ -1,24 +1,33 @@
-// path: src/lib/serverAuth.ts
+// src/lib/serverAuth.ts
+import jwt, { Secret } from "jsonwebtoken";
 import { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
-import { db } from "@/lib/db";
 
-/**
- * Verifies JWT from request cookies.
- * Returns the user object or null if unauthorized.
- */
-export async function verifyAuth(req: NextRequest) {
+const JWT_SECRET: Secret = process.env.JWT_SECRET!;
+
+// Sign JWT with payload and expiration (TypeScript-safe)
+export function signJwt(payload: object, expiresIn = "7d") {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: expiresIn as string });
+}
+
+// Verify JWT and return payload
+export function verifyJwt(token: string) {
   try {
-    const token = req.cookies.get("token")?.value;
-    if (!token) return null;
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: string;
-    };
-    const user = await db.user.findUnique({ where: { id: decoded.id } });
-    return user || null;
-  } catch (err) {
-    console.error("verifyAuth error:", err);
+    return jwt.verify(token, JWT_SECRET);
+  } catch {
     return null;
   }
+}
+
+// Extract token from cookies
+export function getTokenFromRequest(req: NextRequest): string | null {
+  return req.cookies.get("token")?.value || null;
+}
+
+// Require auth for server-side routes
+export function requireAuth(req: NextRequest): string {
+  const token = getTokenFromRequest(req);
+  if (!token) throw new Error("Unauthorized");
+  const payload = verifyJwt(token);
+  if (!payload || typeof payload === "string") throw new Error("Unauthorized");
+  return (payload as { userId: string }).userId;
 }

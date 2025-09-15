@@ -2,52 +2,41 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { useRecipes } from "@/context/RecipeContext";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
 import RecipeDetail from "@/components/RecipeDetail";
+import AddToMealPlan from "@/components/AddToMealPlan";
+import GenerateShoppingList from "@/components/GenerateShoppingList";
 import "@/styles/recipe-detail.css";
 
-interface RecipeDetailPageProps {
-  params: { id: string };
-}
+export default function RecipeDetailPage() {
+  const params = useParams();
+  const { getById, loading } = useRecipes();
+  const [recipe, setRecipe] = useState<any>(null);
 
-export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const { getById } = useRecipes();
-
-  const recipeId = params.id;
-  const [recipe, setRecipe] =
-    useState<
-      typeof getById extends (...args: any) => Promise<infer R> ? R : null
-    >(null);
-  const [loading, setLoading] = useState(true);
-
-  // Redirect unauthenticated users
-  useEffect(() => {
-    if (!authLoading && !user) router.push("/login");
-  }, [authLoading, user, router]);
-
-  // Fetch recipe details
+  // Fetch recipe on mount
   useEffect(() => {
     const fetchRecipe = async () => {
-      setLoading(true);
-      const data = await getById(recipeId);
+      if (!params?.id) return;
+      const data = await getById(params.id as string);
       setRecipe(data);
-      setLoading(false);
     };
     fetchRecipe();
-  }, [recipeId, getById]);
+  }, [params, getById]);
 
-  if (authLoading || loading)
-    return <p className="loading">Loading recipe...</p>;
-  if (!user) return null;
+  if (loading) return <p className="loading">Loading recipe...</p>;
   if (!recipe) return <p className="empty-state">Recipe not found.</p>;
 
   return (
     <div className="recipe-detail-page">
+      {/* Main recipe info */}
       <RecipeDetail recipe={recipe} />
+
+      {/* Actions: add to meal plan or shopping list */}
+      <div className="recipe-actions">
+        <AddToMealPlan recipe={recipe} />
+        <GenerateShoppingList recipe={recipe} />
+      </div>
     </div>
   );
 }
