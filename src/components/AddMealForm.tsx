@@ -1,32 +1,29 @@
 // src/components/AddMealForm.tsx
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { useRecipes } from "@/context/RecipeContext";
+import "@/styles/addMealForm.css";
 
-interface AddMealFormProps {
-  onAdd: (name: string) => void;
-}
-
-export default function AddMealForm({ onAdd }: AddMealFormProps) {
-  const [mealName, setMealName] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!mealName.trim()) return;
-    onAdd(mealName.trim());
-    setMealName("");
-  };
+export default function AddMealForm({
+  onAdd,
+}: {
+  onAdd: (id: string) => void;
+}) {
+  const { recipes } = useRecipes();
+  const [selected, setSelected] = useState("");
 
   return (
-    <form className="add-meal-form" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="Meal name"
-        value={mealName}
-        onChange={(e) => setMealName(e.target.value)}
-        required
-      />
-      <button type="submit">Add Meal</button>
-    </form>
+    <div className="add-meal-form">
+      <select value={selected} onChange={(e) => setSelected(e.target.value)}>
+        <option value="">Select recipe</option>
+        {recipes.map((r) => (
+          <option key={r._id} value={r._id}>
+            {r.title}
+          </option>
+        ))}
+      </select>
+      <button onClick={() => selected && onAdd(selected)}>Add Meal</button>
+    </div>
   );
 }

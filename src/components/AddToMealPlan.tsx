@@ -1,71 +1,49 @@
-// path: src/components/AddToMealPlan.tsx
 "use client";
 
-import React, { useState } from "react";
-import { useMealPlan } from "@/context/MealPlanContext";
-import { RecipeDetail } from "@/types/recipe";
+import { Recipe } from "@/types/recipe";
+import { useMealPlans } from "@/context/MealPlanContext";
+import { MealType } from "@/lib/mealPlanApi";
 
-interface AddToMealPlanProps {
-  recipe: RecipeDetail;
+interface Props {
+  recipe: Recipe;
 }
 
-export default function AddToMealPlan({ recipe }: AddToMealPlanProps) {
-  const { mealPlans, addMealToPlan } = useMealPlan();
-  const [selectedDate, setSelectedDate] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [success, setSuccess] = useState("");
+export default function AddToMealPlan({ recipe }: Props) {
+  const { mealPlans, updateMeal } = useMealPlans();
 
-  const handleAdd = async () => {
-    if (!selectedDate) return;
-    setAdding(true);
-    try {
-      await addMealToPlan(
-        { id: recipe.id.toString(), name: recipe.title, description: "" },
-        selectedDate
-      );
-      setSuccess(`Added "${recipe.title}" to ${selectedDate}`);
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setAdding(false);
+  const handleAdd = (planId: string, mealType: MealType = "breakfast") => {
+    if (!recipe._id) {
+      console.error("Recipe ID is missing!");
+      return;
     }
+
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    updateMeal(planId, today, mealType, recipe._id);
   };
 
-  if (!mealPlans || mealPlans.length === 0) return null;
-
   return (
-    <div style={{ margin: "16px 0", padding: "12px", border: "1px solid #ccc", borderRadius: 6 }}>
-      <label style={{ display: "block", marginBottom: 6 }}>
-        Add to Meal Plan:
-      </label>
-      <select
-        value={selectedDate}
-        onChange={(e) => setSelectedDate(e.target.value)}
-        style={{ padding: "6px 8px", marginRight: 8, borderRadius: 4 }}
-      >
-        <option value="">Select a day</option>
-        {mealPlans.map((plan) => (
-          <option key={plan.date} value={plan.date}>
-            {plan.date}
-          </option>
-        ))}
-      </select>
-      <button
-        onClick={handleAdd}
-        disabled={adding || !selectedDate}
-        style={{
-          padding: "6px 12px",
-          borderRadius: 4,
-          border: "none",
-          backgroundColor: "#0070f3",
-          color: "#fff",
-          cursor: adding || !selectedDate ? "not-allowed" : "pointer",
-        }}
-      >
-        {adding ? "Adding..." : "Add"}
-      </button>
-      {success && <p style={{ color: "green", marginTop: 6 }}>{success}</p>}
+    <div>
+      <h4>Add to Meal Plan</h4>
+      {mealPlans.map((plan) => (
+        <div key={plan.id} style={{ marginBottom: "0.5rem" }}>
+          <span>
+            {plan.startDate} → {plan.endDate}
+          </span>
+          <div>
+            {(["breakfast", "lunch", "dinner"] as MealType[]).map(
+              (mealType) => (
+                <button
+                  key={mealType}
+                  onClick={() => handleAdd(plan.id, mealType)}
+                  style={{ marginRight: "0.5rem" }}
+                >
+                  {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

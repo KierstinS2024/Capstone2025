@@ -1,68 +1,29 @@
-// path: src/components/WeeklyMealPlan.tsx
+// PATH: src/components/WeeklyMealPlan.tsx
 "use client";
+
 import React from "react";
-import { useMealPlan } from "@/context/MealPlanContext";
+import { MealPlan } from "../lib/mealPlanApi";
+import Link from "next/link";
+import styles from "../styles/mealPlans.module.css";
+import { formatDateRange } from "../lib/helpers";
 
-export default function WeeklyMealPlan() {
-  const { week, loading, addMeal, removeMeal } = useMealPlan();
+interface Props {
+  plans: MealPlan[];
+}
 
-  if (loading) return <p>Loading meal plan...</p>;
-  if (!week)
-    return (
-      <div className="card">
-        <p>No plan yet. Add some meals.</p>
-      </div>
-    );
-
-  const days = Object.keys(week.days || {});
+export default function WeeklyMealPlan({ plans }: Props) {
+  if (!plans.length) return <p>No meal plans yet.</p>;
 
   return (
-    <div className="card">
-      <h3>Weekly Meal Plan</h3>
-      <div style={{ display: "grid", gap: 12 }}>
-        {days.map((day) => (
-          <div
-            key={day}
-            style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}
-          >
-            <strong>{day}</strong>
-            <ul>
-              {(week.days[day] || []).map((m) => (
-                <li
-                  key={m.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "6px 0",
-                  }}
-                >
-                  <span>{m.name}</span>
-                  <div>
-                    <button
-                      className="button-muted"
-                      onClick={() => removeMeal(day, m.id)}
-                      style={{ marginRight: 8 }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div style={{ marginTop: 6 }}>
-              <button
-                className="button"
-                onClick={() =>
-                  addMeal(day, { id: crypto.randomUUID(), name: "New Meal" })
-                }
-              >
-                + Add Meal
-              </button>
-            </div>
+    <div className={styles.planList}>
+      {plans.map((plan) => (
+        <Link key={plan._id} href={`/meal-plans/${plan._id}`}>
+          <div className={styles.planCard}>
+            <h3>{formatDateRange(plan.startDate, plan.endDate)}</h3>
+            <p>Click to edit this week’s meals</p>
           </div>
-        ))}
-      </div>
+        </Link>
+      ))}
     </div>
   );
 }

@@ -1,0 +1,42 @@
+.mealCard {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+}
+
+.mealType {
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.imageWrapper {
+  width: 100%;
+  height: 100px;
+  overflow: hidden;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.recipeTitle,
+.addPrompt {
+  text-align: center;
+  font-size: 0.9rem;
+}
+.mealImage {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}

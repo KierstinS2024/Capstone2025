@@ -1,58 +1,50 @@
-// path: src/app/dashboard/page.tsx
+// ===========================================
+// PATH: src/app/dashboard/page.tsx
+// ===========================================
 "use client";
 
-import React, { useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useMealPlan } from "@/context/MealPlanContext";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { useMealPlans } from "@/context/MealPlanContext";
 import { useShoppingList } from "@/context/ShoppingListContext";
-import { useRouter } from "next/navigation";
-import TodayMealPlanCard from "@/components/TodayMealPlanCard";
-import Link from "next/link";
-import "@/styles/dashboard.css";
+import Navbar from "@/components/Navbar";
+import MealPlanCard from "@/components/MealPlanCard";
+import ShoppingListPanel from "@/components/ShoppingListPanel";
 
 export default function DashboardPage() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const { refreshPlans } = useMealPlan();
-  const { refreshList } = useShoppingList();
+  const { user, loading: authLoading } = useRequireAuth();
+  const { mealPlans, loading: mealLoading } = useMealPlans();
+  const { list, loading: listLoading } = useShoppingList();
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    }
-  }, [authLoading, user, router]);
+  if (authLoading || mealLoading || listLoading) {
+    return (
+      <p style={{ textAlign: "center", padding: "2rem" }}>
+        Loading dashboard...
+      </p>
+    );
+  }
 
-  // Refresh data when user is present
-  useEffect(() => {
-    if (user) {
-      refreshPlans();
-      refreshList();
-    }
-  }, [user, refreshPlans, refreshList]);
+  if (!user) return null; // useRequireAuth will redirect if null
 
-  if (authLoading || !user) return <p className="loading">Loading...</p>;
+  const currentPlan = mealPlans[0];
 
   return (
-    <div className="dashboard-container">
-      <h2 className="welcome">Welcome, {user.email}</h2>
-      <p className="subtitle">Your command center for today</p>
-
-      {/* Today’s Meal Plan */}
-      <TodayMealPlanCard />
-
-      {/* Quick Links */}
-      <div className="quick-links">
-        <Link href="/meal-plans" className="quick-link">
-          Manage Meal Plans
-        </Link>
-        <Link href="/recipes" className="quick-link">
-          Discover Recipes
-        </Link>
-        <Link href="/shopping-list" className="quick-link">
-          View Shopping List
-        </Link>
-      </div>
-    </div>
+    <>
+      <Navbar />
+      <main style={{ padding: "2rem" }}>
+        <h1>Welcome {user.email}</h1>
+        <div style={{ display: "flex", gap: "2rem", marginTop: "1rem" }}>
+          <div style={{ flex: 1 }}>
+            {currentPlan ? (
+              <MealPlanCard plan={currentPlan} />
+            ) : (
+              <p>No active plan</p>
+            )}
+          </div>
+          <div style={{ flex: 1 }}>
+            <ShoppingListPanel />
+          </div>
+        </div>
+      </main>
+    </>
   );
 }

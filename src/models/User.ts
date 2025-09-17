@@ -1,21 +1,27 @@
-// src/models/User.ts
-import { Schema, model, models, Document, Types } from "mongoose";
+// ===========================================
+// PATH: src/models/User.ts
+// ===========================================
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
-// User document interface
-export interface IUser extends Document {
-  email: string;
-  password: string; // hashed
-  createdAt: Date;
-  updatedAt: Date;
-}
+const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+});
 
-const UserSchema = new Schema<IUser>(
-  {
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-  },
-  { timestamps: true }
-);
+// Pre-save hook: hash password before saving
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
 
-const User = models.User || model<IUser>("User", UserSchema);
-export default User;
+// Method to compare plain password with hashed password
+userSchema.methods.comparePassword = async function (
+  candidatePassword: string
+) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+export default mongoose.models.User || mongoose.model("User", userSchema);

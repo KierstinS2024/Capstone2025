@@ -1,38 +1,32 @@
-// src/components/MealCard.tsx
 "use client";
 
 import React from "react";
-import { Meal } from "@/types/mealPlan";
+import { Recipe } from "@/context/RecipeContext";
+import styles from "@/styles/mealCard.module.css";
 
-interface MealCardProps {
-  meal: Meal | null;
-  type: "Breakfast" | "Lunch" | "Dinner";
-  onRemove?: (mealId: string) => void;
-  onOpen?: (meal: Meal) => void;
+interface Props {
+  mealType: "breakfast" | "lunch" | "dinner";
+  recipe?: Recipe;
+  onClick: () => void;
 }
 
-export default function MealCard({
-  meal,
-  type,
-  onRemove,
-  onOpen,
-}: MealCardProps) {
-  if (!meal) return <div className="meal-card empty">+ Add {type}</div>;
+export default function MealCard({ mealType, recipe, onClick }: Props) {
+  const image = recipe?.image || "/placeholder.png"; // fallback image
 
   return (
-    <div className="meal-card">
-      {meal.image && (
-        <img src={meal.image} alt={meal.name} className="meal-img" />
-      )}
-      <div className="meal-info">
-        <h4>{meal.name}</h4>
-        <div className="meal-actions">
-          {onOpen && <button onClick={() => onOpen(meal)}>View</button>}
-          {onRemove && (
-            <button onClick={() => onRemove(meal.id)}>Remove</button>
+    <div className={styles.mealCard} onClick={onClick}>
+      <h3 className={styles.mealType}>{mealType.toUpperCase()}</h3>
+
+      {recipe ? (
+        <>
+          {image && (
+            <img src={image} alt={recipe.title} className={styles.mealImage} />
           )}
-        </div>
-      </div>
+          <p className={styles.recipeTitle}>{recipe.title}</p>
+        </>
+      ) : (
+        <p className={styles.addPrompt}>+ Add meal</p>
+      )}
     </div>
   );
 }

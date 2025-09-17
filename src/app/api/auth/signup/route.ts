@@ -1,33 +1,42 @@
-// src/app/api/auth/signup/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { connectDb } from "@/lib/db";
+// ===========================================
+// PATH: src/app/api/auth/signup/route.ts
+// ===========================================
+import { NextResponse } from "next/server";
 import User from "@/models/User";
-import { signJwt } from "@/lib/serverAuth";
+import { connectDB } from "@/lib/db";
+import jwt from "jsonwebtoken";
+import { setTokenCookie } from "@/lib/cookieUtils";
 
-export async function POST(req: NextRequest) {
-  try {
-    const { email, password } = await req.json();
-    await connectDb();
+const JWT_SECRET = process.env.JWT_SECRET || "";
 
-    const existing = await User.findOne({ email });
-    if (existing)
-      return NextResponse.json({ error: "User exists" }, { status: 400 });
+export async function POST(req: Request) {
+  await connectDB();
 
-    const newUser = await User.create({ email, password });
-    const token = signJwt({ userId: newUser._id });
+  const { email, password } = await req.json();
 
-    const res = NextResponse.json({
-      user: { email: newUser.email, id: newUser._id },
-    });
-    res.cookies.set("token", token, {
-      httpOnly: true,
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60,
-    });
-
-    return res;
-  } catch (err) {
-    return NextResponse.json({ error: "Signup failed" }, { status: 500 });
+  // Check if email already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return NextResponse.json(
+      { error: "Email already in use" },
+      { status: 400 }
+    );
   }
+
+  // Create new user (password will be hashed in model pre-save)
+  const newUser = await User.create({ email, password });
+
+  // Sign JWT
+  const token = jwt.sign(
+    { id: newUser._id, email: newUser.email },
+    JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );
+
+  // Send cookie
+  const res = NextResponse.json({ id: newUser._id, email: newUser.email });
+  setTokenCookie(res, token);
+  return res;
 }

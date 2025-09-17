@@ -1,19 +1,18 @@
-// src/lib/helpers.ts
-export function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString(undefined, {
+// PATH: src/lib/helpers.ts
+// Utility functions shared across client + server.
+
+export function formatDateRange(start: string, end: string): string {
+  const s = new Date(start);
+  const e = new Date(end);
+  return `${s.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-    year: "numeric",
-  });
+  })} – ${e.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })}`;
 }
 
-export function generateId(): string {
-  return Math.random().toString(36).substring(2, 10);
-}
-
-export function isToday(dateStr: string): boolean {
-  const today = new Date();
-  const date = new Date(dateStr);
-  return date.toDateString() === today.toDateString();
+export function todayISO(): string {
+  return new Date().toISOString().split("T")[0];
 }

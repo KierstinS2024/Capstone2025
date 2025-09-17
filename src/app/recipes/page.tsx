@@ -1,50 +1,184 @@
-// path: src/app/recipes/page.tsx
+// PATH: src/app/recipes/page.tsx
 "use client";
 
-import React, { useState } from "react";
-import { useRecipes } from "@/context/RecipeContext";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useRecipes, Recipe } from "@/context/RecipeContext";
 import RecipeCard from "@/components/RecipeCard";
-import "@/styles/recipes.css";
+import RecipeModal from "@/components/RecipeModal";
+import Navbar from "@/components/Navbar";
 
 export default function RecipesPage() {
-  const { recipes, loading, search } = useRecipes();
-  const [query, setQuery] = useState("");
+  const {
+    recipes: userRecipes,
+    searchSpoonacular,
+    addRecipe,
+    getRecipe,
+  } = useRecipes();
 
-  // Handle search form submit
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-    await search(query);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+
+  // Spoonacular state
+  const [spoonacularResults, setSpoonacularResults] = useState<Recipe[]>([]);
+  const [spoonacularPage, setSpoonacularPage] = useState(1);
+  const [loadingSpoonacular, setLoadingSpoonacular] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [savingRecipeIds, setSavingRecipeIds] = useState<Set<string>>(
+    new Set()
+  );
+
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastRecipeRef = useCallback(
+    (node: HTMLDivElement) => {
+      if (loadingSpoonacular) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setSpoonacularPage((prev) => prev + 1);
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loadingSpoonacular, hasMore]
+  );
+
+  // Filter user recipes by search query
+  const filteredUserRecipes = userRecipes.filter((r) =>
+    r.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Spoonacular search fetch
+  const fetchSpoonacular = useCallback(async () => {
+    if (!searchQuery.trim()) return;
+    setLoadingSpoonacular(true);
+    try {
+      const results = await searchSpoonacular(searchQuery);
+      setSpoonacularResults((prev) =>
+        spoonacularPage === 1 ? results : [...prev, ...results]
+      );
+      if (results.length === 0) setHasMore(false);
+    } catch (err) {
+      console.error("Spoonacular search failed", err);
+    } finally {
+      setLoadingSpoonacular(false);
+    }
+  }, [searchQuery, spoonacularPage, searchSpoonacular]);
+
+  // Reset Spoonacular results when query changes
+  useEffect(() => {
+    setSpoonacularResults([]);
+    setSpoonacularPage(1);
+    setHasMore(true);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    fetchSpoonacular();
+  }, [fetchSpoonacular, spoonacularPage]);
+
+  const handleSaveSpoonacular = async (id: string) => {
+    if (savingRecipeIds.has(id)) return;
+
+    setSavingRecipeIds((prev) => new Set(prev).add(id));
+    try {
+      const recipe = spoonacularResults.find((r) => r.id === id);
+      if (recipe) await addRecipe(recipe);
+      alert("Recipe saved!");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingRecipeIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }
   };
 
   return (
-    <div className="recipes-page">
-      <h2 className="page-title">Discover Recipes</h2>
+    <>
+      <Navbar />
+      <main style={{ padding: "1rem", maxWidth: "1200px", margin: "0 auto" }}>
+        <h1>Recipes</h1>
 
-      {/* Search bar */}
-      <form className="recipe-search" onSubmit={handleSearch}>
         <input
           type="text"
           placeholder="Search recipes..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="search-input"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem" }}
         />
-        <button type="submit" className="search-button">
-          Search
-        </button>
-      </form>
 
-      {/* Results */}
-      {loading && <p className="loading">Searching recipes...</p>}
-      {!loading && recipes.length === 0 && (
-        <p className="empty-state">No recipes yet. Try searching!</p>
-      )}
-      <div className="recipe-grid">
-        {recipes.map((recipe) => (
-          <RecipeCard key={recipe.id} recipe={recipe} />
-        ))}
-      </div>
-    </div>
+        <div style={{ display: "flex", gap: "2rem" }}>
+          {/* User Recipes */}
+          <div style={{ flex: 1 }}>
+            <h2>Your Recipes</h2>
+            {filteredUserRecipes.length === 0 ? (
+              <p>No recipes found.</p>
+            ) : (
+              <div style={{ display: "grid", gap: "1rem" }}>
+                {filteredUserRecipes.map((recipe) => (
+                  <RecipeCard
+                    key={recipe.id}
+                    recipe={recipe}
+                    onClick={() => setSelectedRecipe(recipe)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Spoonacular Results */}
+          <div style={{ flex: 1 }}>
+            <h2>Spoonacular</h2>
+            {spoonacularResults.length === 0 &&
+            searchQuery &&
+            !loadingSpoonacular ? (
+              <p>No results found.</p>
+            ) : (
+              <div style={{ display: "grid", gap: "1rem" }}>
+                {spoonacularResults.map((result, index) => {
+                  const isSaving = savingRecipeIds.has(result.id);
+                  const isLast = index === spoonacularResults.length - 1;
+                  return (
+                    <div
+                      key={result.id}
+                      ref={isLast ? lastRecipeRef : null}
+                      style={{ position: "relative" }}
+                    >
+                      <RecipeCard
+                        recipe={result}
+                        onClick={() => setSelectedRecipe(result)}
+                      />
+                      <button
+                        onClick={() => handleSaveSpoonacular(result.id)}
+                        disabled={isSaving}
+                        style={{
+                          position: "absolute",
+                          top: "0.5rem",
+                          right: "0.5rem",
+                          padding: "0.25rem 0.5rem",
+                          fontSize: "0.8rem",
+                        }}
+                      >
+                        {isSaving ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  );
+                })}
+                {loadingSpoonacular && <p>Loading more...</p>}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recipe Modal */}
+        {selectedRecipe && (
+          <RecipeModal
+            recipe={selectedRecipe}
+            onClose={() => setSelectedRecipe(null)}
+          />
+        )}
+      </main>
+    </>
   );
 }

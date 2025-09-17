@@ -1,90 +1,123 @@
-// src/context/MealPlanContext.tsx
+// PATH: src/context/MealPlanContext.tsx
 "use client";
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { useAuth } from "./AuthContext";
+
+import React, { createContext, useContext, useEffect, useState } from "react";
 import {
-  fetchMealPlans,
+  MealPlan,
+  MealType,
+  getMealPlans,
+  getMealPlan,
   createMealPlan,
-  addMeal,
-  removeMeal,
+  updateMealPlan,
   deleteMealPlan,
 } from "@/lib/mealPlanApi";
-import { MealPlan, Meal } from "@/types/mealPlan";
 
 interface MealPlanContextType {
   mealPlans: MealPlan[];
   loading: boolean;
-  refreshPlans: () => void;
-  createPlan: (startDate: string, endDate: string) => void;
-  addMealToPlan: (planId: string, meal: Meal) => void;
-  removeMealFromPlan: (planId: string, mealId: string) => void;
-  deletePlan: (planId: string) => void;
+  fetchMealPlans: () => Promise<void>;
+  fetchMealPlan: (id: string) => Promise<MealPlan | null>;
+  create: (data: Partial<MealPlan>) => Promise<MealPlan>;
+  update: (id: string, data: Partial<MealPlan>) => Promise<MealPlan>;
+  remove: (id: string) => Promise<void>;
+  updateMeal: (
+    planId: string,
+    date: string,
+    mealType: MealType,
+    recipeId: string
+  ) => Promise<void>;
 }
 
-const MealPlanContext = createContext<MealPlanContextType>(
-  {} as MealPlanContextType
+const MealPlanContext = createContext<MealPlanContextType | undefined>(
+  undefined
 );
 
-export const MealPlanProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
-  const { user } = useAuth();
+export function MealPlanProvider({ children }: { children: React.ReactNode }) {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const refreshPlans = useCallback(async () => {
-    if (!user) return;
+  useEffect(() => {
+    fetchMealPlans();
+  }, []);
+
+  async function fetchMealPlans() {
     setLoading(true);
-    const plans = await fetchMealPlans(user.id);
-    setMealPlans(plans);
-    setLoading(false);
-  }, [user]);
+    try {
+      const plans = await getMealPlans();
+      setMealPlans(plans);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const createPlan = async (startDate: string, endDate: string) => {
-    if (!user) return;
-    const newPlan = await createMealPlan(user.id, startDate, endDate);
-    setMealPlans((prev) => [...prev, newPlan]);
-  };
+  async function fetchMealPlan(id: string) {
+    try {
+      return await getMealPlan(id);
+    } catch {
+      return null;
+    }
+  }
 
-  const addMealToPlan = async (planId: string, meal: Meal) => {
-    if (!user) return;
-    const updatedPlan = await addMeal(user.id, planId, meal);
-    setMealPlans((prev) =>
-      prev.map((p) => (p._id === planId ? updatedPlan : p))
-    );
-  };
+  async function createPlan(data: Partial<MealPlan>) {
+    const newPlan = await createMealPlan(data);
+    await fetchMealPlans();
+    return newPlan;
+  }
 
-  const removeMealFromPlan = async (planId: string, mealId: string) => {
-    if (!user) return;
-    const updatedPlan = await removeMeal(user.id, planId, mealId);
-    setMealPlans((prev) =>
-      prev.map((p) => (p._id === planId ? updatedPlan : p))
-    );
-  };
+  async function updatePlan(id: string, data: Partial<MealPlan>) {
+    const updated = await updateMealPlan(id, data);
+    await fetchMealPlans();
+    return updated;
+  }
 
-  const deletePlan = async (planId: string) => {
-    if (!user) return;
-    await deleteMealPlan(user.id, planId);
-    setMealPlans((prev) => prev.filter((p) => p._id !== planId));
-  };
+  async function removePlan(id: string) {
+    await deleteMealPlan(id);
+    await fetchMealPlans();
+  }
+
+  // -----------------------------
+  // Update a single meal
+  async function updateMeal(
+    planId: string,
+    date: string,
+    mealType: MealType,
+    recipeId: string
+  ) {
+    const plan = mealPlans.find((p) => p.id === planId);
+    if (!plan) throw new Error("Meal plan not found");
+
+    const updatedMeals = {
+      ...plan.meals,
+      [date]: {
+        ...plan.meals[date],
+        [mealType]: recipeId,
+      },
+    };
+
+    await updatePlan(planId, { meals: updatedMeals });
+  }
 
   return (
     <MealPlanContext.Provider
       value={{
         mealPlans,
         loading,
-        refreshPlans,
-        createPlan,
-        addMealToPlan,
-        removeMealFromPlan,
-        deletePlan,
+        fetchMealPlans,
+        fetchMealPlan,
+        create: createPlan,
+        update: updatePlan,
+        remove: removePlan,
+        updateMeal,
       }}
     >
       {children}
     </MealPlanContext.Provider>
   );
-};
+}
 
-export const useMealPlan = () => useContext(MealPlanContext);
+export function useMealPlans() {
+  const ctx = useContext(MealPlanContext);
+  if (!ctx)
+    throw new Error("useMealPlans must be used within MealPlanProvider");
+  return ctx;
+}

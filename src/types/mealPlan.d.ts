@@ -1,16 +1,15 @@
-export interface Meal {
-  id: string;
-  name: string;
-  type: "breakfast" | "lunch" | "dinner";
-  date: string; // YYYY-MM-DD
-  recipeId?: string;
-  image?: string;
-  ingredients?: { name: string; quantity?: string }[];
-}
-
+// ===========================================
+// src/types/mealPlan.d.ts
+// ===========================================
 export interface MealPlan {
-  _id: string;
-  startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
-  meals: Meal[];
+  _id?: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  meals: {
+    day: string;
+    breakfast?: string;
+    lunch?: string;
+    dinner?: string;
+  }[];
 }

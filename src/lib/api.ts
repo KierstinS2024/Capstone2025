@@ -1,29 +1,21 @@
-// src/lib/api.ts
-export async function getJSON<T>(
-  url: string,
-  options?: RequestInit
-): Promise<T> {
-  const res = await fetch(url, { ...options, credentials: "include" });
-  if (!res.ok) throw new Error(`API request failed: ${res.statusText}`);
-  return res.json();
-}
+// PATH: src/lib/api.ts
+// Generic API wrapper for client-side fetch calls to Next.js API routes.
+// Automatically includes credentials so httpOnly cookies are sent with requests.
 
-export async function postJSON<T>(url: string, data: any): Promise<T> {
-  return getJSON<T>(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+export async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(url, {
+    ...options,
+    credentials: "include", // send cookies with requests
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
   });
-}
 
-export async function putJSON<T>(url: string, data: any): Promise<T> {
-  return getJSON<T>(url, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-}
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || `API request failed: ${res.status}`);
+  }
 
-export async function deleteJSON<T>(url: string): Promise<T> {
-  return getJSON<T>(url, { method: "DELETE" });
+  return res.json() as Promise<T>;
 }

@@ -1,66 +1,44 @@
-// path: src/lib/shoppingListApi.ts
-import { Types } from "mongoose";
-import { connectDb } from "./db";
-import ShoppingList, { IShoppingItem } from "@/models/ShoppingList";
+// PATH: src/lib/shoppingListApi.ts
+// Client-side API helpers for the Shopping List.
 
-// Fetch shopping list
-export async function fetchShoppingList(
-  userId: string
-): Promise<{ items: IShoppingItem[] }> {
-  await connectDb();
-  const list = await ShoppingList.findOne({ userId });
-  return list ? list.toObject() : { items: [] };
+import { apiFetch } from "./api";
+
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  checked: boolean;
 }
 
-// Add single item
-export async function addItemApi(
-  userId: string,
-  name: string,
-  category = "other"
-): Promise<IShoppingItem> {
-  await connectDb();
-  let list = await ShoppingList.findOne({ userId });
-
-  const newItem: IShoppingItem = {
-    name,
-    category,
-    purchased: false,
-    mealTypes: [],
-  };
-  if (!list) list = new ShoppingList({ userId, items: [newItem] });
-  else list.items.push(newItem);
-
-  await list.save();
-  return newItem;
+export interface ShoppingList {
+  id: string;
+  items: ShoppingItem[];
 }
 
-// Remove item
-export async function removeItemApi(userId: string, itemId: string) {
-  await connectDb();
-  const list = await ShoppingList.findOne({ userId });
-  if (!list) throw new Error("Shopping list not found");
-
-  list.items = list.items.filter(
-    (i: IShoppingItem & { _id?: Types.ObjectId }) =>
-      i._id?.toString() !== itemId
-  );
-  await list.save();
-  return list.toObject();
+export async function getShoppingList(): Promise<ShoppingList> {
+  return apiFetch<ShoppingList>("/api/shopping-lists");
 }
 
-// Toggle purchased
-export async function toggleItemApi(userId: string, itemId: string) {
-  await connectDb();
-  const list = await ShoppingList.findOne({ userId });
-  if (!list) throw new Error("Shopping list not found");
+export async function addItem(name: string): Promise<ShoppingList> {
+  return apiFetch<ShoppingList>("/api/shopping-lists", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
 
-  const item = list.items.find(
-    (i: IShoppingItem & { _id?: Types.ObjectId }) =>
-      i._id?.toString() === itemId
-  );
-  if (!item) throw new Error("Item not found");
+export async function toggleItem(id: string): Promise<ShoppingList> {
+  return apiFetch<ShoppingList>(`/api/shopping-lists/${id}`, {
+    method: "PUT",
+  });
+}
 
-  item.purchased = !item.purchased;
-  await list.save();
-  return item.toObject();
+export async function deleteItem(id: string): Promise<ShoppingList> {
+  return apiFetch<ShoppingList>(`/api/shopping-lists/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function clearList(): Promise<ShoppingList> {
+  return apiFetch<ShoppingList>("/api/shopping-lists", {
+    method: "DELETE",
+  });
 }

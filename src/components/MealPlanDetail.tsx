@@ -1,79 +1,105 @@
-// path: src/components/MealPlanDetail.tsx
+// PATH: src/components/MealPlanDetail.tsx
 "use client";
 
-import React from "react";
-import Link from "next/link";
-import { MealPlan, Meal } from "@/types/mealPlan";
+import React, { useState } from "react";
+import { MealPlan } from "../lib/mealPlanApi";
+import { useRecipes } from "../context/RecipeContext";
+import RecipeModal from "./RecipeModal";
+import styles from "../styles/mealplan-detail.module.css";
+import { formatDateRange, getWeekDates } from "../lib/helpers";
 
-interface MealPlanDetailProps {
-  plan: MealPlan; // Full meal plan object
-  onRemoveMeal?: (mealId: string) => void; // Optional callback for removing a meal
+interface Props {
+  plan: MealPlan;
+  onSave: (updated: MealPlan) => void;
 }
 
-/**
- * MealPlanDetail component
- * ------------------------
- * Displays all meals in a meal plan across its date range.
- * Used in: /meal-plans/[id] page
- */
-export default function MealPlanDetail({
-  plan,
-  onRemoveMeal,
-}: MealPlanDetailProps) {
-  if (!plan) {
-    return <p className="empty">Meal plan not found.</p>;
+export default function MealPlanDetail({ plan, onSave }: Props) {
+  const { recipes } = useRecipes();
+  const [editingPlan, setEditingPlan] = useState<MealPlan>(
+    structuredClone(plan)
+  );
+  const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
+
+  const weekDays = getWeekDates(plan.startDate);
+
+  function updateMeal(
+    day: string,
+    meal: "breakfast" | "lunch" | "dinner",
+    recipeId: string
+  ) {
+    const copy = structuredClone(editingPlan);
+    if (!copy.meals[day]) copy.meals[day] = {};
+    copy.meals[day][meal] = recipeId;
+    setEditingPlan(copy);
+  }
+
+  function handleSave() {
+    onSave(editingPlan);
   }
 
   return (
-    <div className="mealplan-detail">
-      {/* Header */}
-      <div className="header">
-        <h2>
-          Meal Plan: {plan.startDate} → {plan.endDate}
-        </h2>
-        <Link href="/meal-plans" className="back-link">
-          ← Back to Plans
-        </Link>
-      </div>
+    <div className={styles.detail}>
+      <h2>Meal Plan: {formatDateRange(plan.startDate, plan.endDate)}</h2>
 
-      {/* Meals grouped by date */}
-      <div className="meals-by-day">
-        {plan.meals.length === 0 ? (
-          <p className="empty">No meals added yet.</p>
-        ) : (
-          plan.meals.map((meal: Meal) => (
-            <div key={meal.id} className="meal-entry">
-              {/* Image preview */}
-              {meal.image && (
-                <img src={meal.image} alt={meal.name} className="meal-image" />
-              )}
+      <table className={styles.planTable}>
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Breakfast</th>
+            <th>Lunch</th>
+            <th>Dinner</th>
+          </tr>
+        </thead>
+        <tbody>
+          {weekDays.map((day) => {
+            const dayMeals = editingPlan.meals[day] || {};
+            return (
+              <tr key={day}>
+                <td>{day}</td>
+                {["breakfast", "lunch", "dinner"].map((meal) => {
+                  const recipeId = dayMeals[meal];
+                  const recipe = recipes.find((r) => r._id === recipeId);
+                  return (
+                    <td key={meal}>
+                      {recipe ? (
+                        <button onClick={() => setViewingRecipeId(recipe._id)}>
+                          {recipe.title}
+                        </button>
+                      ) : (
+                        <span className={styles.empty}>—</span>
+                      )}
+                      <select
+                        onChange={(e) =>
+                          updateMeal(day, meal as any, e.target.value)
+                        }
+                        value={recipeId || ""}
+                      >
+                        <option value="">— Select —</option>
+                        {recipes.map((r) => (
+                          <option key={r._id} value={r._id}>
+                            {r.title}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
 
-              {/* Info */}
-              <div className="meal-info">
-                <h4>{meal.name}</h4>
-                <p>
-                  {meal.type} • {meal.date}
-                </p>
-              </div>
+      <button className={styles.saveBtn} onClick={handleSave}>
+        Save Meal Plan
+      </button>
 
-              {/* Actions */}
-              <div className="meal-actions">
-                <Link href={`/recipes/${meal.recipeId}`} className="view-link">
-                  View Recipe
-                </Link>
-                {onRemoveMeal && (
-                  <button
-                    className="remove-button"
-                    onClick={() => onRemoveMeal(meal.id)}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      {viewingRecipeId && (
+        <RecipeModal
+          recipeId={viewingRecipeId}
+          onClose={() => setViewingRecipeId(null)}
+        />
+      )}
     </div>
   );
 }

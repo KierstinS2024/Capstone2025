@@ -1,0 +1,54 @@
+.container {
+  padding: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.section {
+  margin-top: 2rem;
+}
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+.searchContainer,
+.searchForm {
+  margin-bottom: 1rem;
+}
+.searchInput {
+  padding: 0.5rem;
+  width: 100%;
+}
+.cardWrapper {
+  position: relative;
+}
+.saveBtn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+}
+.notificationSuccess {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  position: relative;
+}
+.notificationError {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  position: relative;
+}
+.closeBtn {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}

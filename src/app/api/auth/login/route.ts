@@ -1,36 +1,27 @@
-// src/app/api/auth/login/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { connectDb } from "@/lib/db";
+// PATH: src/app/api/auth/login/route.ts
+export const runtime = "nodejs";
+
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/db";
 import User from "@/models/User";
-import { signJwt } from "@/lib/serverAuth";
+import jwt from "jsonwebtoken";
+import { setTokenCookie } from "@/lib/cookieUtils";
 
-export async function POST(req: NextRequest) {
-  try {
-    const { email, password } = await req.json();
-    await connectDb();
+const JWT_SECRET = process.env.JWT_SECRET || "";
 
-    const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
-    }
+export async function POST(req: Request) {
+  await connectDB();
+  const { email, password } = await req.json();
 
-    const token = signJwt({ userId: user._id });
-    const res = NextResponse.json({
-      user: { email: user.email, id: user._id },
-    });
-
-    res.cookies.set("token", token, {
-      httpOnly: true,
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
-
-    return res;
-  } catch (err) {
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+  const user = await User.findOne({ email });
+  if (!user || !(await user.comparePassword(password))) {
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
+
+  const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
+    expiresIn: "7d",
+  });
+  const res = NextResponse.json({ id: user._id, email: user.email });
+  setTokenCookie(res, token);
+  return res;
 }

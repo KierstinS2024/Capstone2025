@@ -1,54 +1,57 @@
-// src/lib/mealPlanApi.ts
-import { connectDb } from "@/lib/db";
-import MealPlan, { IMealPlan } from "@/models/MealPlan";
+// PATH: src/lib/mealPlanApi.ts
+// Client-side API helpers for Meal Plans
 
-// Fetch all meal plans for a user
-export async function fetchMealPlans(userId: string): Promise<IMealPlan[]> {
-  await connectDb();
-  const plans = await MealPlan.find({ userId }).lean();
-  return plans as IMealPlan[];
+import { apiFetch } from "./api";
+
+// -----------------------------
+// Types
+// -----------------------------
+export type MealType = "breakfast" | "lunch" | "dinner";
+
+export interface MealPlan {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  meals: {
+    [date: string]: {
+      breakfast?: string;
+      lunch?: string;
+      dinner?: string;
+    };
+  };
 }
 
-// Create a new meal plan
+// -----------------------------
+// CRUD
+// -----------------------------
+export async function getMealPlans(): Promise<MealPlan[]> {
+  return apiFetch<MealPlan[]>("/api/meal-plans");
+}
+
+export async function getMealPlan(id: string): Promise<MealPlan> {
+  return apiFetch<MealPlan>(`/api/meal-plans/${id}`);
+}
+
 export async function createMealPlan(
-  userId: string,
-  startDate: string,
-  endDate: string
-): Promise<IMealPlan> {
-  await connectDb();
-  const plan = new MealPlan({ userId, startDate, endDate, meals: [] });
-  await plan.save();
-  return plan.toObject() as IMealPlan;
+  data: Partial<MealPlan>
+): Promise<MealPlan> {
+  return apiFetch<MealPlan>("/api/meal-plans", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
-// Add meal to plan
-export async function addMeal(userId: string, planId: string, meal: any) {
-  await connectDb();
-  const plan = await MealPlan.findOne({ _id: planId, userId });
-  if (!plan) throw new Error("Meal plan not found");
-  plan.meals.push(meal);
-  await plan.save();
-  return plan.toObject();
+export async function updateMealPlan(
+  id: string,
+  data: Partial<MealPlan>
+): Promise<MealPlan> {
+  return apiFetch<MealPlan>(`/api/meal-plans/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 }
 
-// Remove meal from plan
-export async function removeMeal(
-  userId: string,
-  planId: string,
-  mealId: string
-) {
-  await connectDb();
-  const plan = await MealPlan.findOne({ _id: planId, userId });
-  if (!plan) throw new Error("Meal plan not found");
-  plan.meals = plan.meals.filter((m) => m._id?.toString() !== mealId);
-  await plan.save();
-  return plan.toObject();
-}
-
-// Delete a meal plan
-export async function deleteMealPlan(userId: string, planId: string) {
-  await connectDb();
-  const deleted = await MealPlan.findOneAndDelete({ _id: planId, userId });
-  if (!deleted) throw new Error("Meal plan not found");
-  return deleted.toObject();
+export async function deleteMealPlan(id: string): Promise<void> {
+  await apiFetch(`/api/meal-plans/${id}`, { method: "DELETE" });
 }

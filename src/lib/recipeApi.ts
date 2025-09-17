@@ -1,32 +1,31 @@
-// src/lib/recipeApi.ts
-import { connectDb } from "./db";
-import Recipe, { IRecipe } from "@/models/Recipe";
-import { Types } from "mongoose";
+// PATH: src/lib/recipeApi.ts
+// Client-side API helpers for Recipes.
 
-// Fetch recipe by ID
-export async function getRecipeById(id: string): Promise<IRecipe | null> {
-  await connectDb();
-  const recipe = await Recipe.findById(id);
-  return recipe ? recipe.toObject() : null;
+import { apiFetch } from "./api";
+
+export interface Recipe {
+  id: string;
+  title: string;
+  ingredients: string[];
+  instructions: string;
+  source?: "user" | "spoonacular";
 }
 
-// Search recipes by name
-export async function searchRecipes(query: string): Promise<IRecipe[]> {
-  await connectDb();
-  const regex = new RegExp(query, "i");
-  const recipes = await Recipe.find({ name: regex }).limit(20);
-  return recipes.map((r) => r.toObject());
+export async function getRecipes(): Promise<Recipe[]> {
+  return apiFetch<Recipe[]>("/api/recipes");
 }
 
-// Toggle favorite
-export async function toggleFavorite(
-  recipeId: string,
-  userId: string
-): Promise<IRecipe | null> {
-  await connectDb();
-  const recipe = await Recipe.findOne({ _id: recipeId, userId });
-  if (!recipe) return null;
-  recipe.favorite = !recipe.favorite;
-  await recipe.save();
-  return recipe.toObject();
+export async function getRecipe(id: string): Promise<Recipe> {
+  return apiFetch<Recipe>(`/api/recipes/${id}`);
+}
+
+export async function createRecipe(data: Partial<Recipe>): Promise<Recipe> {
+  return apiFetch<Recipe>("/api/recipes", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteRecipe(id: string): Promise<void> {
+  await apiFetch(`/api/recipes/${id}`, { method: "DELETE" });
 }

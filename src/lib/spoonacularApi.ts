@@ -1,19 +1,23 @@
-// src/lib/spoonacularApi.ts
-const API_KEY = process.env.NEXT_PUBLIC_SPOONACULAR_API_KEY;
-const BASE_URL = "https://api.spoonacular.com";
+// PATH: src/lib/spoonacularApi.ts
+// Wrapper for Spoonacular external API requests.
+// Always use NEXT_PUBLIC_SPOONACULAR_API_KEY from .env.local.
 
-export async function fetchRecipes(query: string) {
+const API_KEY = process.env.NEXT_PUBLIC_SPOONACULAR_API_KEY;
+
+export async function searchSpoonacular(query: string) {
   const res = await fetch(
-    `${BASE_URL}/recipes/complexSearch?query=${query}&apiKey=${API_KEY}`
+    `https://api.spoonacular.com/recipes/complexSearch?query=${encodeURIComponent(
+      query
+    )}&number=10&apiKey=${API_KEY}`
   );
-  if (!res.ok) throw new Error("Failed to fetch recipes");
+  if (!res.ok) throw new Error("Spoonacular search failed");
   return res.json();
 }
 
-export async function fetchRecipeById(id: string) {
+export async function getSpoonacularRecipe(id: string) {
   const res = await fetch(
-    `${BASE_URL}/recipes/${id}/information?apiKey=${API_KEY}`
+    `https://api.spoonacular.com/recipes/${id}/information?apiKey=${API_KEY}`
   );
-  if (!res.ok) throw new Error("Failed to fetch recipe");
+  if (!res.ok) throw new Error("Spoonacular fetch failed");
   return res.json();
 }

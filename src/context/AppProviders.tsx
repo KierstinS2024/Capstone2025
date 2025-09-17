@@ -1,25 +1,23 @@
+// ===========================================
 // src/context/AppProviders.tsx
+// Wrapper to compose all contexts
+// ===========================================
 "use client";
 
-import React from "react";
+import React, { ReactNode } from "react";
 import { AuthProvider } from "./AuthContext";
 import { MealPlanProvider } from "./MealPlanContext";
-import { ShoppingListProvider } from "./ShoppingListContext";
 import { RecipeProvider } from "./RecipeContext";
+import { ShoppingListProvider } from "./ShoppingListContext";
 
-// Wrap all client-side contexts here
-export default function AppProviders({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const AppProviders = ({ children }: { children: ReactNode }) => {
   return (
     <AuthProvider>
       <MealPlanProvider>
-        <ShoppingListProvider>
-          <RecipeProvider>{children}</RecipeProvider>
-        </ShoppingListProvider>
+        <RecipeProvider>
+          <ShoppingListProvider>{children}</ShoppingListProvider>
+        </RecipeProvider>
       </MealPlanProvider>
     </AuthProvider>
   );
-}
+};

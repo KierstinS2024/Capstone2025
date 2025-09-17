@@ -1,49 +1,96 @@
-// src/components/MealPlanCard.tsx
-"use client";
-
-import React from "react";
-import { MealPlan } from "@/types/mealPlan";
+import React, { useState, useEffect } from "react";
+import { MealPlan, MealType } from "@/lib/mealPlanApi";
 import MealCard from "./MealCard";
-import { useMealPlan } from "@/context/MealPlanContext";
+import RecipeModal from "./RecipeModal";
+import AddToMealPlanModal from "./AddToMealPlanModal";
+import { useRecipes, Recipe } from "@/context/RecipeContext";
+import { formatDateRange, todayISO } from "@/lib/helpers";
+import styles from "@/styles/mealPlanCard.module.css";
 
-interface MealPlanCardProps {
+interface Props {
   plan: MealPlan;
-  selectedDate: string;
-  onSelectPlan: (id: string) => void;
-  isSelected: boolean;
 }
 
-export default function MealPlanCard({
-  plan,
-  selectedDate,
-  onSelectPlan,
-  isSelected,
-}: MealPlanCardProps) {
-  const { removeMealFromPlan } = useMealPlan();
+export default function MealPlanCard({ plan }: Props) {
+  const { fetchRecipe } = useRecipes();
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [showAddMeal, setShowAddMeal] = useState<{
+    mealType: MealType | "";
+    open: boolean;
+  }>({ mealType: "", open: false });
 
-  const mealsForDate = plan.meals.filter((m) => m.date === selectedDate);
+  const today = todayISO();
+
+  // state to hold recipes for today
+  const [recipesForToday, setRecipesForToday] = useState<
+    Partial<Record<MealType, Recipe>>
+  >({});
+
+  useEffect(() => {
+    const loadRecipes = async () => {
+      const meals = plan.meals[today] || {};
+      const entries: [MealType, Recipe][] = [];
+
+      for (const mealType of ["breakfast", "lunch", "dinner"] as MealType[]) {
+        const recipeId = meals[mealType];
+        if (recipeId) {
+          const recipe = await fetchRecipe(recipeId);
+          if (recipe) entries.push([mealType, recipe]);
+        }
+      }
+
+      setRecipesForToday(Object.fromEntries(entries));
+    };
+
+    loadRecipes();
+  }, [plan, today, fetchRecipe]);
+
+  const handleMealClick = (mealType: MealType, recipe?: Recipe) => {
+    if (recipe) {
+      setSelectedRecipe(recipe);
+    } else {
+      setShowAddMeal({ mealType, open: true });
+    }
+  };
 
   return (
-    <div
-      className={`mealplan-card ${isSelected ? "selected" : ""}`}
-      onClick={() => onSelectPlan(plan._id)}
-    >
-      <p>
-        {plan.startDate} → {plan.endDate}
-      </p>
-      <div className="meals-preview">
-        {["breakfast", "lunch", "dinner"].map((type) => {
-          const meal = mealsForDate.find((m) => m.type === type);
+    <div className={styles.planCard}>
+      <h2 className={styles.dateRange}>
+        {formatDateRange(plan.startDate, plan.endDate)}
+      </h2>
+
+      <div className={styles.meals}>
+        {(["breakfast", "lunch", "dinner"] as MealType[]).map((mealType) => {
+          const recipe = recipesForToday[mealType];
+
           return (
             <MealCard
-              key={type}
-              type={type as any}
-              meal={meal || null}
-              onRemove={meal ? (id) => removeMealFromPlan(id) : undefined}
+              key={mealType}
+              mealType={mealType}
+              recipe={recipe}
+              onClick={() => handleMealClick(mealType, recipe)}
             />
           );
         })}
       </div>
+
+      {/* Recipe Modal */}
+      {selectedRecipe && (
+        <RecipeModal
+          recipe={selectedRecipe}
+          onClose={() => setSelectedRecipe(null)}
+        />
+      )}
+
+      {/* Add Meal Modal */}
+      {showAddMeal.open && showAddMeal.mealType && (
+        <AddToMealPlanModal
+          recipe={selectedRecipe!} // should always be set if modal opens
+          plan={plan}
+          mealType={showAddMeal.mealType}
+          onClose={() => setShowAddMeal({ mealType: "", open: false })}
+        />
+      )}
     </div>
   );
 }

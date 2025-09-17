@@ -1,5 +1,8 @@
+// ===========================================
+// src/types/user.d.ts
+// ===========================================
 export interface User {
-  id: string;
+  _id?: string;
   email: string;
-  createdAt: string;
+  password: string;
 }

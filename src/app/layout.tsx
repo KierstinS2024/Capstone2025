@@ -1,14 +1,11 @@
 // src/app/layout.tsx
-import "./global.css";
-import Navbar from "@/components/Navbar";
-import AppProviders from "@/context/AppProviders";
+import React from "react";
+import { AuthProvider } from "@/context/AuthContext";
+import { RecipeProvider } from "@/context/RecipeContext";
+import { ShoppingListProvider } from "@/context/ShoppingListContext";
+import { MealPlanProvider } from "@/context/MealPlanContext";
+import "@/app/global.css";
 
-export const metadata = {
-  title: "MealMate",
-  description: "Plan meals, discover recipes, and manage shopping lists",
-};
-
-// Keep layout as server component to allow metadata export
 export default function RootLayout({
   children,
 }: {
@@ -17,11 +14,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {/* All client-side context providers live inside AppProviders */}
-        <AppProviders>
-          <Navbar />
-          <main className="max-w-5xl mx-auto p-4">{children}</main>
-        </AppProviders>
+        <AuthProvider>
+          <RecipeProvider>
+            <ShoppingListProvider>
+              <MealPlanProvider>{children}</MealPlanProvider>
+            </ShoppingListProvider>
+          </RecipeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

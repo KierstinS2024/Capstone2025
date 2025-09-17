@@ -1,34 +1,25 @@
-// path: src/components/ProtectedRoute.tsx
+// PATH: src/components/ProtectedRoute.tsx
 "use client";
 
-import React, { useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import React, { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 
-/**
- * Protects routes that require authentication.
- * Redirects to /login if the user is not logged in.
- */
-interface ProtectedRouteProps {
-  children: React.ReactNode;
+interface Props {
+  children: ReactNode;
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children }: Props) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // If user is done loading and is not logged in, redirect to login
     if (!loading && !user) {
-      router.replace("/login");
+      router.push("/login");
     }
-  }, [loading, user, router]);
+  }, [user, loading]);
 
-  // While loading or redirecting, show nothing or a loading indicator
-  if (loading || !user) {
-    return <p className="center">Loading...</p>;
-  }
+  if (loading || !user) return <p>Loading...</p>;
 
-  // Render the protected content once authenticated
   return <>{children}</>;
 }

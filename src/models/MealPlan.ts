@@ -1,52 +1,33 @@
-// src/models/MealPlan.ts
-import { Schema, model, models, Document, Types } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-// Meal document interface
-export interface IMeal {
-  name: string;
-  type: "breakfast" | "lunch" | "dinner";
-  date: string; // ISO string YYYY-MM-DD
-  recipeId?: Types.ObjectId;
-  image?: string;
-  ingredients?: { name: string; quantity?: string }[];
-}
-
-// MealPlan document interface
 export interface IMealPlan extends Document {
-  userId: Types.ObjectId;
+  title: string;
   startDate: string;
   endDate: string;
-  meals: IMeal[];
-  createdAt: Date;
-  updatedAt: Date;
+  meals: Record<
+    string,
+    {
+      breakfast?: string;
+      lunch?: string;
+      dinner?: string;
+    }
+  >;
 }
 
-const MealSchema = new Schema<IMeal>(
-  {
-    name: { type: String, required: true },
-    type: {
-      type: String,
-      enum: ["breakfast", "lunch", "dinner"],
-      required: true,
-    },
-    date: { type: String, required: true },
-    recipeId: { type: Schema.Types.ObjectId, ref: "Recipe" },
-    image: { type: String },
-    ingredients: { type: [{ name: String, quantity: String }], default: [] },
+const MealPlanSchema = new Schema<IMealPlan>({
+  title: { type: String, required: true },
+  startDate: { type: String },
+  endDate: { type: String },
+  meals: {
+    type: Map,
+    of: new Schema({
+      breakfast: String,
+      lunch: String,
+      dinner: String,
+    }),
+    default: {},
   },
-  { _id: true }
-);
+});
 
-const MealPlanSchema = new Schema<IMealPlan>(
-  {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    startDate: { type: String, required: true },
-    endDate: { type: String, required: true },
-    meals: { type: [MealSchema], default: [] },
-  },
-  { timestamps: true }
-);
-
-const MealPlan =
-  models.MealPlan || model<IMealPlan>("MealPlan", MealPlanSchema);
-export default MealPlan;
+export default mongoose.models.MealPlan ||
+  mongoose.model<IMealPlan>("MealPlan", MealPlanSchema);

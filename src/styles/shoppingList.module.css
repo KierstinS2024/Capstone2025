@@ -1,0 +1,17 @@
+/* ===========================================
+   src/styles/shoppingList.css
+   =========================================== */
+
+.shopping-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shopping-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  border-bottom: 1px solid #eee;
+}

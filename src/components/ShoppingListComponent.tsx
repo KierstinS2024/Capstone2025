@@ -1,38 +1,25 @@
 // src/components/ShoppingListComponent.tsx
 "use client";
 
-import React from "react";
-import { useShoppingList } from "@/context/ShoppingListContext";
+import { IShoppingList } from "@/types/shoppingList";
 
-export default function ShoppingListComponent() {
-  const { shoppingList, toggleItem, removeItem } = useShoppingList();
-
+// Component for rendering shopping list items
+export default function ShoppingListComponent({
+  list,
+}: {
+  list: IShoppingList;
+}) {
   return (
-    <ul className="shopping-items">
-      {shoppingList.length === 0 ? (
-        <p>Your shopping list is empty.</p>
-      ) : (
-        shoppingList.map((item) => (
-          <li key={item.id} className="shopping-item">
-            <label>
-              <input
-                type="checkbox"
-                checked={item.purchased}
-                onChange={() => toggleItem(item.id)}
-              />
-              <span className={item.purchased ? "purchased" : ""}>
-                {item.name}
-              </span>
-            </label>
-            <button
-              className="remove-button"
-              onClick={() => removeItem(item.id)}
-            >
-              Remove
-            </button>
+    <div className="border rounded-lg shadow-md p-4 bg-white">
+      <h3 className="font-semibold text-lg">Shopping List</h3>
+      <ul className="mt-2 space-y-1">
+        {list.items.map((item, i) => (
+          <li key={i} className="flex justify-between items-center">
+            <span>{item.name}</span>
+            <span className="text-gray-500 text-sm">{item.quantity}</span>
           </li>
-        ))
-      )}
-    </ul>
+        ))}
+      </ul>
+    </div>
   );
 }

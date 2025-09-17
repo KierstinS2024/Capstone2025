@@ -1,17 +1,19 @@
-// src/middleware.ts
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+// PATH: src/middleware.ts
+import { NextResponse, type NextRequest } from "next/server";
 
+// Protect pages that require authentication
 export function middleware(req: NextRequest) {
-  const token = req.cookies.get("token")?.value; // consistent with auth routes
   const { pathname } = req.nextUrl;
 
-  const protectedPaths = ["/dashboard", "/meal-plans", "/shopping-list"];
-  const isProtected = protectedPaths.some((path) => pathname.startsWith(path));
-
-  if (isProtected && !token) {
-    const loginUrl = new URL("/login", req.url);
-    return NextResponse.redirect(loginUrl);
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/meal-plans") ||
+    pathname.startsWith("/shopping-list")
+  ) {
+    const token = req.cookies.get("token"); // just check presence
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
   }
 
   return NextResponse.next();

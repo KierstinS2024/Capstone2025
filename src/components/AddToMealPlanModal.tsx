@@ -1,60 +1,49 @@
-// src/components/AddToMealPlanModal.tsx
+// PATH: src/components/AddToMealPlanModal.tsx
 "use client";
 
 import React, { useState } from "react";
-import { Meal } from "@/types/mealPlan";
-import { useMealPlan } from "@/context/MealPlanContext";
+import { MealPlan, MealType } from "@/lib/mealPlanApi";
+import { useMealPlans } from "@/context/MealPlanContext";
+import { Recipe } from "@/context/RecipeContext";
 
-interface AddToMealPlanModalProps {
-  meal: Meal;
+interface Props {
+  recipe: Recipe;
+  plan: MealPlan;
+  mealType: MealType;
   onClose: () => void;
 }
 
 export default function AddToMealPlanModal({
-  meal,
+  recipe,
+  plan,
+  mealType,
   onClose,
-}: AddToMealPlanModalProps) {
-  const { addMealToPlan } = useMealPlan();
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-  const [mealType, setMealType] = useState<"breakfast" | "lunch" | "dinner">(
-    "breakfast"
-  );
+}: Props) {
+  const { updateMeal } = useMealPlans();
+  const [loading, setLoading] = useState(false);
 
   const handleAdd = async () => {
-    await addMealToPlan({ ...meal, type: mealType }, selectedDate);
-    onClose();
+    if (!recipe.id || !plan.id) return; // safety check
+    setLoading(true);
+    try {
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      await updateMeal(plan.id, today, mealType, recipe.id);
+      onClose();
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-content">
-        <h3>Add {meal.name} to Meal Plan</h3>
-        <label>
-          Date:
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-          />
-        </label>
-        <label>
-          Type:
-          <select
-            value={mealType}
-            onChange={(e) => setMealType(e.target.value as any)}
-          >
-            <option value="breakfast">Breakfast</option>
-            <option value="lunch">Lunch</option>
-            <option value="dinner">Dinner</option>
-          </select>
-        </label>
-        <div className="modal-actions">
-          <button onClick={handleAdd}>Add</button>
-          <button onClick={onClose}>Cancel</button>
-        </div>
-      </div>
+    <div className="modal">
+      <h3>
+        Add <strong>{recipe.title}</strong> to <strong>{plan.title}</strong> (
+        {mealType})
+      </h3>
+      <button onClick={handleAdd} disabled={loading}>
+        {loading ? "Adding..." : "Add to Meal Plan"}
+      </button>
+      <button onClick={onClose}>Cancel</button>
     </div>
   );
 }

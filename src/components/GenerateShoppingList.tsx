@@ -1,22 +1,23 @@
 // src/components/GenerateShoppingList.tsx
 "use client";
 
-import React from "react";
-import { useMealPlan } from "@/context/MealPlanContext";
+import { useMealPlans } from "@/context/MealPlanContext";
 import { useShoppingList } from "@/context/ShoppingListContext";
 
-export default function GenerateShoppingList() {
-  const { getAllMealNames } = useMealPlan();
-  const { addMultipleItems } = useShoppingList();
+export default function GenerateShoppingList({
+  mealPlanId,
+}: {
+  mealPlanId: string;
+}) {
+  const { generateFromMealPlan } = useShoppingList();
+  const { mealPlans } = useMealPlans();
+  const plan = mealPlans.find((p) => p._id === mealPlanId);
 
-  const handleGenerate = async () => {
-    const names = getAllMealNames();
-    await addMultipleItems(names);
-  };
+  if (!plan) return null;
 
   return (
-    <button className="generate-button" onClick={handleGenerate}>
-      Generate Shopping List from Meal Plans
+    <button onClick={() => generateFromMealPlan(mealPlanId)}>
+      Generate Shopping List from {plan.title}
     </button>
   );
 }

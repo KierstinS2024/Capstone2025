@@ -1,36 +1,41 @@
-// src/components/Navbar.tsx
+// PATH: src/components/Navbar.tsx
 "use client";
 
-import React from "react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
-import "@/styles/navbar.css";
+import React from "react";
+import { useAuth } from "../context/AuthContext";
+import styles from "@/styles/navbar.module.css";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
 
   return (
-    <nav className="navbar">
-      <Link href="/" className="logo">
-        MealMate
-      </Link>
-
-      <div className="nav-links">
+    <nav className={styles.navbar}>
+      <div className={styles.logo}>MealMate</div>
+      <ul className={styles.links}>
+        <li>
+          <Link href="/dashboard">Dashboard</Link>
+        </li>
+        <li>
+          <Link href="/meal-plans">Meal Plans</Link>
+        </li>
+        <li>
+          <Link href="/recipes">Recipes</Link>
+        </li>
+        <li>
+          <Link href="/shopping-list">Shopping List</Link>
+        </li>
+      </ul>
+      <div className={styles.auth}>
         {user ? (
           <>
-            <Link href="/dashboard">Dashboard</Link>
-            <Link href="/meal-plans">Meal Plans</Link>
-            <Link href="/recipes">Recipes</Link>
-            <Link href="/shopping-list">Shopping List</Link>
-            <button className="logout-btn" onClick={logout}>
+            <span className={styles.welcome}>Welcome {user.email}</span>
+            <button className={styles.logoutBtn} onClick={logout}>
               Logout
             </button>
           </>
         ) : (
-          <>
-            <Link href="/login">Login</Link>
-            <Link href="/signup">Sign Up</Link>
-          </>
+          <Link href="/login">Login</Link>
         )}
       </div>
     </nav>

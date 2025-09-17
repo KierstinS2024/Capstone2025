@@ -1,107 +1,107 @@
+// PATH: src/context/ShoppingListContext.tsx
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-  ReactNode,
-} from "react";
-import { ShoppingListItem } from "@/types/shoppingList";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import {
-  fetchShoppingList,
-  addItemApi,
-  removeItemApi,
-  toggleItemApi,
-} from "@/lib/shoppingListApi";
-import { useAuth } from "./AuthContext";
+  ShoppingList,
+  ShoppingItem,
+  getShoppingList,
+  addItem,
+  toggleItem,
+  deleteItem,
+  clearList,
+} from "../lib/shoppingListApi";
 
-interface ShoppingListContextValue {
-  shoppingList: ShoppingListItem[];
+interface ShoppingListContextType {
+  list: ShoppingList | null;
   loading: boolean;
-  addItem: (
-    name: string,
-    category: ShoppingListItem["category"]
-  ) => Promise<void>;
-  removeItem: (id: string) => Promise<void>;
-  toggleItem: (id: string) => Promise<void>;
-  refreshList: () => Promise<void>;
-  addMultipleItems: (names: string[]) => Promise<void>;
+  fetchList: () => Promise<void>;
+  add: (name: string) => Promise<void>;
+  addBulk: (names: string[]) => Promise<void>; // <-- NEW
+  toggle: (id: string) => Promise<void>;
+  remove: (id: string) => Promise<void>;
+  clear: () => Promise<void>;
 }
 
-const ShoppingListContext = createContext<ShoppingListContextValue | undefined>(
+const ShoppingListContext = createContext<ShoppingListContextType | undefined>(
   undefined
 );
 
-export const ShoppingListProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
-  const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
-  const [loading, setLoading] = useState(false);
+export function ShoppingListProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [list, setList] = useState<ShoppingList | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const refreshList = useCallback(async () => {
-    if (!user) return;
+  useEffect(() => {
+    fetchList();
+  }, []);
+
+  async function fetchList() {
     setLoading(true);
     try {
-      const list = await fetchShoppingList();
-      setShoppingList(list);
+      const l = await getShoppingList();
+      setList(l);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }
 
-  useEffect(() => {
-    refreshList();
-  }, [refreshList]);
+  // Add single item
+  async function addItemToList(name: string) {
+    const updated = await addItem(name);
+    setList(updated);
+  }
 
-  const addItem = useCallback(
-    async (name: string, category: ShoppingListItem["category"]) => {
-      const newItem = await addItemApi(name, category);
-      setShoppingList((prev) => [...prev, newItem]);
-    },
-    []
-  );
+  // Add multiple items at once
+  async function addBulkItemsToList(names: string[]) {
+    // Sequentially add each item (or implement bulk API if available)
+    for (const name of names) {
+      await addItem(name);
+    }
+    // Refresh the list after all items are added
+    await fetchList();
+  }
 
-  const removeItem = useCallback(async (id: string) => {
-    await removeItemApi(id);
-    setShoppingList((prev) => prev.filter((i) => i.id !== id));
-  }, []);
+  async function toggleItemInList(id: string) {
+    const updated = await toggleItem(id);
+    setList(updated);
+  }
 
-  const toggleItem = useCallback(async (id: string) => {
-    const updated = await toggleItemApi(id);
-    setShoppingList((prev) => prev.map((i) => (i.id === id ? updated : i)));
-  }, []);
+  async function removeItemFromList(id: string) {
+    const updated = await deleteItem(id);
+    setList(updated);
+  }
 
-  const addMultipleItems = useCallback(
-    async (names: string[]) => {
-      for (const name of names) {
-        if (!name) continue;
-        await addItem(name, "other");
-      }
-    },
-    [addItem]
-  );
+  async function clearShoppingList() {
+    const updated = await clearList();
+    setList(updated);
+  }
 
   return (
     <ShoppingListContext.Provider
       value={{
-        shoppingList,
+        list,
         loading,
-        addItem,
-        removeItem,
-        toggleItem,
-        refreshList,
-        addMultipleItems,
+        fetchList,
+        add: addItemToList,
+        addBulk: addBulkItemsToList, // <-- expose addBulk
+        toggle: toggleItemInList,
+        remove: removeItemFromList,
+        clear: clearShoppingList,
       }}
     >
       {children}
     </ShoppingListContext.Provider>
   );
-};
+}
 
 export function useShoppingList() {
   const ctx = useContext(ShoppingListContext);
-  if (!ctx)
-    throw new Error("useShoppingList must be used inside ShoppingListProvider");
+  if (!ctx) {
+    throw new Error("useShoppingList must be used within ShoppingListProvider");
+  }
   return ctx;
 }
