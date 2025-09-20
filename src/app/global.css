@@ -1,9 +1,17 @@
 /* path: src/app/globals.css */
-@import "../styles/variables.css";
+@import "@/styles/variables.css";
 
 :root {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   color-scheme: light;
+  --bg: #f3f0eb;        /* match auth background */
+  --card: #ffffff;      /* white cards */
+  --primary: #a3b18a;   /* earthy green */
+  --primary-hover: #7c947a;
+  --text: #4a4a4a;      /* dark earthy gray */
+  --muted: #555;
+  --border: #dcd3c9;
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 body {
@@ -12,7 +20,7 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .container {
@@ -21,46 +29,63 @@ body {
   padding: 16px;
 }
 
-/* Basic components */
+/* Cards */
 .card {
   background: var(--card);
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: var(--shadow-soft);
-  padding: 16px;
+  padding: 1.5rem;
   border: 1px solid var(--border);
 }
 
+/* Buttons */
 .button {
   background: var(--primary);
-  color: var(--card);
+  color: #fff;
   border: none;
-  padding: 8px 12px;
+  padding: 0.75rem 1rem;
   border-radius: 8px;
   cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s ease;
+}
+
+.button:hover {
+  background: var(--primary-hover);
 }
 
 .button-muted {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
 }
 
+/* Navbar */
 .navbar {
   height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  background: linear-gradient(180deg, var(--bg-2), var(--bg));
+  background: #ffffff;
   border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
   position: sticky;
   top: 0;
   z-index: 40;
 }
 
+.logo {
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
 .nav-links {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
 }
 
@@ -69,13 +94,15 @@ body {
   text-decoration: none;
   padding: 6px 10px;
   border-radius: 6px;
+  transition: background 0.2s ease;
 }
 
 .link:hover {
-  background: rgba(0,0,0,0.02);
+  background: var(--primary);
+  color: #fff;
 }
 
-/* Responsive grid for dashboard */
+/* Layout helpers */
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 360px;

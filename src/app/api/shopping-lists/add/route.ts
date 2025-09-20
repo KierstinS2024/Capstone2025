@@ -1,22 +1,23 @@
 // ===========================================
-// PATH: src/app/api/shopping-lists/route.ts
-// GET the active shopping list, create if none exists
+// PATH: src/app/api/shopping-lists/add/route.ts
+// POST a new item to the shopping list
 // ===========================================
 
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import ShoppingList from "@/models/ShoppingList";
 
-export async function GET() {
+export async function POST(req: Request) {
   await connectDB();
+  const { name } = await req.json();
 
-  // Find the single active shopping list
   let list = await ShoppingList.findOne();
-
-  // If none exists, create an empty list
   if (!list) {
     list = await ShoppingList.create({ items: [] });
   }
+
+  list.items.push({ name, checked: false });
+  await list.save();
 
   return NextResponse.json(list);
 }

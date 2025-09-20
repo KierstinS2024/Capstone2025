@@ -1,7 +1,8 @@
+//src/components/RecipeCard.tsx
 "use client";
 
 import React from "react";
-import { Recipe } from "@/context/RecipeContext";
+import { Recipe } from "@/types/recipe";
 import styles from "@/styles/recipeCard.module.css";
 
 interface Props {
@@ -10,7 +11,7 @@ interface Props {
 }
 
 export default function RecipeCard({ recipe, onClick }: Props) {
-  const image = recipe.image || "/placeholder.png"; // fallback image
+  const image = recipe.image || "/placeholder.png";
 
   return (
     <div className={styles.card} onClick={onClick}>

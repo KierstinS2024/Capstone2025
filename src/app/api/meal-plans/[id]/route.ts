@@ -1,34 +1,66 @@
 // ===========================================
-// src/app/api/meal-plans/[id]/route.ts
+// PATH: src/app/api/meal-plans/[id]/route.ts
+// GET, PUT, DELETE a single meal plan by ID
 // ===========================================
+
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import MealPlan from "@/models/MealPlan";
 
-interface Params {
-  params: { id: string };
+/**
+ * Normalize MongoDB document for frontend.
+ */
+function formatMealPlan(doc: any) {
+  return {
+    id: doc._id.toString(),
+    title: doc.title,
+    startDate: doc.startDate,
+    endDate: doc.endDate,
+    meals: doc.meals || {},
+    user: doc.user || null,
+    createdAt: doc.createdAt?.toISOString?.(),
+    updatedAt: doc.updatedAt?.toISOString?.(),
+  };
 }
 
-// GET single plan
-export async function GET(_: Request, { params }: Params) {
+// GET /api/meal-plans/:id
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   await connectDB();
-  const plan = await MealPlan.findById(params.id);
-  return NextResponse.json(plan);
+  const plan = await MealPlan.findById(params.id).lean();
+  if (!plan) {
+    return NextResponse.json({ error: "Meal plan not found" }, { status: 404 });
+  }
+  return NextResponse.json(formatMealPlan(plan));
 }
 
-// PUT update
-export async function PUT(req: Request, { params }: Params) {
+// PUT /api/meal-plans/:id
+export async function PUT(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   await connectDB();
   const body = await req.json();
   const updated = await MealPlan.findByIdAndUpdate(params.id, body, {
     new: true,
-  });
-  return NextResponse.json(updated);
+  }).lean();
+  if (!updated) {
+    return NextResponse.json({ error: "Meal plan not found" }, { status: 404 });
+  }
+  return NextResponse.json(formatMealPlan(updated));
 }
 
-// DELETE remove
-export async function DELETE(_: Request, { params }: Params) {
+// DELETE /api/meal-plans/:id
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   await connectDB();
-  await MealPlan.findByIdAndDelete(params.id);
-  return NextResponse.json({ message: "Deleted" });
+  const deleted = await MealPlan.findByIdAndDelete(params.id).lean();
+  if (!deleted) {
+    return NextResponse.json({ error: "Meal plan not found" }, { status: 404 });
+  }
+  return NextResponse.json({ success: true });
 }

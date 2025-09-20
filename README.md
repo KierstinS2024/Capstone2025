@@ -1,18 +1,18 @@
 🍽️ Recipe & Meal Planner App (Capstone2025)
 
-A full-stack application designed to help users simplify meal planning, explore recipes, and stay on track with healthy eating — with support for both authenticated users and guest mode browsing.
+A full-stack application designed to help users simplify meal planning, explore recipes, and manage shopping — fully personalized for authenticated users.
 
 ✅ Project Overview
 
 This web application allows users to:
 
-Discover recipes (custom + guest-friendly dataset)
+Discover recipes (custom user recipes + Spoonacular integration)
 
-Create, customize, and save meal plans
+Create, customize, and save weekly meal plans
 
-Mark recipes as favorites for quick access
+Add recipes to shopping list (per ingredient or bulk from plan)
 
-Experiment in guest mode without creating an account
+Check off, delete, or clear shopping list items
 
 Navigate intuitively with a user-friendly dashboard and navbar
 
@@ -24,27 +24,19 @@ Next.js 15 (App Router + React)
 
 TypeScript
 
-Tailwind CSS
+CSS Modules (no Tailwind)
 
-Context API for global state (auth, recipes, favorites, meal plans, guest mode)
+Context API for global state (Auth, Recipes, Meal Plans, Shopping List)
 
 Backend
 
-Next.js API routes (serverless functions for auth & data handling)
+Next.js API Routes
 
-Future-ready for PostgreSQL / external APIs
+MongoDB + Mongoose for data persistence
 
-Authentication
-
-JWT-based sessions via API routes
+JWT-based authentication & session management
 
 bcrypt for password hashing
-
-Guest Mode
-
-Static dataset of recipes (guestRecipes.ts)
-
-Context-powered state (GuestContext.tsx)
 
 Deployment
 
@@ -54,46 +46,41 @@ GitHub for version control
 
 🌐 Platform
 
-This is a responsive web application, optimized for desktop and mobile browsers. No native app is planned at this stage.
+Responsive web application optimized for desktop and mobile browsers. No native app planned at this stage.
 
 🎯 Project Goals
 
-To help users plan and discover meals efficiently while:
+Help users plan and discover meals efficiently
 
-Supporting both registered accounts and guests
+Allow recipe exploration and meal planning with minimal friction
 
-Allowing recipe exploration with minimal friction
+Enable shopping list generation from recipes and meal plans
 
-Laying groundwork for nutrition tracking and shopping list generation
-
-Keeping navigation simple and intuitive with a consistent navbar + dashboard
+Maintain simple, intuitive navigation with consistent navbar + dashboard
 
 👥 Target Users
-
-Guests curious about exploring recipes without committing
 
 Busy professionals or parents needing quick meal planning
 
 Health-conscious individuals who want a personalized planner
 
-Future audience: fitness enthusiasts, meal preppers, and people with dietary needs
+Fitness enthusiasts, meal preppers, or people with dietary needs
 
 📆 Key Features
+
 Core (MVP, implemented)
 
 👤 User authentication (signup, login, logout)
 
-🧑‍🍳 Guest mode (browse preloaded recipes & mock meal planning)
+📖 Recipe browsing (custom + Spoonacular)
 
-📖 Recipe browsing and favorites
+🗓️ Meal plan creation & display (weekly view)
 
-🗓️ Meal plan creation & display
+🛒 Shopping list: manual add, bulk-add from recipe or meal plan, check, delete, clear
 
-🧭 Navbar for navigation (authenticated + guest-aware)
+🧭 Navbar for navigation (authenticated users)
 
 Stretch Goals (planned)
-
-🛒 Auto-generated shopping lists
 
 📊 Nutrition tracking by meal/day
 
@@ -105,90 +92,91 @@ Stretch Goals (planned)
 
 🔐 Security & Data Handling
 
-User passwords securely hashed with bcrypt
+Passwords hashed securely with bcrypt
 
 JWTs for authentication
 
-Guest mode stores no persistent data
-
 Minimal sensitive data stored — only email + hashed password required
+
+MongoDB used for all persistent data (users, recipes, meal plans, shopping list)
 
 🧬 Current Data Model
 
-Currently lightweight (contexts + static guest data).
-Planned full schema will expand into relational storage.
-
 User
 
-id
+_id
 
 email
 
-password_hash
+passwordHash
 
 preferences (future dietary settings)
 
 Recipe
 
-id
+_id
 
-name
+title
 
 description
 
+ingredients
+
 instructions
 
-nutrition_info (future)
-
-is_guest (to differentiate static guest recipes)
+source (user / Spoonacular)
 
 MealPlan
 
-id
+_id
 
-user_id
+userId
 
-week_start_date
+weekStartDate
 
-entries (recipes by day/meal)
+meals (recipes by day/meal)
+
+ShoppingList
+
+_id
+
+userId
+
+items (name, checked state)
 
 🔄 User Flow
 
-Guests can immediately enter Guest Mode from the landing page
+Users log in → land on Dashboard
 
-Guests see recipes, can mock-create plans (but data resets on refresh)
+Dashboard shows current week’s meal plan (3 cards per day: breakfast, lunch, dinner)
 
-Authenticated users log in and land on the dashboard
+Users can:
 
-Navbar dynamically adjusts:
+Add/edit recipes for each meal
 
-Guests: Login | Signup | Guest Mode
+Generate shopping list for today or entire week
 
-Users: Dashboard | Logout
+Add ingredients individually or in bulk from recipes
 
-Dashboard gives quick access to:
+Shopping list panel allows checking off, deleting, or clearing all items
 
-Meal planner
+/meal-plans page allows full week planning in a calendar interface
 
-Recipe browsing
-
-Favorites
+/recipes page allows search, detail view, adding to plan, pushing ingredients to shopping list
 
 📖 Story-Driven UX
 
-Sarah isn’t sure if she wants to sign up. She clicks Guest Mode, tries a few recipes, and experiments with a meal plan.
-Later, she decides to create an account, logs in, and can now save her favorites and meal plans. The transition from guest → user feels natural and rewarding.
+Sarah logs in and sees her weekly meal plan on the dashboard. Breakfast is empty, so she clicks + Add meal and selects a recipe. The shopping list panel automatically populates ingredients for today. Later, she decides to plan for the entire week, generates the full shopping list, and marks items as purchased while cooking. Everything stays in one persistent shopping list tied to her account.
 
 🔨 Tasks Breakdown
 Task	Status	Description
-Layout & Providers	✅ Done	Set up Auth, Recipe, MealPlan, Favorites, Guest contexts
+Layout & Providers	✅ Done	Set up Auth, Recipe, MealPlan, ShoppingList contexts
 Auth System	✅ Done	Signup/login/logout with JWT + bcrypt
-Guest Mode	✅ Done	Static dataset & GuestContext
-Navbar	✅ Done	Dynamic nav based on auth state
-Dashboard	⚠️ WIP	Empty for logged-in users, needs population
-Recipe Features	⚠️ WIP	Displaying cards, hooking favorites + planner
-Meal Plans	⚠️ WIP	Form exists, needs tighter integration
-Stretch Features	⏳ Later	Nutrition tracking, shopping lists, export
+Navbar	✅ Done	Dynamic navigation based on auth state
+Dashboard	✅ Done	Shows active meal plan + shopping list panel
+Recipe Features	⚠️ WIP	Displaying cards, hook favorites, add to plan, push ingredients
+Meal Plans	⚠️ WIP	Weekly planner, edit meals, generate shopping list
+Stretch Features	⏳ Later	Nutrition tracking, multi-language, export, notifications
 🚀 Running the Project
 # Install dependencies
 npm install
@@ -201,10 +189,10 @@ http://localhost:3000
 
 📖 Notes for Contributors
 
-Keep components modular (Navbar, Cards, Forms, etc.)
+Keep components modular (Navbar, Cards, Forms, Panels)
 
 Wrap all pages in proper providers (layout.tsx handles this)
 
-Guest mode should never break when API is down
+Shopping list panel should always reflect meal plan or recipe bulk-adds
 
 Always run npm run dev locally to test flows before commits

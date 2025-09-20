@@ -2,18 +2,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useRecipes, Recipe } from "@/context/RecipeContext";
+import { useRecipes } from "@/context/RecipeContext";
+import { Recipe } from "@/types/recipe";
 import RecipeCard from "@/components/RecipeCard";
 import RecipeModal from "@/components/RecipeModal";
 import Navbar from "@/components/Navbar";
 
 export default function RecipesPage() {
-  const {
-    recipes: userRecipes,
-    searchSpoonacular,
-    addRecipe,
-    getRecipe,
-  } = useRecipes();
+  const { recipes: userRecipes, searchSpoonacular, addRecipe } = useRecipes();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -26,6 +22,7 @@ export default function RecipesPage() {
   const [savingRecipeIds, setSavingRecipeIds] = useState<Set<string>>(
     new Set()
   );
+  const [spoonacularError, setSpoonacularError] = useState<string | null>(null);
 
   const observer = useRef<IntersectionObserver | null>(null);
   const lastRecipeRef = useCallback(
@@ -43,22 +40,34 @@ export default function RecipesPage() {
   );
 
   // Filter user recipes by search query
-  const filteredUserRecipes = userRecipes.filter((r) =>
-    r.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUserRecipes = (userRecipes || []).filter(
+    (r): r is Recipe =>
+      !!r &&
+      typeof r.title === "string" &&
+      r.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Spoonacular search fetch
   const fetchSpoonacular = useCallback(async () => {
     if (!searchQuery.trim()) return;
     setLoadingSpoonacular(true);
+    setSpoonacularError(null); // reset error before fetch
+
     try {
       const results = await searchSpoonacular(searchQuery);
       setSpoonacularResults((prev) =>
         spoonacularPage === 1 ? results : [...prev, ...results]
       );
       if (results.length === 0) setHasMore(false);
-    } catch (err) {
-      console.error("Spoonacular search failed", err);
+    } catch (err: any) {
+      if (err.message === "quota") {
+        setSpoonacularError(
+          "Daily Spoonacular limit reached. Please try again tomorrow."
+        );
+      } else {
+        setSpoonacularError("Spoonacular search failed. Try again later.");
+        console.error("Spoonacular search failed", err);
+      }
     } finally {
       setLoadingSpoonacular(false);
     }
@@ -69,6 +78,7 @@ export default function RecipesPage() {
     setSpoonacularResults([]);
     setSpoonacularPage(1);
     setHasMore(true);
+    setSpoonacularError(null);
   }, [searchQuery]);
 
   useEffect(() => {
@@ -130,9 +140,11 @@ export default function RecipesPage() {
           {/* Spoonacular Results */}
           <div style={{ flex: 1 }}>
             <h2>Spoonacular</h2>
-            {spoonacularResults.length === 0 &&
-            searchQuery &&
-            !loadingSpoonacular ? (
+            {spoonacularError ? (
+              <p style={{ color: "red" }}>{spoonacularError}</p>
+            ) : spoonacularResults.length === 0 &&
+              searchQuery &&
+              !loadingSpoonacular ? (
               <p>No results found.</p>
             ) : (
               <div style={{ display: "grid", gap: "1rem" }}>

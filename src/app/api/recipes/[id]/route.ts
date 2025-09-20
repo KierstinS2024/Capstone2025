@@ -2,7 +2,7 @@
 // src/app/api/recipes/[id]/route.ts
 // ===========================================
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/db";
+import { connectDB } from "@/lib/db";
 import Recipe from "@/models/Recipe";
 
 interface Params {
@@ -10,13 +10,13 @@ interface Params {
 }
 
 export async function GET(_: Request, { params }: Params) {
-  await dbConnect();
+  await connectDB();
   const recipe = await Recipe.findById(params.id);
   return NextResponse.json(recipe);
 }
 
 export async function PUT(req: Request, { params }: Params) {
-  await dbConnect();
+  await connectDB();
   const body = await req.json();
   const updated = await Recipe.findByIdAndUpdate(params.id, body, {
     new: true,
@@ -25,7 +25,7 @@ export async function PUT(req: Request, { params }: Params) {
 }
 
 export async function DELETE(_: Request, { params }: Params) {
-  await dbConnect();
+  await connectDB();
   await Recipe.findByIdAndDelete(params.id);
   return NextResponse.json({ message: "Deleted" });
 }

@@ -1,7 +1,12 @@
+// ===========================================
+// PATH: src/components/RecipeModal.tsx
+// ===========================================
 "use client";
 
-import React from "react";
-import { Recipe } from "@/context/RecipeContext";
+import React, { useState, useEffect } from "react";
+import { Recipe } from "@/types/recipe";
+import { getSpoonacularRecipe } from "@/lib/spoonacularApi";
+import { parseInstructions } from "@/utils/parseInstructions";
 
 interface RecipeModalProps {
   recipe: Recipe;
@@ -9,12 +14,25 @@ interface RecipeModalProps {
 }
 
 export default function RecipeModal({ recipe, onClose }: RecipeModalProps) {
-  if (!recipe) return null;
+  const [fullRecipe, setFullRecipe] = useState<Recipe>(recipe);
+  const [loading, setLoading] = useState(false);
 
-  const title = recipe.title || "Untitled Recipe";
-  const image = recipe.image || "/placeholder.png";
-  const instructions = recipe.instructions || "No instructions provided.";
-  const ingredients: string[] = recipe.ingredients || [];
+  useEffect(() => {
+    const fetchFullRecipe = async () => {
+      if (recipe.source === "spoonacular" && !recipe.instructions) {
+        setLoading(true);
+        try {
+          const data = await getSpoonacularRecipe(recipe.id);
+          setFullRecipe(data);
+        } catch (err) {
+          console.error("Failed to fetch Spoonacular recipe", err);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchFullRecipe();
+  }, [recipe]);
 
   return (
     <div
@@ -60,22 +78,24 @@ export default function RecipeModal({ recipe, onClose }: RecipeModalProps) {
           ×
         </button>
 
-        <h2>{title}</h2>
+        <h2>{fullRecipe.title}</h2>
 
-        {image && (
+        {fullRecipe.image && (
           <img
-            src={image}
-            alt={title}
+            src={fullRecipe.image}
+            alt={fullRecipe.title}
             style={{ width: "100%", borderRadius: "8px", marginBottom: "1rem" }}
           />
         )}
 
-        {ingredients.length > 0 && (
+        {loading && <p>Loading full details…</p>}
+
+        {fullRecipe.ingredients?.length > 0 && (
           <div style={{ marginBottom: "1rem" }}>
             <h3>Ingredients:</h3>
             <ul>
-              {ingredients.map((ing, i) => (
-                <li key={i}>{ing}</li>
+              {fullRecipe.ingredients.map((ing) => (
+                <li key={ing}>{ing}</li>
               ))}
             </ul>
           </div>
@@ -83,7 +103,7 @@ export default function RecipeModal({ recipe, onClose }: RecipeModalProps) {
 
         <div>
           <h3>Instructions:</h3>
-          <p style={{ whiteSpace: "pre-wrap" }}>{instructions}</p>
+          {parseInstructions(fullRecipe.instructions)}
         </div>
       </div>
     </div>

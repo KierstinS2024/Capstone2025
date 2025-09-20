@@ -1,3 +1,4 @@
+//src/components/AddToMealPlan.tsx
 "use client";
 
 import { Recipe } from "@/types/recipe";
@@ -12,13 +13,13 @@ export default function AddToMealPlan({ recipe }: Props) {
   const { mealPlans, updateMeal } = useMealPlans();
 
   const handleAdd = (planId: string, mealType: MealType = "breakfast") => {
-    if (!recipe._id) {
+    if (!recipe.id) {
       console.error("Recipe ID is missing!");
       return;
     }
 
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    updateMeal(planId, today, mealType, recipe._id);
+    updateMeal(planId, today, mealType, recipe.id);
   };
 
   return (

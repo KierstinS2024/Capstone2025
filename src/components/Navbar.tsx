@@ -1,41 +1,43 @@
-// PATH: src/components/Navbar.tsx
+// src/components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
 import React from "react";
-import { useAuth } from "../context/AuthContext";
-import styles from "@/styles/navbar.module.css";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
 
   return (
-    <nav className={styles.navbar}>
-      <div className={styles.logo}>MealMate</div>
-      <ul className={styles.links}>
-        <li>
-          <Link href="/dashboard">Dashboard</Link>
-        </li>
-        <li>
-          <Link href="/meal-plans">Meal Plans</Link>
-        </li>
-        <li>
-          <Link href="/recipes">Recipes</Link>
-        </li>
-        <li>
-          <Link href="/shopping-list">Shopping List</Link>
-        </li>
-      </ul>
-      <div className={styles.auth}>
+    <nav className="navbar">
+      <div className="logo">MealMate</div>
+
+      {/* Main links */}
+      <div className="nav-links">
+        <Link href="/dashboard" className="link">
+          Dashboard
+        </Link>
+        <Link href="/meal-plans" className="link">
+          Meal Plans
+        </Link>
+        <Link href="/recipes" className="link">
+          Recipes
+        </Link>
+        <Link href="/shopping-list" className="link">
+          Shopping List
+        </Link>
+      </div>
+
+      {/* Auth action */}
+      <div className="nav-links">
         {user ? (
-          <>
-            <span className={styles.welcome}>Welcome {user.email}</span>
-            <button className={styles.logoutBtn} onClick={logout}>
-              Logout
-            </button>
-          </>
+          <button className="button-muted" onClick={logout}>
+            Logout
+          </button>
         ) : (
-          <Link href="/login">Login</Link>
+          <Link href="/login" className="link">
+            Login
+          </Link>
         )}
       </div>
     </nav>

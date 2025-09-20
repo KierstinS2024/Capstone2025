@@ -1,21 +1,22 @@
 // ===========================================
-// PATH: src/app/api/shopping-lists/route.ts
-// GET the active shopping list, create if none exists
+// PATH: src/app/api/shopping-lists/clear/route.ts
+// DELETE all items in the shopping list
 // ===========================================
 
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import ShoppingList from "@/models/ShoppingList";
 
-export async function GET() {
+export async function DELETE() {
   await connectDB();
 
-  // Find the single active shopping list
   let list = await ShoppingList.findOne();
-
-  // If none exists, create an empty list
   if (!list) {
+    // create empty list if none exists
     list = await ShoppingList.create({ items: [] });
+  } else {
+    list.items = [];
+    await list.save();
   }
 
   return NextResponse.json(list);

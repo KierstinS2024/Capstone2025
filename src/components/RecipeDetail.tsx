@@ -2,10 +2,13 @@
 "use client";
 
 import React, { useState } from "react";
+import { Recipe } from "@/types/recipe";
 import { useShoppingList } from "@/context/ShoppingListContext";
-import { useRecipes, Recipe } from "@/context/RecipeContext";
+import { useRecipes } from "@/context/RecipeContext";
+import { useMealPlans } from "@/context/MealPlanContext";
 import AddToMealPlanModal from "./AddToMealPlanModal";
-import styles from "../styles/recipeDetail.module.css";
+import { parseInstructions } from "@/utils/parseInstructions";
+import styles from "@/styles/recipeDetail.module.css";
 
 interface Props {
   recipe: Recipe;
@@ -14,6 +17,7 @@ interface Props {
 export default function RecipeDetail({ recipe }: Props) {
   const { add, addBulk } = useShoppingList();
   const { addRecipe } = useRecipes();
+  const { activePlan } = useMealPlans();
 
   const [addingIngredient, setAddingIngredient] = useState<string | null>(null);
   const [addingAll, setAddingAll] = useState(false);
@@ -21,19 +25,17 @@ export default function RecipeDetail({ recipe }: Props) {
   const [recipeSaved, setRecipeSaved] = useState(false);
   const [showMealModal, setShowMealModal] = useState(false);
 
-  // Add single ingredient
   const handleAddIngredient = async (ingredient: string) => {
     setAddingIngredient(ingredient);
     try {
       await add(ingredient);
     } catch (err) {
-      console.error("Failed to add ingredient:", ingredient, err);
+      console.error("Failed to add ingredient:", err);
     } finally {
       setAddingIngredient(null);
     }
   };
 
-  // Add all ingredients
   const handleAddAll = async () => {
     if (!recipe.ingredients?.length) return;
     setAddingAll(true);
@@ -46,7 +48,6 @@ export default function RecipeDetail({ recipe }: Props) {
     }
   };
 
-  // Save Spoonacular recipe to user collection
   const handleSaveRecipe = async () => {
     if (recipe.source !== "spoonacular") return;
 
@@ -56,6 +57,8 @@ export default function RecipeDetail({ recipe }: Props) {
         title: recipe.title,
         ingredients: recipe.ingredients,
         instructions: recipe.instructions,
+        image: recipe.image,
+        source: "spoonacular",
       });
       setRecipeSaved(true);
     } catch (err) {
@@ -68,8 +71,10 @@ export default function RecipeDetail({ recipe }: Props) {
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>{recipe.title}</h2>
+      {recipe.image && (
+        <img src={recipe.image} alt={recipe.title} className={styles.image} />
+      )}
 
-      {/* Ingredients */}
       <h3>Ingredients</h3>
       <ul className={styles.ingredients}>
         {recipe.ingredients?.map((ing, idx) => (
@@ -94,13 +99,11 @@ export default function RecipeDetail({ recipe }: Props) {
         {addingAll ? "Adding All..." : "Add All to Shopping List"}
       </button>
 
-      {/* Instructions */}
       <h3>Instructions</h3>
-      <p className={styles.instructions}>
-        {recipe.instructions || "No instructions provided."}
-      </p>
+      <div className={styles.instructions}>
+        {parseInstructions(recipe.instructions)}
+      </div>
 
-      {/* Save Spoonacular Recipe */}
       {recipe.source === "spoonacular" && (
         <button
           className={styles.saveRecipeBtn}
@@ -115,19 +118,24 @@ export default function RecipeDetail({ recipe }: Props) {
         </button>
       )}
 
-      {/* Add to Meal Plan */}
-      <button
-        className={styles.mealPlanBtn}
-        onClick={() => setShowMealModal(true)}
-      >
-        Add to Meal Plan
-      </button>
+      {activePlan && (
+        <>
+          <button
+            className={styles.mealPlanBtn}
+            onClick={() => setShowMealModal(true)}
+          >
+            Add to Meal Plan
+          </button>
 
-      {showMealModal && (
-        <AddToMealPlanModal
-          recipe={recipe}
-          onClose={() => setShowMealModal(false)}
-        />
+          {showMealModal && recipe.id && (
+            <AddToMealPlanModal
+              recipe={recipe}
+              plan={activePlan}
+              mealType="dinner"
+              onClose={() => setShowMealModal(false)}
+            />
+          )}
+        </>
       )}
     </div>
   );

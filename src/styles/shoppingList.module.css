@@ -1,17 +1,126 @@
-/* ===========================================
-   src/styles/shoppingList.css
-   =========================================== */
+/* =========================================== */
+/* PATH: src/styles/shoppingList.module.css */
+/* =========================================== */
 
-.shopping-list {
+/* Container for the shopping list panel */
+.panel {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  max-width: 400px;
+  width: 100%;
+}
+
+/* Header */
+.panel h2 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+/* Manual add form */
+.addForm {
   display: flex;
-  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.addForm input {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.addForm button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.addForm button:hover {
+  background-color: #45a049;
+}
+
+/* Generate buttons container */
+.generateButtons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Generate buttons */
+.generateButtons button {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: none;
+  background-color: #2196F3;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.generateButtons button:hover {
+  background-color: #1976d2;
+}
+
+/* Shopping list items */
+.itemList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+/* Item checkbox and label */
+.item label {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
 }
 
-.shopping-list-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem;
-  border-bottom: 1px solid #eee;
+/* Remove button for each item */
+.item button {
+  border: none;
+  background: none;
+  color: #ff4d4f;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.item button:hover {
+  color: #d9363e;
+}
+
+/* Clear all button */
+.clearBtn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  background-color: #f44336;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.clearBtn:hover {
+  background-color: #d32f2f;
 }

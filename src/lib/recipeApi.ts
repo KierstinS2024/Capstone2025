@@ -1,15 +1,10 @@
+// ===========================================
 // PATH: src/lib/recipeApi.ts
-// Client-side API helpers for Recipes.
+// ===========================================
 
+// ✅ API helpers
 import { apiFetch } from "./api";
-
-export interface Recipe {
-  id: string;
-  title: string;
-  ingredients: string[];
-  instructions: string;
-  source?: "user" | "spoonacular";
-}
+import { Recipe } from "@/types/recipe"; // ✅ use global type
 
 export async function getRecipes(): Promise<Recipe[]> {
   return apiFetch<Recipe[]>("/api/recipes");

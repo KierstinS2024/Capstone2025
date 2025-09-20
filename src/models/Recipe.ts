@@ -7,7 +7,9 @@ export interface IRecipe extends Document {
   title: string;
   ingredients: string[];
   instructions: string;
-  author?: string;
+  author?: string; // user email
+  temporary?: boolean;
+  linkedMealPlanIds?: string[];
 }
 
 const RecipeSchema = new Schema<IRecipe>({
@@ -15,6 +17,8 @@ const RecipeSchema = new Schema<IRecipe>({
   ingredients: [{ type: String }],
   instructions: { type: String },
   author: { type: String }, // user email
+  temporary: { type: Boolean, default: false },
+  linkedMealPlanIds: [{ type: String }],
 });
 
 export default mongoose.models.Recipe ||
