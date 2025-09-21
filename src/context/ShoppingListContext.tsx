@@ -1,141 +1,126 @@
-// ===========================================
-// PATH: src/context/ShoppingListContext.tsx
-// React Context Provider for Shopping Lists
-// Uses API helpers from lib/shoppingListApi.ts
-// ===========================================
-
+// ShoppingListContext.tsx
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext"; // ✅ your existing auth
 import {
   ShoppingList,
   getShoppingList,
   addItem,
+  addFromMealPlan,
   toggleItem,
   deleteItem,
   clearList,
 } from "@/lib/shoppingListApi";
 
-// -----------------------------
-// Context Type Definition
-// -----------------------------
 interface ShoppingListContextType {
   list: ShoppingList | null;
   loading: boolean;
   error: string | null;
-
   fetchList: () => Promise<void>;
   add: (name: string) => Promise<void>;
   addBulk: (names: string[]) => Promise<void>;
+  addFromMealPlan: (mealPlanId: string) => Promise<void>;
   toggle: (id: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
   clear: () => Promise<void>;
 }
 
-// -----------------------------
-// Create React Context
-// -----------------------------
 const ShoppingListContext = createContext<ShoppingListContextType | undefined>(
   undefined
 );
 
-// -----------------------------
-// Provider Component
-// -----------------------------
 export function ShoppingListProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { user } = useAuth(); // 👈 use your existing auth context
   const [list, setList] = useState<ShoppingList | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch the list when the provider mounts
+  // 🔑 Watch user changes
   useEffect(() => {
-    fetchList();
-  }, []);
+    if (user) {
+      fetchList(); // logged in → fetch their list
+    } else {
+      setList(null); // logged out → reset
+      setLoading(false);
+      setError(null);
+    }
+  }, [user]); // 👈 refetch whenever auth user changes
 
-  // -----------------------------
-  // Fetch shopping list from backend
-  // -----------------------------
   async function fetchList() {
     setLoading(true);
     setError(null);
     try {
       const l = await getShoppingList();
-      setList(l ?? null); // already normalized by API
-    } catch (err: any) {
-      setError(err.message || "Failed to load shopping list");
+      setList(l ?? null);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load shopping list"
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  // -----------------------------
-  // Add a single item
-  // -----------------------------
   async function addItemToList(name: string) {
-    setError(null);
     try {
       const updated = await addItem(name);
       setList(updated);
-    } catch (err: any) {
-      setError(err.message || "Failed to add item");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to add item");
     }
   }
 
-  // -----------------------------
-  // Add multiple items in bulk
-  // -----------------------------
   async function addBulkItemsToList(names: string[]) {
-    setError(null);
     try {
       for (const name of names) {
         await addItem(name);
       }
-      await fetchList(); // refresh after bulk add
-    } catch (err: any) {
-      setError(err.message || "Failed to add items");
+      await fetchList();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to add items");
     }
   }
 
-  // -----------------------------
-  // Toggle an item's checked state
-  // -----------------------------
+  async function addItemsFromMealPlan(mealPlanId: string) {
+    try {
+      const updated = await addFromMealPlan(mealPlanId);
+      setList(updated);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to add from meal plan"
+      );
+    }
+  }
+
   async function toggleItemInList(id: string) {
-    setError(null);
     try {
       const updated = await toggleItem(id);
       setList(updated);
-    } catch (err: any) {
-      setError(err.message || "Failed to toggle item");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to toggle item");
     }
   }
 
-  // -----------------------------
-  // Remove a single item
-  // -----------------------------
   async function removeItemFromList(id: string) {
-    setError(null);
     try {
       const updated = await deleteItem(id);
       setList(updated);
-    } catch (err: any) {
-      setError(err.message || "Failed to remove item");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to remove item");
     }
   }
 
-  // -----------------------------
-  // Clear the entire shopping list
-  // -----------------------------
   async function clearShoppingList() {
-    setError(null);
     try {
       const updated = await clearList();
       setList(updated);
-    } catch (err: any) {
-      setError(err.message || "Failed to clear list");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to clear list");
     }
   }
 
@@ -148,6 +133,7 @@ export function ShoppingListProvider({
         fetchList,
         add: addItemToList,
         addBulk: addBulkItemsToList,
+        addFromMealPlan: addItemsFromMealPlan,
         toggle: toggleItemInList,
         remove: removeItemFromList,
         clear: clearShoppingList,
@@ -158,9 +144,6 @@ export function ShoppingListProvider({
   );
 }
 
-// -----------------------------
-// Hook for consuming context
-// -----------------------------
 export function useShoppingList() {
   const ctx = useContext(ShoppingListContext);
   if (!ctx) {

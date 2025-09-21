@@ -15,12 +15,17 @@ export default function RecipeCard({ recipe, onClick }: Props) {
 
   return (
     <div className={styles.card} onClick={onClick}>
-      {image && <img src={image} alt={recipe.title} className={styles.image} />}
-      <h3 className={styles.title}>{recipe.title}</h3>
-      <p className={styles.summary}>
-        {recipe.instructions?.slice(0, 100) || "No instructions yet..."}
-        {recipe.instructions && recipe.instructions.length > 100 ? "..." : ""}
-      </p>
+      <div className={styles.header}>
+        {image && (
+          <img src={image} alt={recipe.title} className={styles.image} />
+        )}
+      </div>
+
+      <div className={styles.text}>
+        <h3 className={styles.title}>{recipe.title}</h3>
+        <div className={styles.meta}></div>
+      </div>
+
       <button className={styles.viewBtn}>View Full Recipe</button>
     </div>
   );

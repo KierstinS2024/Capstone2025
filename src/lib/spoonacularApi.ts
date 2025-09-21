@@ -1,5 +1,5 @@
 // PATH: src/lib/spoonacularApi.ts
-import { Recipe } from "./recipeApi";
+import { Recipe } from "@/types/recipe";
 
 const API_KEY = process.env.NEXT_PUBLIC_SPOONACULAR_API_KEY;
 

@@ -9,7 +9,7 @@ export default function RecipeDetailPage() {
   const { id } = useParams();
   const { recipes } = useRecipes();
 
-  const recipe = recipes.find((r) => r._id === id);
+  const recipe = recipes.find((r) => r.id === id);
 
   if (!recipe) return <p>Recipe not found.</p>;
 

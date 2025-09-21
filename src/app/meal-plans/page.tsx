@@ -8,7 +8,7 @@
 import React, { useEffect } from "react";
 import { useMealPlans } from "@/context/MealPlanContext";
 import MealPlanEditor from "@/components/MealPlanEditor";
-
+import Navbar from "@/components/Navbar";
 export default function MealPlansPage() {
   const { activePlan, mealPlans, setActivePlan, loading } = useMealPlans();
 
@@ -37,6 +37,7 @@ export default function MealPlansPage() {
   // -----------------------------------
   return (
     <div>
+      <Navbar />
       <h1>Weekly Meal Plan</h1>
       <MealPlanEditor plan={activePlan} />
     </div>

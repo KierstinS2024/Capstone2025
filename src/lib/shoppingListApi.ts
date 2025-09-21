@@ -1,7 +1,8 @@
 // ===========================================
 // PATH: src/lib/shoppingListApi.ts
 // Client-side API helpers for Shopping Lists
-// Normalizes MongoDB `_id` → `id`
+// - Calls unified /api/shopping-lists route
+// - Normalizes MongoDB `_id` → `id`
 // ===========================================
 
 import { apiFetch } from "./api";
@@ -13,25 +14,27 @@ import { ShoppingList, ShoppingListItem } from "@/types/shoppingList";
 
 /**
  * Normalize a single shopping list item
+ * Converts raw MongoDB object into a clean ShoppingListItem
  */
-function normalizeItem(item: any): ShoppingListItem {
+function normalizeItem(raw: any): ShoppingListItem {
   return {
-    id: item._id || item.id, // normalize Mongo _id
-    name: item.name,
-    checked: item.checked,
+    id: raw._id?.toString() || raw.id, // always convert ObjectId to string
+    name: raw.name,
+    checked: raw.checked,
   };
 }
 
 /**
  * Normalize a full shopping list
+ * Ensures consistent shape for frontend
  */
-function normalizeShoppingList(list: any): ShoppingList {
+function normalizeShoppingList(raw: any): ShoppingList {
   return {
-    id: list._id || list.id,
-    items: (list.items || []).map(normalizeItem),
-    user: list.user,
-    createdAt: list.createdAt,
-    updatedAt: list.updatedAt,
+    id: raw._id?.toString() || raw.id || "",
+    user: raw.user?.toString() || "", // always include user ID
+    items: Array.isArray(raw.items) ? raw.items.map(normalizeItem) : [],
+    createdAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : "",
+    updatedAt: raw.updatedAt ? new Date(raw.updatedAt).toISOString() : "",
   };
 }
 
@@ -40,50 +43,63 @@ function normalizeShoppingList(list: any): ShoppingList {
 // -----------------------------
 
 /**
- * Get the current shopping list
+ * Get the current user's shopping list
  */
 export async function getShoppingList(): Promise<ShoppingList> {
-  const list = await apiFetch<any>("/api/shopping-lists");
-  return normalizeShoppingList(list);
+  const res = await apiFetch<any>("/api/shopping-lists", { method: "GET" });
+  return normalizeShoppingList(res);
 }
 
 /**
- * Add a single item to the shopping list
+ * Add a single item by name
  */
 export async function addItem(name: string): Promise<ShoppingList> {
-  const list = await apiFetch<any>("/api/shopping-lists/add", {
+  const res = await apiFetch<any>("/api/shopping-lists", {
     method: "POST",
     body: JSON.stringify({ name }),
   });
-  return normalizeShoppingList(list);
+  return normalizeShoppingList(res);
 }
 
 /**
- * Toggle an item checked/unchecked
+ * Add all ingredients from a meal plan
  */
-export async function toggleItem(id: string): Promise<ShoppingList> {
-  const list = await apiFetch<any>(`/api/shopping-lists/toggle/${id}`, {
-    method: "PUT",
+export async function addFromMealPlan(
+  mealPlanId: string
+): Promise<ShoppingList> {
+  const res = await apiFetch<any>("/api/shopping-lists", {
+    method: "POST",
+    body: JSON.stringify({ mealPlanId }),
   });
-  return normalizeShoppingList(list);
+  return normalizeShoppingList(res);
+}
+
+/**
+ * Toggle an item's checked state
+ */
+export async function toggleItem(itemId: string): Promise<ShoppingList> {
+  const res = await apiFetch<any>(`/api/shopping-lists?id=${itemId}`, {
+    method: "PATCH",
+  });
+  return normalizeShoppingList(res);
 }
 
 /**
  * Delete a single item
  */
-export async function deleteItem(id: string): Promise<ShoppingList> {
-  const list = await apiFetch<any>(`/api/shopping-lists/remove/${id}`, {
+export async function deleteItem(itemId: string): Promise<ShoppingList> {
+  const res = await apiFetch<any>(`/api/shopping-lists?id=${itemId}`, {
     method: "DELETE",
   });
-  return normalizeShoppingList(list);
+  return normalizeShoppingList(res);
 }
 
 /**
  * Clear the entire shopping list
  */
 export async function clearList(): Promise<ShoppingList> {
-  const list = await apiFetch<any>("/api/shopping-lists/clear", {
+  const res = await apiFetch<any>("/api/shopping-lists", {
     method: "DELETE",
   });
-  return normalizeShoppingList(list);
+  return normalizeShoppingList(res);
 }
