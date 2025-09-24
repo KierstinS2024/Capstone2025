@@ -46,7 +46,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ----- Methods -----
   const login = async (email: string, password: string) => {
-    const u = await loginApi(email, password);
+    // normalize email to lowercase to prevent case-sensitive login issues
+    const u = await loginApi(email.toLowerCase(), password);
     if (u?.id) {
       setUser(u);
       return true;
@@ -56,7 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (email: string, password: string) => {
-    const u = await signupApi(email, password);
+    // normalize email to lowercase to avoid duplicates and case issues
+    const u = await signupApi(email.toLowerCase(), password);
     if (u?.id) {
       setUser(u);
       return true;
@@ -68,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     await logoutApi();
     setUser(null);
-    router.replace("/login");
+    router.replace("/login"); // redirect to login after logout
   };
 
   return (
