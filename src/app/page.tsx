@@ -1,10 +1,26 @@
-// ===========================================
-// PATH: src/app/page.tsx
-// ===========================================
+// src/app/page.tsx
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 import styles from "./page.module.css";
 
 export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // Redirect client-side if user is already logged in (prevents flash on client navigation)
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace("/dashboard");
+    }
+  }, [user, loading, router]);
+
+  // While we detect session, don't render landing content (prevents brief flash)
+  if (loading) return null;
+
   return (
     <main className={styles.hero}>
       <div className={styles.heroContent}>
