@@ -1,4 +1,6 @@
+// ===========================================
 // PATH: src/app/recipes/page.tsx
+// ===========================================
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -10,7 +12,6 @@ import Navbar from "@/components/Navbar";
 
 export default function RecipesPage() {
   const { recipes: userRecipes, searchSpoonacular, addRecipe } = useRecipes();
-
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
@@ -25,6 +26,8 @@ export default function RecipesPage() {
   const [spoonacularError, setSpoonacularError] = useState<string | null>(null);
 
   const observer = useRef<IntersectionObserver | null>(null);
+
+  // Infinite scroll for Spoonacular
   const lastRecipeRef = useCallback(
     (node: HTMLDivElement) => {
       if (loadingSpoonacular) return;
@@ -40,18 +43,15 @@ export default function RecipesPage() {
   );
 
   // Filter user recipes by search query
-  const filteredUserRecipes = (userRecipes || []).filter(
-    (r): r is Recipe =>
-      !!r &&
-      typeof r.title === "string" &&
-      r.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUserRecipes = (userRecipes || []).filter((r): r is Recipe =>
+    r.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Spoonacular search fetch
+  // Spoonacular search
   const fetchSpoonacular = useCallback(async () => {
     if (!searchQuery.trim()) return;
     setLoadingSpoonacular(true);
-    setSpoonacularError(null); // reset error before fetch
+    setSpoonacularError(null);
 
     try {
       const results = await searchSpoonacular(searchQuery);
@@ -60,20 +60,18 @@ export default function RecipesPage() {
       );
       if (results.length === 0) setHasMore(false);
     } catch (err: any) {
-      if (err.message === "quota") {
-        setSpoonacularError(
-          "Daily Spoonacular limit reached. Please try again tomorrow."
-        );
-      } else {
-        setSpoonacularError("Spoonacular search failed. Try again later.");
-        console.error("Spoonacular search failed", err);
-      }
+      setSpoonacularError(
+        err.message === "quota"
+          ? "Daily Spoonacular limit reached. Please try again tomorrow."
+          : "Spoonacular search failed. Try again later."
+      );
+      console.error(err);
     } finally {
       setLoadingSpoonacular(false);
     }
   }, [searchQuery, spoonacularPage, searchSpoonacular]);
 
-  // Reset Spoonacular results when query changes
+  // Reset Spoonacular results on query change
   useEffect(() => {
     setSpoonacularResults([]);
     setSpoonacularPage(1);
@@ -85,16 +83,18 @@ export default function RecipesPage() {
     fetchSpoonacular();
   }, [fetchSpoonacular, spoonacularPage]);
 
+  // Save a Spoonacular recipe to user collection
   const handleSaveSpoonacular = async (id: string) => {
     if (savingRecipeIds.has(id)) return;
 
     setSavingRecipeIds((prev) => new Set(prev).add(id));
     try {
-      const recipe = spoonacularResults.find((r) => r.id === id);
-      if (recipe) await addRecipe(recipe);
+      const userEmail = localStorage.getItem("userEmail") || "";
+      await addRecipe(Number(id), userEmail);
       alert("Recipe saved!");
     } catch (err) {
       console.error(err);
+      alert("Failed to save recipe.");
     } finally {
       setSavingRecipeIds((prev) => {
         const newSet = new Set(prev);
@@ -108,28 +108,49 @@ export default function RecipesPage() {
     <>
       <Navbar />
       <main style={{ padding: "1rem", maxWidth: "1200px", margin: "0 auto" }}>
-        <h1>Recipes</h1>
+        <h1 style={{ marginBottom: "1rem" }}>Recipes</h1>
 
+        {/* Search input */}
         <input
           type="text"
           placeholder="Search recipes..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem" }}
+          style={{
+            width: "100%",
+            padding: "0.5rem",
+            marginBottom: "2rem",
+            borderRadius: "8px",
+            border: "1px solid #ccc",
+          }}
         />
 
-        <div style={{ display: "flex", gap: "2rem" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "2rem",
+            alignItems: "start",
+          }}
+        >
           {/* User Recipes */}
-          <div style={{ flex: 1 }}>
-            <h2>Your Recipes</h2>
+          <div>
+            <h2 style={{ marginBottom: "1rem" }}>Your Recipes</h2>
             {filteredUserRecipes.length === 0 ? (
               <p>No recipes found.</p>
             ) : (
-              <div style={{ display: "grid", gap: "1rem" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                  gap: "1rem",
+                }}
+              >
                 {filteredUserRecipes.map((recipe) => (
                   <RecipeCard
                     key={recipe.id}
                     recipe={recipe}
+                    currentUserEmail={localStorage.getItem("userEmail")}
                     onClick={() => setSelectedRecipe(recipe)}
                   />
                 ))}
@@ -138,8 +159,8 @@ export default function RecipesPage() {
           </div>
 
           {/* Spoonacular Results */}
-          <div style={{ flex: 1 }}>
-            <h2>Spoonacular</h2>
+          <div>
+            <h2 style={{ marginBottom: "1rem" }}>Spoonacular</h2>
             {spoonacularError ? (
               <p style={{ color: "red" }}>{spoonacularError}</p>
             ) : spoonacularResults.length === 0 &&
@@ -147,33 +168,24 @@ export default function RecipesPage() {
               !loadingSpoonacular ? (
               <p>No results found.</p>
             ) : (
-              <div style={{ display: "grid", gap: "1rem" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                  gap: "1rem",
+                }}
+              >
                 {spoonacularResults.map((result, index) => {
                   const isSaving = savingRecipeIds.has(result.id);
                   const isLast = index === spoonacularResults.length - 1;
                   return (
-                    <div
-                      key={result.id}
-                      ref={isLast ? lastRecipeRef : null}
-                      style={{ position: "relative" }}
-                    >
+                    <div key={result.id} ref={isLast ? lastRecipeRef : null}>
                       <RecipeCard
                         recipe={result}
                         onClick={() => setSelectedRecipe(result)}
+                        onSave={handleSaveSpoonacular}
+                        currentUserEmail={localStorage.getItem("userEmail")}
                       />
-                      <button
-                        onClick={() => handleSaveSpoonacular(result.id)}
-                        disabled={isSaving}
-                        style={{
-                          position: "absolute",
-                          top: "0.5rem",
-                          right: "0.5rem",
-                          padding: "0.25rem 0.5rem",
-                          fontSize: "0.8rem",
-                        }}
-                      >
-                        {isSaving ? "Saving..." : "Save"}
-                      </button>
                     </div>
                   );
                 })}

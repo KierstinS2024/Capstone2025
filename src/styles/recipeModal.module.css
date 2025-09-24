@@ -1,10 +1,15 @@
+/* ===========================================
+PATH: src/styles/recipeModal.module.css
+RecipeModal styling: overlay, modal, buttons
+=========================================== */
+
 .overlay {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -12,22 +17,94 @@
 }
 
 .modal {
-  background-color: #fff;
-  padding: 1rem;
+  background: #fff;
+  padding: 2rem;
   border-radius: 12px;
   width: 90%;
   max-width: 700px;
-  max-height: 90vh;
+  max-height: 90%;
   overflow-y: auto;
   position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
 
 .closeBtn {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: none;
+  top: 1rem;
+  right: 1rem;
   border: none;
-  font-size: 1.2rem;
+  background: none;
+  font-size: 1.5rem;
   cursor: pointer;
+}
+
+.title {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.image {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.ingredients {
+  margin-top: 1rem;
+}
+
+.ingredientItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.addBtn {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.addBtn:hover {
+  background: #45a049;
+}
+
+.addAllBtn {
+  margin-top: 0.5rem;
+  background: #2196f3;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.addAllBtn:hover {
+  background: #1976d2;
+}
+
+.instructions {
+  margin-top: 1rem;
+}
+
+.addMealBtn {
+  margin-top: 1rem;
+  width: 100%;
+  background: #ff9800;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.addMealBtn:hover {
+  background: #fb8c00;
 }

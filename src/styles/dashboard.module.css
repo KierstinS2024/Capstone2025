@@ -1,0 +1,76 @@
+.dashboard {
+  padding: 2rem;
+  font-family: "Inter", sans-serif;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* Header */
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  color: var(--text);
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+/* Main layout: side-by-side for desktop/tablet, stack for mobile */
+.main {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+/* Left: Meal Plan */
+.mealPlanSection {
+  flex: 2;
+}
+
+/* Right: Shopping List */
+.shoppingListSection {
+  flex: 1;
+  min-width: 280px;
+}
+
+/* Empty state for no active plan */
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  border: 2px dashed #dcd3c9;
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.createPlanButton {
+  margin-top: 1rem;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+}
+
+.createPlanButton:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Responsive: stack sections on small screens */
+@media (max-width: 900px) {
+  .main {
+    flex-direction: column;
+  }
+
+  .mealPlanSection,
+  .shoppingListSection {
+    width: 100%;
+  }
+
+  .shoppingListSection {
+    margin-top: 2rem;
+  }
+}

@@ -22,7 +22,7 @@
 
 .image {
   width: 100%;
-  height: 110px;
+  height: 140px;
   object-fit: cover;
 }
 
@@ -67,6 +67,10 @@
   margin-right: 0.25rem;
 }
 
+.stars i {
+  color: #ffe500;
+  margin-right: 2px;
+}
 
 .viewBtn {
   display: block;

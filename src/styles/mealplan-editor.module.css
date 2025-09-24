@@ -1,0 +1,143 @@
+/* ===========================================
+   PATH: src/styles/mealplan-editor.module.css
+   Styles for MealPlanEditor + RecipeSidebar
+   =========================================== */
+
+/* Overall layout: sidebar + editor grid */
+.editorLayout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+/* Sidebar with recipe list */
+.sidebar {
+  width: 220px;
+  min-height: 400px;
+  padding: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 0.75rem;
+  background: #fafafa;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar h3 {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Recipe cards inside sidebar */
+.recipeCard {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  background: #fff;
+  cursor: grab;
+  transition: background 0.2s;
+}
+
+.recipeCard:active {
+  cursor: grabbing;
+}
+
+.recipeCard:hover {
+  background: #f1f1f1;
+}
+
+/* Editor detail section */
+.detail {
+  flex: 1;
+}
+
+/* Table grid for meal plan */
+.planTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.planTable th,
+.planTable td {
+  border: 1px solid #ddd;
+  padding: 0.75rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Empty meal slot */
+.slot {
+  min-height: 60px;
+  background: #fdfdfd;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+/* Highlight when dragging over */
+.highlight {
+  background: #e3f7ff;
+  border: 2px dashed #3b82f6;
+}
+
+/* Text when slot is empty */
+.empty {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+/* Assigned recipe slot */
+.recipeSlot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+/* Recipe button inside slot */
+.recipeBtn {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: #333;
+  cursor: pointer;
+}
+
+.recipeBtn:hover {
+  text-decoration: underline;
+}
+
+/* Remove button (×) */
+.removeBtn {
+  border: none;
+  background: none;
+  color: #e11d48;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Save button */
+.saveBtn {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.saveBtn:hover {
+  background: #2563eb;
+}

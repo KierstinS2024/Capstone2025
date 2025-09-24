@@ -24,3 +24,4 @@ export interface MealPlan {
   createdAt?: string;
   updatedAt?: string;
 }
+

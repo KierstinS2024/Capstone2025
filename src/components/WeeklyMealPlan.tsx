@@ -4,7 +4,7 @@
 "use client";
 
 import React from "react";
-import { MealPlan } from "@/lib/mealPlanApi";
+import { MealPlan } from "@/types/mealPlan";
 import Link from "next/link";
 import styles from "@/styles/mealPlans.module.css";
 import { formatDateRange } from "@/lib/helpers";

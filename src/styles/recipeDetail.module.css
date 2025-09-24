@@ -1,155 +1,42 @@
-/* ===========================================
-   PATH: src/styles/recipeDetail.module.css
-   =========================================== */
+/* PATH: src/styles/recipeDetail.module.css */
 
 .container {
-  max-width: 700px;
-  margin: 2rem auto;
-  padding: 1.5rem;
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-  font-family: 'Arial', sans-serif;
-  line-height: 1.6;
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.title {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
+.loading {
   text-align: center;
-  color: #222;
+  font-size: 1.2rem;
+  color: #777;
 }
 
 .image {
   width: 100%;
-  max-height: 400px;
+  max-height: 360px;
   object-fit: cover;
   border-radius: 12px;
   margin-bottom: 1.5rem;
 }
 
-h3 {
-  font-size: 1.3rem;
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
-  color: #333;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.3rem;
-}
-
-.ingredients {
-  list-style: disc inside;
-  margin-bottom: 1rem;
-  padding-left: 1rem;
-}
-
-.ingredientItem {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.3rem;
-}
-
-.addBtn {
-  margin-right: 0.5rem;
-  padding: 0 0.5rem;
-  height: 24px;
-  font-size: 0.9rem;
-  background-color: #4caf50;
-  border: none;
-  border-radius: 4px;
-  color: white;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.addBtn:disabled {
-  background-color: #9e9e9e;
-  cursor: not-allowed;
-}
-
-.addBtn:hover:not(:disabled) {
-  background-color: #45a049;
-}
-
-.addAllBtn {
-  display: block;
-  margin-top: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: #2196f3;
-  border: none;
-  border-radius: 6px;
-  color: white;
+.title {
+  font-size: 2rem;
   font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
+  text-align: center;
+  margin-bottom: 1.5rem;
 }
 
-.addAllBtn:disabled {
-  background-color: #90caf9;
-  cursor: not-allowed;
+.section {
+  margin-bottom: 2rem;
 }
 
-.addAllBtn:hover:not(:disabled) {
-  background-color: #1976d2;
+.list {
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
 }
 
 .instructions {
+  line-height: 1.6;
   margin-top: 0.5rem;
-  font-size: 1rem;
-  color: #444;
-}
-
-.instructions p {
-  margin-bottom: 0.5rem;
-}
-
-.instructions ol,
-.instructions ul {
-  margin-left: 1.2rem;
-  margin-bottom: 0.8rem;
-}
-
-.instructions li {
-  margin-bottom: 0.4rem;
-}
-
-.saveRecipeBtn,
-.mealPlanBtn {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background 0.2s;
-}
-
-.saveRecipeBtn {
-  background-color: #ff9800;
-  color: white;
-}
-
-.saveRecipeBtn:hover:not(:disabled) {
-  background-color: #fb8c00;
-}
-
-.saveRecipeBtn:disabled {
-  background-color: #ffc947;
-  cursor: not-allowed;
-}
-
-.mealPlanBtn {
-  background-color: #9c27b0;
-  color: white;
-  margin-left: 0.5rem;
-}
-
-.mealPlanBtn:hover:not(:disabled) {
-  background-color: #7b1fa2;
-}
-
-.mealPlanBtn:disabled {
-  background-color: #ce93d8;
-  cursor: not-allowed;
 }

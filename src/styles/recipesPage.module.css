@@ -1,54 +1,83 @@
+/* Path: src/styles/recipesPage.module.css */
+
 .container {
-  padding: 1rem;
-  max-width: 900px;
+  padding: 2rem;
+  max-width: 1200px;
   margin: 0 auto;
 }
-.section {
-  margin-top: 2rem;
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
 }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  background: #f3f3f3;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.tab:hover {
+  background: #e6e6e6;
+}
+
+.activeTab {
+  background: #4cafef;
+  color: white;
+  font-weight: bold;
+}
+
+/* Search Bar */
+.searchForm {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+.searchButton {
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  border: none;
+  background: #4cafef;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.searchButton:hover {
+  background: #3ba6d8;
+}
+
+/* Recipes Grid */
 .grid {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
 }
-.searchContainer,
-.searchForm {
-  margin-bottom: 1rem;
-}
-.searchInput {
-  padding: 0.5rem;
-  width: 100%;
-}
-.cardWrapper {
-  position: relative;
-}
-.saveBtn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  font-size: 0.8rem;
-  padding: 0.25rem 0.5rem;
-}
-.notificationSuccess {
-  background-color: #d4edda;
-  color: #155724;
-  padding: 0.5rem;
-  margin-bottom: 1rem;
-  border-radius: 4px;
-  position: relative;
-}
-.notificationError {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 0.5rem;
-  margin-bottom: 1rem;
-  border-radius: 4px;
-  position: relative;
-}
-.closeBtn {
-  position: absolute;
-  top: 0.25rem;
-  right: 0.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
+
+.empty {
+  text-align: center;
+  color: #777;
+  font-size: 1.1rem;
+  margin-top: 2rem;
 }

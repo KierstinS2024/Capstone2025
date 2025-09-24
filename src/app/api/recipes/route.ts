@@ -5,74 +5,104 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Recipe from "@/models/Recipe";
 
-// -----------------------------
-// GET all recipes
-// -----------------------------
-export async function GET() {
+/**
+ * GET all recipes for a specific user
+ * Pass `author` as query param (user email) to get only their recipes
+ */
+export async function GET(req: Request) {
   await connectDB();
-  const recipes = await Recipe.find();
+
+  const { searchParams } = new URL(req.url);
+  const author = searchParams.get("author"); // user's email
+
+  const filter = author ? { author } : {}; // filter by user if provided
+  const recipes = await Recipe.find(filter).sort({ createdAt: -1 }); // latest first
+
   return NextResponse.json(recipes);
 }
 
-// -----------------------------
-// POST create new recipe
-// - Supports temporary and linkedMealPlanIds
-// -----------------------------
+/**
+ * POST create a new recipe
+ * Requires `author` in body to associate recipe with a user
+ */
 export async function POST(req: Request) {
   await connectDB();
   try {
     const body = await req.json();
 
-    // Ensure linkedMealPlanIds is always an array
-    if (!body.linkedMealPlanIds) body.linkedMealPlanIds = [];
+    if (!body.author) {
+      return NextResponse.json({ error: "Missing author" }, { status: 400 });
+    }
 
-    const recipe = await Recipe.create(body);
+    const recipeData = {
+      title: body.title,
+      ingredients: body.ingredients || [],
+      instructions: body.instructions || "",
+      image: body.image || null,
+      source: body.source || "user",
+      temporary: body.temporary || false,
+      linkedMealPlanIds: body.linkedMealPlanIds || [],
+      author: body.author, // user email
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const recipe = await Recipe.create(recipeData);
     return NextResponse.json(recipe);
   } catch (err: any) {
+    console.error("POST /api/recipes error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-// -----------------------------
-// PUT update existing recipe
-// -----------------------------
+/**
+ * PUT update an existing recipe
+ * Body must include `id` and fields to update
+ */
 export async function PUT(req: Request) {
   await connectDB();
   try {
     const body = await req.json();
     const { id, ...updates } = body;
 
-    if (!id)
+    if (!id) {
       return NextResponse.json({ error: "Missing recipe ID" }, { status: 400 });
+    }
+
+    updates.updatedAt = new Date(); // update timestamp
 
     const recipe = await Recipe.findByIdAndUpdate(id, updates, { new: true });
-    if (!recipe)
+    if (!recipe) {
       return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
+    }
 
     return NextResponse.json(recipe);
   } catch (err: any) {
+    console.error("PUT /api/recipes error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-// -----------------------------
-// DELETE recipe
-// - Used for removing temporary recipes
-// -----------------------------
+/**
+ * DELETE a recipe by ID
+ */
 export async function DELETE(req: Request) {
   await connectDB();
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    if (!id)
+    if (!id) {
       return NextResponse.json({ error: "Missing recipe ID" }, { status: 400 });
+    }
 
     const recipe = await Recipe.findByIdAndDelete(id);
-    if (!recipe)
+    if (!recipe) {
       return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    console.error("DELETE /api/recipes error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

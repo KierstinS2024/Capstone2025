@@ -1,5 +1,5 @@
 // ===========================================
-// src/app/api/recipes/[id]/route.ts
+// PATH: src/app/api/recipes/[id]/route.ts
 // ===========================================
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
@@ -9,23 +9,57 @@ interface Params {
   params: { id: string };
 }
 
+/**
+ * GET recipe by ID
+ */
 export async function GET(_: Request, { params }: Params) {
   await connectDB();
-  const recipe = await Recipe.findById(params.id);
-  return NextResponse.json(recipe);
+  try {
+    const recipe = await Recipe.findById(params.id);
+    if (!recipe)
+      return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
+    return NextResponse.json(recipe);
+  } catch (err: any) {
+    console.error("GET /api/recipes/[id] error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
 
+/**
+ * PUT update recipe by ID
+ */
 export async function PUT(req: Request, { params }: Params) {
   await connectDB();
-  const body = await req.json();
-  const updated = await Recipe.findByIdAndUpdate(params.id, body, {
-    new: true,
-  });
-  return NextResponse.json(updated);
+  try {
+    const updates = await req.json();
+    updates.updatedAt = new Date();
+
+    const recipe = await Recipe.findByIdAndUpdate(params.id, updates, {
+      new: true,
+    });
+    if (!recipe)
+      return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
+
+    return NextResponse.json(recipe);
+  } catch (err: any) {
+    console.error("PUT /api/recipes/[id] error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
 
+/**
+ * DELETE recipe by ID
+ */
 export async function DELETE(_: Request, { params }: Params) {
   await connectDB();
-  await Recipe.findByIdAndDelete(params.id);
-  return NextResponse.json({ message: "Deleted" });
+  try {
+    const recipe = await Recipe.findByIdAndDelete(params.id);
+    if (!recipe)
+      return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("DELETE /api/recipes/[id] error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

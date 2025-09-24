@@ -1,6 +1,3 @@
-// ===========================================
-// PATH: src/components/MealCard.tsx
-// ===========================================
 "use client";
 
 import React from "react";

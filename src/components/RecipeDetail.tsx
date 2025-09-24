@@ -1,4 +1,3 @@
-// PATH: src/components/RecipeDetail.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -25,6 +24,10 @@ export default function RecipeDetail({ recipe }: Props) {
   const [recipeSaved, setRecipeSaved] = useState(false);
   const [showMealModal, setShowMealModal] = useState(false);
 
+  // ⬅️ Replace this with however you get the current user's email
+  const userEmail =
+    typeof window !== "undefined" ? localStorage.getItem("userEmail") : null;
+
   const handleAddIngredient = async (ingredient: string) => {
     setAddingIngredient(ingredient);
     try {
@@ -49,7 +52,7 @@ export default function RecipeDetail({ recipe }: Props) {
   };
 
   const handleSaveRecipe = async () => {
-    if (recipe.source !== "spoonacular") return;
+    if (recipe.source !== "spoonacular" || !userEmail) return;
 
     setSavingRecipe(true);
     try {
@@ -59,6 +62,7 @@ export default function RecipeDetail({ recipe }: Props) {
         instructions: recipe.instructions,
         image: recipe.image,
         source: "spoonacular",
+        author: userEmail, // ✅ attach user
       });
       setRecipeSaved(true);
     } catch (err) {
@@ -70,6 +74,21 @@ export default function RecipeDetail({ recipe }: Props) {
 
   return (
     <div className={styles.container}>
+      {/* ✅ Save button moved to top */}
+      {recipe.source === "spoonacular" && (
+        <button
+          className={styles.saveRecipeBtn}
+          disabled={savingRecipe || recipeSaved}
+          onClick={handleSaveRecipe}
+        >
+          {recipeSaved
+            ? "Saved!"
+            : savingRecipe
+            ? "Saving..."
+            : "Save to My Recipes"}
+        </button>
+      )}
+
       <h2 className={styles.title}>{recipe.title}</h2>
       {recipe.image && (
         <img src={recipe.image} alt={recipe.title} className={styles.image} />
@@ -104,20 +123,6 @@ export default function RecipeDetail({ recipe }: Props) {
         {parseInstructions(recipe.instructions)}
       </div>
 
-      {recipe.source === "spoonacular" && (
-        <button
-          className={styles.saveRecipeBtn}
-          disabled={savingRecipe || recipeSaved}
-          onClick={handleSaveRecipe}
-        >
-          {recipeSaved
-            ? "Saved!"
-            : savingRecipe
-            ? "Saving..."
-            : "Save to My Recipes"}
-        </button>
-      )}
-
       {activePlan && (
         <>
           <button
@@ -131,7 +136,6 @@ export default function RecipeDetail({ recipe }: Props) {
             <AddToMealPlanModal
               recipe={recipe}
               plan={activePlan}
-              mealType="dinner"
               onClose={() => setShowMealModal(false)}
             />
           )}

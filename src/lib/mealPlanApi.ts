@@ -1,7 +1,6 @@
-// ===========================================
 // PATH: src/lib/mealPlanApi.ts
 // Client-side API helpers for Meal Plans.
-// Normalizes MongoDB `_id` → `id` and ensures full MealSlots
+// Normalizes MongoDB _id → id and ensures full MealSlots
 // ===========================================
 
 import { apiFetch } from "./api";
@@ -9,14 +8,14 @@ import { MealPlan, MealType } from "@/types/mealPlan";
 
 // -----------------------------
 // Normalizer
-// Ensures each date has breakfast/lunch/dinner and uses `id`
+// Ensures each date has breakfast/lunch/dinner and uses id
 // -----------------------------
 function normalizeMealPlan(plan: any): MealPlan {
   // Ensure we always have the full 3 meal slots for each day
   const normalizedMeals: Record<string, Record<MealType, string | null>> = {};
 
   Object.entries(plan.meals || {}).forEach(([day, meals]) => {
-    // `meals` may be incomplete from server → fill with nulls
+    // meals may be incomplete from server → fill with nulls
     const m = meals as Partial<Record<MealType, string | null>>;
     normalizedMeals[day] = {
       breakfast: m?.breakfast ?? null,
@@ -27,7 +26,7 @@ function normalizeMealPlan(plan: any): MealPlan {
 
   return {
     ...plan,
-    id: plan._id || plan.id, // normalize Mongo `_id` into `id`
+    id: plan._id || plan.id, // normalize Mongo _id into id
     meals: normalizedMeals,
     _id: undefined, // drop raw _id to avoid confusion
   } as MealPlan;
@@ -84,5 +83,7 @@ export async function updateMealPlan(
  * Delete a meal plan
  */
 export async function deleteMealPlan(id: string): Promise<void> {
-  await apiFetch(`/api/meal-plans/${id}`, { method: "DELETE" });
+  await apiFetch(`/api/meal-plans/${id}`, {
+    method: "DELETE",
+  });
 }

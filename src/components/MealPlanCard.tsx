@@ -1,10 +1,13 @@
 // ===========================================
 // PATH: src/components/MealPlanCard.tsx
+// Card showing meals for today with ability to view, add, remove recipes
+// Updated to wire AddToMealPlanModal to MealPlanContext.updateMeal
 // ===========================================
+
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { MealPlan, MealType } from "@/lib/mealPlanApi";
+import { MealPlan, MealType } from "@/types/mealPlan";
 import MealCard from "./MealCard";
 import RecipeModal from "./RecipeModal";
 import AddToMealPlanModal from "./AddToMealPlanModal";
@@ -19,39 +22,34 @@ interface Props {
 }
 
 export default function MealPlanCard({ plan }: Props) {
-  const { fetchRecipe, unlinkTemporaryRecipe } = useRecipes(); // Recipe context
-  const { updateMeal } = useMealPlans(); // Meal plan context
+  const { fetchRecipe, unlinkTemporaryRecipe } = useRecipes();
+  const { updateMeal } = useMealPlans();
+  const today = todayISO();
 
-  const today = todayISO(); // Current day in YYYY-MM-DD format
-
-  // -----------------------------
-  // Local state
-  // -----------------------------
+  // Holds the recipes assigned for today's meals
   const [recipesForToday, setRecipesForToday] = useState<
     Partial<Record<MealType, Recipe>>
-  >({}); // Holds recipes for breakfast, lunch, dinner
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null); // Recipe to show in modal
+  >({});
+
+  // Recipe selected to view in modal
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+
+  // Controls AddToMealPlanModal visibility and meal type
   const [showAddMeal, setShowAddMeal] = useState<{
     mealType: MealType | "";
     open: boolean;
-  }>({ mealType: "", open: false }); // Controls AddToMealPlan modal
+  }>({ mealType: "", open: false });
 
-  // Callback to immediately update UI when a recipe is added
-  const handleAddToToday = (mealType: MealType, recipe: Recipe) => {
-    setRecipesForToday((prev) => ({ ...prev, [mealType]: recipe }));
-  };
-
-  // -----------------------------
-  // Load recipes for today
-  // -----------------------------
+  /**
+   * Load recipes for today's meal slots on mount
+   */
   useEffect(() => {
     const loadRecipesForToday = async () => {
       const todayMeals = plan.meals[today] || {};
       const entries: [MealType, Recipe][] = [];
 
-      // Fetch each meal's recipe
       for (const mealType of ["breakfast", "lunch", "dinner"] as MealType[]) {
-        const recipeId = todayMeals[mealType];
+        const recipeId = todayMeals[mealType] ?? null;
         if (recipeId) {
           const recipe = await fetchRecipe(recipeId);
           if (recipe) entries.push([mealType, recipe]);
@@ -64,32 +62,32 @@ export default function MealPlanCard({ plan }: Props) {
     loadRecipesForToday();
   }, [plan, today, fetchRecipe]);
 
-  // -----------------------------
-  // Handle meal card click
-  // -----------------------------
+  /**
+   * Handle clicking on a meal slot
+   */
   const handleMealClick = (mealType: MealType, recipe?: Recipe) => {
-    if (recipe) setSelectedRecipe(recipe); // Open recipe modal
-    else setShowAddMeal({ mealType, open: true }); // Open AddToMealPlan modal
+    if (recipe) setSelectedRecipe(recipe);
+    else setShowAddMeal({ mealType, open: true });
   };
 
-  // -----------------------------
-  // Remove meal from plan
-  // -----------------------------
+  /**
+   * Remove meal from today
+   */
   const handleRemoveMeal = async (mealType: MealType) => {
     const recipe = recipesForToday[mealType];
     if (!recipe) return;
 
-    // Remove from backend
-    await updateMeal(plan.id, today, mealType, undefined);
+    // Update backend
+    await updateMeal(plan.id, today, mealType, null);
 
-    // Update local UI
+    // Update local state
     setRecipesForToday((prev) => {
       const updated = { ...prev };
       delete updated[mealType];
       return updated;
     });
 
-    // Cleanup temporary Spoonacular recipe
+    // If temporary recipe, unlink it
     if (recipe.source === "spoonacular" && recipe.temporary) {
       try {
         await unlinkTemporaryRecipe(recipe.id);
@@ -101,12 +99,11 @@ export default function MealPlanCard({ plan }: Props) {
 
   return (
     <div className={styles.planCard}>
-      {/* Date range */}
       <h2 className={styles.dateRange}>
-        {formatDateRange(plan.startDate, plan.endDate)}
+        {formatDateRange(plan.startDate, plan.endDate || plan.startDate)}
       </h2>
 
-      {/* Meal cards for breakfast, lunch, dinner */}
+      {/* Today's meal slots */}
       <div className={styles.meals}>
         {(["breakfast", "lunch", "dinner"] as MealType[]).map((mealType) => {
           const recipe = recipesForToday[mealType];
@@ -122,7 +119,7 @@ export default function MealPlanCard({ plan }: Props) {
         })}
       </div>
 
-      {/* Recipe modal */}
+      {/* Recipe modal for viewing */}
       {selectedRecipe && (
         <RecipeModal
           recipe={selectedRecipe}
@@ -130,14 +127,18 @@ export default function MealPlanCard({ plan }: Props) {
         />
       )}
 
-      {/* AddToMealPlan modal */}
+      {/* Add recipe modal */}
       {showAddMeal.open && showAddMeal.mealType && (
         <AddToMealPlanModal
           recipe={selectedRecipe ?? undefined}
           plan={plan}
-          mealType={showAddMeal.mealType}
           onClose={() => setShowAddMeal({ mealType: "", open: false })}
-          onAdd={handleAddToToday} // Update local state immediately
+          // **Wire directly to updateMeal so backend + state stays in sync**
+          onAdd={async (mealType: MealType, recipe: Recipe) => {
+            if (!plan.id) return;
+            await updateMeal(plan.id, today, mealType, recipe.id);
+            setRecipesForToday((prev) => ({ ...prev, [mealType]: recipe }));
+          }}
         />
       )}
     </div>

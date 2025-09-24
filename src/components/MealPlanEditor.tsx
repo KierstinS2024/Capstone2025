@@ -1,7 +1,8 @@
 // ===========================================
 // PATH: src/components/MealPlanEditor.tsx
-// Weekly Meal Plan Editor with drag & drop, select fallback, and safe handling of null/invalid dates
+// Meal plan editor with drag-and-drop slots
 // ===========================================
+
 "use client";
 
 import React, { useState } from "react";
@@ -10,39 +11,26 @@ import { useMealPlans } from "@/context/MealPlanContext";
 import { useRecipes } from "@/context/RecipeContext";
 import RecipeModal from "./RecipeModal";
 import { formatDateRange, getWeekDates } from "@/lib/helpers";
-import styles from "@/styles/mealplan-detail.module.css";
+import { DragDropContext, Droppable } from "@hello-pangea/dnd"; // ✅ updated import
+import RecipeSidebar from "./RecipeSidebar";
+import styles from "@/styles/mealplan-editor.module.css";
 
-// Props: a fully loaded MealPlan object
 interface Props {
   plan: MealPlan;
 }
 
 export default function MealPlanEditor({ plan }: Props) {
-  const { updateMeal } = useMealPlans(); // context function to save changes
-  const { recipes } = useRecipes(); // list of all recipes
+  const { updateMealPlan } = useMealPlans();
+  const { recipes } = useRecipes();
 
-  // -----------------------------
-  // Local state for editing before saving
-  // Deep clone ensures editing does not mutate context directly
-  // -----------------------------
+  // Local editing state (clone to avoid mutating prop)
   const [editingPlan, setEditingPlan] = useState(structuredClone(plan));
-
-  // Track recipe being dragged
-  const [draggingRecipeId, setDraggingRecipeId] = useState<string | null>(null);
-
-  // Track recipe currently being viewed in modal
   const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
 
-  // -----------------------------
-  // Array of date strings for the current week
-  // Use helper that safely handles null/invalid startDate
-  // If invalid, weekDays will be empty and table will render a message
-  // -----------------------------
-  const weekDays = getWeekDates(editingPlan.startDate);
+  // Dates for table columns
+  const weekDays = getWeekDates(editingPlan.startDate, editingPlan.endDate);
 
-  // -----------------------------
-  // Update a meal slot in local state
-  // -----------------------------
+  /** Assign a recipe to a slot (day + meal) */
   function handleUpdateMeal(
     day: string,
     meal: "breakfast" | "lunch" | "dinner",
@@ -54,153 +42,137 @@ export default function MealPlanEditor({ plan }: Props) {
     setEditingPlan(copy);
   }
 
-  // -----------------------------
-  // Save all changes to backend via context
-  // -----------------------------
+  /** Save meal plan back to context/API */
   async function handleSave() {
-    if (weekDays.length === 0) {
-      alert("Cannot save: invalid start date.");
-      return;
+    try {
+      const updated = await updateMealPlan(editingPlan.id, editingPlan);
+      setEditingPlan(structuredClone(updated));
+      alert("Meal plan saved!");
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to save meal plan: " + err.message);
     }
-
-    for (const day of weekDays) {
-      const dayMeals = editingPlan.meals[day] || {};
-      for (const meal of ["breakfast", "lunch", "dinner"] as const) {
-        const recipeId = dayMeals[meal] ?? null;
-        await updateMeal(plan.id, day, meal, recipeId);
-      }
-    }
-
-    alert("Meal plan saved!");
   }
 
-  // -----------------------------
-  // Drag & Drop Handlers
-  // -----------------------------
-  const handleDragOver = (e: React.DragEvent<HTMLTableCellElement>) => {
-    e.preventDefault();
-    e.currentTarget.classList.add(styles.over);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLTableCellElement>) => {
-    e.currentTarget.classList.remove(styles.over);
-  };
-
-  const handleDrop = (
-    e: React.DragEvent<HTMLTableCellElement>,
-    day: string,
-    meal: "breakfast" | "lunch" | "dinner"
-  ) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove(styles.over);
-    const recipeId = e.dataTransfer.getData("text/plain");
-    if (recipeId) handleUpdateMeal(day, meal, recipeId);
-    setDraggingRecipeId(null);
-  };
-
-  // -----------------------------
-  // Find recipe for modal display
-  // -----------------------------
+  // Recipe currently being viewed in modal
   const recipeToView = viewingRecipeId
     ? recipes.find((r) => r.id === viewingRecipeId)
     : null;
 
-  // -----------------------------
-  // Render the table
-  // -----------------------------
   return (
-    <div className={styles.detail}>
-      <h2>
-        Meal Plan: {formatDateRange(editingPlan.startDate, editingPlan.endDate)}
-      </h2>
+    <DragDropContext
+      onDragEnd={(result) => {
+        const { destination, draggableId } = result;
+        if (!destination) return;
 
-      {/* If weekDays is empty due to invalid startDate, show warning */}
-      {weekDays.length === 0 ? (
-        <p style={{ color: "red" }}>Invalid start date. Cannot display week.</p>
-      ) : (
-        <table className={styles.planTable}>
-          <thead>
-            <tr>
-              <th>Day</th>
-              <th>Breakfast</th>
-              <th>Lunch</th>
-              <th>Dinner</th>
-            </tr>
-          </thead>
-          <tbody>
-            {weekDays.map((day) => {
-              const dayMeals = editingPlan.meals[day] || {};
-              return (
-                <tr key={day}>
-                  <td>{day}</td>
-                  {(["breakfast", "lunch", "dinner"] as const).map((meal) => {
-                    const recipeId = dayMeals[meal] ?? null;
-                    const recipe = recipes.find((r) => r.id === recipeId);
+        // Ignore dragging back into recipe list
+        if (destination.droppableId.startsWith("recipes")) return;
 
-                    return (
-                      <td
-                        key={meal}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, day, meal)}
-                      >
-                        {/* Recipe button to open modal */}
-                        {recipe ? (
-                          <div className={styles.recipeSlot}>
-                            <button
-                              className={styles.recipeBtn}
-                              onClick={() => setViewingRecipeId(recipe.id)}
-                            >
-                              {recipe.title}
-                            </button>
-                            {/* Remove recipe from slot */}
-                            <button
-                              className={styles.removeBtn}
-                              onClick={() => handleUpdateMeal(day, meal, null)}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ) : (
-                          <span className={styles.empty}>—</span>
-                        )}
+        // droppableId is formatted like "2025-09-23|breakfast"
+        const [day, meal] = destination.droppableId.split("|");
 
-                        {/* Fallback select input */}
-                        <select
-                          value={recipeId || ""}
-                          onChange={(e) =>
-                            handleUpdateMeal(day, meal, e.target.value || null)
-                          }
-                        >
-                          <option value="">— Select —</option>
-                          {recipes.map((r) => (
-                            <option key={r.id} value={r.id}>
-                              {r.title}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+        handleUpdateMeal(
+          day,
+          meal as "breakfast" | "lunch" | "dinner",
+          draggableId
+        );
+      }}
+    >
+      <div className={styles.editorLayout}>
+        {/* Sidebar containing available recipes */}
+        <RecipeSidebar />
 
-      {/* Save button commits all changes */}
-      <button className={styles.saveBtn} onClick={handleSave}>
-        Save Meal Plan
-      </button>
+        <div className={styles.detail}>
+          <h2>
+            Meal Plan:{" "}
+            {formatDateRange(editingPlan.startDate, editingPlan.endDate)}
+          </h2>
 
-      {/* Recipe modal */}
+          {/* Grid of meal slots */}
+          <table className={styles.planTable}>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Breakfast</th>
+                <th>Lunch</th>
+                <th>Dinner</th>
+              </tr>
+            </thead>
+            <tbody>
+              {weekDays.map((day) => {
+                const dayMeals = editingPlan.meals[day] || {};
+                return (
+                  <tr key={day}>
+                    <td>{day}</td>
+                    {(["breakfast", "lunch", "dinner"] as const).map((meal) => {
+                      const recipeId = dayMeals[meal] ?? null;
+                      const recipe = recipes.find((r) => r.id === recipeId);
+
+                      return (
+                        <Droppable droppableId={`${day}|${meal}`} key={meal}>
+                          {(provided, snapshot) => (
+                            <td>
+                              {/* Wrapper div needed so ref is not attached to <td> */}
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={
+                                  snapshot.isDraggingOver
+                                    ? styles.highlight
+                                    : styles.slot
+                                }
+                              >
+                                {recipe ? (
+                                  <div className={styles.recipeSlot}>
+                                    <button
+                                      className={styles.recipeBtn}
+                                      onClick={() =>
+                                        setViewingRecipeId(recipe.id)
+                                      }
+                                    >
+                                      {recipe.title}
+                                    </button>
+                                    <button
+                                      className={styles.removeBtn}
+                                      onClick={() =>
+                                        handleUpdateMeal(day, meal, null)
+                                      }
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className={styles.empty}>
+                                    Drop here
+                                  </span>
+                                )}
+                                {provided.placeholder}
+                              </div>
+                            </td>
+                          )}
+                        </Droppable>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* Save button */}
+          <button className={styles.saveBtn} onClick={handleSave}>
+            Save Meal Plan
+          </button>
+        </div>
+      </div>
+
+      {/* Recipe detail modal */}
       {recipeToView && (
         <RecipeModal
           recipe={recipeToView}
           onClose={() => setViewingRecipeId(null)}
         />
       )}
-    </div>
+    </DragDropContext>
   );
 }

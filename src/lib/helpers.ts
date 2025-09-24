@@ -37,35 +37,42 @@ export function todayISO(): string {
 }
 
 /**
- * Generate an array of 7 ISO date strings starting from a given date.
- * Used for weekly meal plan rendering.
- * If the start date is invalid, returns an empty array.
+ * Generate an array of ISO date strings from start → end (inclusive).
+ * Used for rendering custom-length meal plans (default = 7 days).
+ * If start or end are invalid, returns an empty array.
  */
-export function getWeekDates(start: string | null | undefined): string[] {
-  if (!start) {
-    console.warn("No start date provided to getWeekDates");
+export function getWeekDates(
+  start: string | null | undefined,
+  end: string | null | undefined
+): string[] {
+  if (!start || !end) {
+    console.warn("Missing start or end date in getWeekDates:", start, end);
     return [];
   }
 
   const startDate = new Date(start);
-  if (isNaN(startDate.getTime())) {
-    console.warn("Invalid start date passed to getWeekDates:", start);
+  const endDate = new Date(end);
+
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    console.warn("Invalid date(s) passed to getWeekDates:", start, end);
     return [];
   }
 
-  const week: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(startDate);
-    d.setDate(startDate.getDate() + i);
-    week.push(d.toISOString().split("T")[0]); // convert to YYYY-MM-DD
+  const days: string[] = [];
+  let current = new Date(startDate);
+
+  // Walk from start → end, inclusive
+  while (current <= endDate) {
+    days.push(current.toISOString().split("T")[0]);
+    current.setDate(current.getDate() + 1);
   }
 
-  return week;
+  return days;
 }
 
 /**
- * Optional helper: add N days to a date string (YYYY-MM-DD)
- * Returns YYYY-MM-DD format or null if invalid
+ * Add N days to a date string (YYYY-MM-DD).
+ * Returns YYYY-MM-DD format or null if invalid.
  */
 export function addDays(dateStr: string, days: number): string | null {
   const date = new Date(dateStr);
