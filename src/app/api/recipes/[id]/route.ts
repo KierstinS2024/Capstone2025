@@ -1,25 +1,24 @@
 // ===========================================
 // PATH: src/app/api/recipes/[id]/route.ts
-// Dynamic API route for GET, PUT, DELETE a recipe by ID
-// Fix: `params` must be awaited before using
+// Dynamic API route for GET, PUT, DELETE a single user recipe
+// Temporary recipes removed
 // ===========================================
-
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Recipe from "@/models/Recipe";
 
 /**
  * GET /api/recipes/[id]
- * Fetch a recipe by ID
+ * Fetch a single recipe by ID
  */
 export async function GET(
   _: Request,
-  context: { params: Promise<{ id: string }> } // 👈 must be Promise
+  context: { params: Promise<{ id: string }> } // params is a Promise
 ) {
   await connectDB();
 
   try {
-    const { id } = await context.params; // ✅ await before use
+    const { id } = await context.params; // wait for params
     const recipe = await Recipe.findById(id);
 
     if (!recipe) {
@@ -36,6 +35,7 @@ export async function GET(
 /**
  * PUT /api/recipes/[id]
  * Update a recipe by ID
+ * Body should include only the fields to update
  */
 export async function PUT(
   req: Request,
@@ -44,9 +44,10 @@ export async function PUT(
   await connectDB();
 
   try {
-    const { id } = await context.params; // ✅ await before use
+    const { id } = await context.params; // wait for params
     const updates = await req.json();
-    updates.updatedAt = new Date();
+
+    updates.updatedAt = new Date(); // always update timestamp
 
     const recipe = await Recipe.findByIdAndUpdate(id, updates, { new: true });
 
@@ -63,7 +64,7 @@ export async function PUT(
 
 /**
  * DELETE /api/recipes/[id]
- * Delete a recipe by ID
+ * Permanently delete a recipe by ID
  */
 export async function DELETE(
   _: Request,
@@ -72,7 +73,7 @@ export async function DELETE(
   await connectDB();
 
   try {
-    const { id } = await context.params; // ✅ await before use
+    const { id } = await context.params; // wait for params
     const recipe = await Recipe.findByIdAndDelete(id);
 
     if (!recipe) {

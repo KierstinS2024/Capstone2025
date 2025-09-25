@@ -1,5 +1,7 @@
 // ===========================================
 // PATH: src/app/api/recipes/route.ts
+// Recipe API — handles CRUD operations for user recipes
+// Temporary recipes and linkedMealPlanIds removed
 // ===========================================
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
@@ -24,9 +26,11 @@ export async function GET(req: Request) {
 /**
  * POST create a new recipe
  * Requires `author` in body to associate recipe with a user
+ * Removed: temporary flag and linkedMealPlanIds
  */
 export async function POST(req: Request) {
   await connectDB();
+
   try {
     const body = await req.json();
 
@@ -34,20 +38,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing author" }, { status: 400 });
     }
 
+    // Build recipe object for creation
     const recipeData = {
       title: body.title,
       ingredients: body.ingredients || [],
       instructions: body.instructions || "",
       image: body.image || null,
       source: body.source || "user",
-      temporary: body.temporary || false,
-      linkedMealPlanIds: body.linkedMealPlanIds || [],
       author: body.author, // user email
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
+    // Save recipe in database
     const recipe = await Recipe.create(recipeData);
+
     return NextResponse.json(recipe);
   } catch (err: any) {
     console.error("POST /api/recipes error:", err);
@@ -61,6 +66,7 @@ export async function POST(req: Request) {
  */
 export async function PUT(req: Request) {
   await connectDB();
+
   try {
     const body = await req.json();
     const { id, ...updates } = body;
@@ -72,6 +78,7 @@ export async function PUT(req: Request) {
     updates.updatedAt = new Date(); // update timestamp
 
     const recipe = await Recipe.findByIdAndUpdate(id, updates, { new: true });
+
     if (!recipe) {
       return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
     }
@@ -88,14 +95,17 @@ export async function PUT(req: Request) {
  */
 export async function DELETE(req: Request) {
   await connectDB();
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
+
     if (!id) {
       return NextResponse.json({ error: "Missing recipe ID" }, { status: 400 });
     }
 
     const recipe = await Recipe.findByIdAndDelete(id);
+
     if (!recipe) {
       return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
     }
