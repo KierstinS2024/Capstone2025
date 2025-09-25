@@ -2,10 +2,11 @@
 // PATH: src/app/recipes/page.tsx
 // RecipesPage — displays user recipes + Spoonacular search
 // Fully integrated add/delete handling for card & modal
+// Includes debounce for search and unified RecipeCard usage
 // ===========================================
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import RecipeCard from "@/components/RecipeCard";
 import RecipeModal from "@/components/RecipeModal";
@@ -16,6 +17,9 @@ import { Recipe } from "@/types/recipe";
 export default function RecipesPage() {
   const { recipes, searchSpoonacular, addRecipe, deleteRecipe } = useRecipes();
 
+  // -----------------------------
+  // Component state
+  // -----------------------------
   const [searchQuery, setSearchQuery] = useState("");
   const [spoonacularResults, setSpoonacularResults] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -27,16 +31,23 @@ export default function RecipesPage() {
   const [showAddRecipeForm, setShowAddRecipeForm] = useState(false);
 
   // -----------------------------
-  // Spoonacular search effect
+  // Debounce timer for Spoonacular search
   // -----------------------------
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (!searchQuery.trim()) {
+      // Reset results if query is empty
       setSpoonacularResults([]);
       setSpoonacularError(null);
       return;
     }
 
-    const fetchResults = async () => {
+    // Clear previous debounce timer
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    // Set new debounce timer
+    searchTimeout.current = setTimeout(async () => {
       setLoadingSpoonacular(true);
       setSpoonacularError(null);
 
@@ -52,16 +63,14 @@ export default function RecipesPage() {
       } finally {
         setLoadingSpoonacular(false);
       }
-    };
-
-    fetchResults();
+    }, 500); // 500ms debounce
   }, [searchQuery, searchSpoonacular]);
 
   // -----------------------------
   // Save Spoonacular recipe
   // -----------------------------
   const handleSaveRecipe = async (id: string) => {
-    if (savingRecipeIds.has(id)) return;
+    if (savingRecipeIds.has(id)) return; // prevent double clicks
     setSavingRecipeIds((prev) => new Set(prev).add(id));
 
     try {
@@ -86,7 +95,7 @@ export default function RecipesPage() {
     if (!confirm("Are you sure you want to delete this recipe?")) return;
     try {
       await deleteRecipe(id);
-      if (selectedRecipe?.id === id) setSelectedRecipe(null);
+      if (selectedRecipe?.id === id) setSelectedRecipe(null); // close modal if deleted
     } catch (err) {
       console.error("Failed to delete recipe", err);
     }
@@ -154,7 +163,7 @@ export default function RecipesPage() {
             <AddRecipeForm
               onClose={() => setShowAddRecipeForm(false)}
               onSuccess={(newRecipe) => {
-                setSelectedRecipe(newRecipe); // open modal immediately for new recipe
+                setSelectedRecipe(newRecipe); // open modal for new recipe
                 setShowAddRecipeForm(false);
               }}
             />
@@ -177,7 +186,7 @@ export default function RecipesPage() {
               key={recipe.id}
               recipe={recipe}
               onClick={() => setSelectedRecipe(recipe)}
-              onDelete={handleDeleteRecipe}
+              onDelete={handleDeleteRecipe} // user-owned: allow delete
             />
           ))}
         </div>
@@ -188,6 +197,7 @@ export default function RecipesPage() {
             <h2>Spoonacular Results</h2>
             {loadingSpoonacular && <p>Loading...</p>}
             {spoonacularError && <p>{spoonacularError}</p>}
+
             <div
               style={{
                 display: "grid",
@@ -196,38 +206,32 @@ export default function RecipesPage() {
               }}
             >
               {spoonacularResults.map((recipe) => (
-                <div
+                <RecipeCard
                   key={recipe.id}
-                  style={{
-                    border: "1px solid #ccc",
-                    borderRadius: "8px",
-                    padding: "1rem",
-                  }}
+                  recipe={recipe}
+                  onClick={() => setSelectedRecipe(recipe)} // opens modal
+                  onDelete={undefined} // read-only
                 >
-                  <h3>{recipe.title}</h3>
-                  {recipe.image && (
-                    <img
-                      src={recipe.image}
-                      alt={recipe.title}
-                      style={{ width: "100%", borderRadius: "4px" }}
-                    />
-                  )}
+                  {/* Extra Save button (child prop) */}
                   <button
                     disabled={savingRecipeIds.has(recipe.id)}
-                    onClick={() => handleSaveRecipe(recipe.id)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // prevent modal open
+                      handleSaveRecipe(recipe.id);
+                    }}
                     style={{
-                      marginTop: "0.5rem",
-                      padding: "0.5rem 1rem",
-                      borderRadius: "8px",
+                      flex: 1,
+                      padding: "0.25rem",
+                      borderRadius: "6px",
+                      border: "none",
                       backgroundColor: "#2ecc71",
                       color: "#fff",
-                      border: "none",
                       cursor: "pointer",
                     }}
                   >
                     {savingRecipeIds.has(recipe.id) ? "Saving..." : "Save"}
                   </button>
-                </div>
+                </RecipeCard>
               ))}
             </div>
           </>
