@@ -1,40 +1,122 @@
 .form {
-  max-width: 500px;
-  margin: 2rem auto;
-  padding: 1.5rem;
-  background: var(--color-background-light);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  max-height: 100vh;
+  overflow-y: auto; /* whole form scrolls */
 }
 
-input,
-textarea {
+/* Header */
+.formHeader {
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+/* Section */
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Ingredients */
+.ingredientsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background-color: #fafafa;
   padding: 0.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 6px;
 }
 
-button {
+/* Ingredient row */
+.ingredientRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  background: #fff;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+/* Drag handle */
+.dragHandle {
+  cursor: grab;
+  font-size: 1.2rem;
+  color: #666;
+  padding: 0 0.3rem;
+  user-select: none;
+}
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+/* Inputs */
+.form input,
+.form textarea {
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 100%;
+}
+
+/* Auto-growing textarea */
+.autoGrowTextarea {
+  min-height: 150px;
+  resize: vertical;
+  padding: 0.6rem;
+}
+
+/* Buttons */
+.addIngredientBtn,
+.submitBtn {
   padding: 0.6rem 1rem;
-  background: var(--color-accent);
+  background-color: #2ecc71;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
-button:disabled {
-  background: var(--color-disabled);
+.removeIngredientBtn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0 0.5rem;
+  cursor: pointer;
 }
 
-.success {
-  color: green;
+/* Submit (sticky on mobile) */
+.submitContainer {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  padding-top: 0.5rem;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.error {
-  color: red;
+/* Feedback */
+.success { color: green; font-weight: 500; }
+.error { color: red; font-weight: 500; }
+
+/* -------------------------
+Responsive
+------------------------- */
+@media (max-width: 768px) {
+  .form { padding: 1rem; }
+  .autoGrowTextarea { min-height: 120px; }
+  .addIngredientBtn, .submitBtn { width: 100%; }
+}
+
+@media (max-width: 375px) {
+  .form { padding: 0.5rem; }
+  .autoGrowTextarea { min-height: 100px; }
 }

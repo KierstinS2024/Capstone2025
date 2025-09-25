@@ -1,44 +1,52 @@
+// PATH: src/components/RecipeDetail.tsx
 "use client";
 
 import React, { useState } from "react";
 import { Recipe } from "@/types/recipe";
 import { useShoppingList } from "@/context/ShoppingListContext";
 import { useRecipes } from "@/context/RecipeContext";
-import { useMealPlans } from "@/context/MealPlanContext";
-import AddToMealPlanModal from "./AddToMealPlanModal";
 import { parseInstructions } from "@/utils/parseInstructions";
 import styles from "@/styles/recipeDetail.module.css";
 
 interface Props {
-  recipe: Recipe;
+  recipe: Recipe; // Recipe to display
 }
 
 export default function RecipeDetail({ recipe }: Props) {
-  const { add, addBulk } = useShoppingList();
-  const { addRecipe } = useRecipes();
-  const { activePlan } = useMealPlans();
+  const { add, addBulk } = useShoppingList(); // shopping list context
+  const { addRecipe, deleteRecipe } = useRecipes(); // recipe context
 
   const [addingIngredient, setAddingIngredient] = useState<string | null>(null);
   const [addingAll, setAddingAll] = useState(false);
   const [savingRecipe, setSavingRecipe] = useState(false);
   const [recipeSaved, setRecipeSaved] = useState(false);
-  const [showMealModal, setShowMealModal] = useState(false);
 
-  // ⬅️ Replace this with however you get the current user's email
+  // Current user email
   const userEmail =
     typeof window !== "undefined" ? localStorage.getItem("userEmail") : null;
 
+  // Check if recipe belongs to current user
+  const isUserRecipe =
+    recipe.source !== "spoonacular" && recipe.author === userEmail;
+
+  // -----------------------------
+  // Add single ingredient to shopping list
+  // -----------------------------
   const handleAddIngredient = async (ingredient: string) => {
     setAddingIngredient(ingredient);
     try {
       await add(ingredient);
     } catch (err) {
       console.error("Failed to add ingredient:", err);
+      alert("Failed to add ingredient");
     } finally {
       setAddingIngredient(null);
     }
   };
 
+  // -----------------------------
+  // Add all ingredients to shopping list
+  // -----------------------------
   const handleAddAll = async () => {
     if (!recipe.ingredients?.length) return;
     setAddingAll(true);
@@ -46,11 +54,15 @@ export default function RecipeDetail({ recipe }: Props) {
       await addBulk(recipe.ingredients);
     } catch (err) {
       console.error("Failed to add all ingredients:", err);
+      alert("Failed to add ingredients");
     } finally {
       setAddingAll(false);
     }
   };
 
+  // -----------------------------
+  // Save Spoonacular recipe to user's recipes
+  // -----------------------------
   const handleSaveRecipe = async () => {
     if (recipe.source !== "spoonacular" || !userEmail) return;
 
@@ -62,38 +74,56 @@ export default function RecipeDetail({ recipe }: Props) {
         instructions: recipe.instructions,
         image: recipe.image,
         source: "spoonacular",
-        author: userEmail, // ✅ attach user
+        author: userEmail,
       });
       setRecipeSaved(true);
+      alert("Recipe saved!");
     } catch (err) {
       console.error("Failed to save recipe:", err);
+      alert("Failed to save recipe");
     } finally {
       setSavingRecipe(false);
     }
   };
 
+  // -----------------------------
+  // Delete user recipe
+  // -----------------------------
+  const handleDeleteRecipe = async () => {
+    if (!isUserRecipe) return;
+
+    try {
+      await deleteRecipe(recipe.id);
+      alert("Recipe deleted!");
+      // Optional: redirect or close view
+    } catch (err) {
+      console.error("Failed to delete recipe:", err);
+      alert("Failed to delete recipe");
+    }
+  };
+
   return (
     <div className={styles.container}>
-      {/* ✅ Save button moved to top */}
-      {recipe.source === "spoonacular" && (
-        <button
-          className={styles.saveRecipeBtn}
-          disabled={savingRecipe || recipeSaved}
-          onClick={handleSaveRecipe}
-        >
-          {recipeSaved
-            ? "Saved!"
-            : savingRecipe
-            ? "Saving..."
-            : "Save to My Recipes"}
-        </button>
-      )}
+      {/* Action buttons: Save/Delete */}
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+        {isUserRecipe && <button onClick={handleDeleteRecipe}>Delete</button>}
 
+        {recipe.source === "spoonacular" && !recipeSaved && (
+          <button onClick={handleSaveRecipe} disabled={savingRecipe}>
+            {savingRecipe ? "Saving..." : "Save to My Recipes"}
+          </button>
+        )}
+      </div>
+
+      {/* Recipe title */}
       <h2 className={styles.title}>{recipe.title}</h2>
+
+      {/* Recipe image */}
       {recipe.image && (
         <img src={recipe.image} alt={recipe.title} className={styles.image} />
       )}
 
+      {/* Ingredients */}
       <h3>Ingredients</h3>
       <ul className={styles.ingredients}>
         {recipe.ingredients?.map((ing, idx) => (
@@ -104,12 +134,11 @@ export default function RecipeDetail({ recipe }: Props) {
               onClick={() => handleAddIngredient(ing)}
             >
               {addingIngredient === ing ? "Adding..." : "+"}
-            </button>{" "}
+            </button>
             {ing}
           </li>
         ))}
       </ul>
-
       <button
         className={styles.addAllBtn}
         disabled={addingAll}
@@ -118,29 +147,11 @@ export default function RecipeDetail({ recipe }: Props) {
         {addingAll ? "Adding All..." : "Add All to Shopping List"}
       </button>
 
+      {/* Instructions */}
       <h3>Instructions</h3>
       <div className={styles.instructions}>
         {parseInstructions(recipe.instructions)}
       </div>
-
-      {activePlan && (
-        <>
-          <button
-            className={styles.mealPlanBtn}
-            onClick={() => setShowMealModal(true)}
-          >
-            Add to Meal Plan
-          </button>
-
-          {showMealModal && recipe.id && (
-            <AddToMealPlanModal
-              recipe={recipe}
-              plan={activePlan}
-              onClose={() => setShowMealModal(false)}
-            />
-          )}
-        </>
-      )}
     </div>
   );
 }

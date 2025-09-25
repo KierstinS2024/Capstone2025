@@ -1,98 +1,96 @@
 // ===========================================
 // PATH: src/components/RecipeCard.tsx
+// Recipe Card Component
+// - Displays recipe image, title, source
+// - Save (Spoonacular) or Delete (user recipe)
+// - Clicking card opens RecipeModal
+// - Fully commented for clarity
 // ===========================================
 "use client";
 
 import React from "react";
 import { Recipe } from "@/types/recipe";
 import styles from "@/styles/recipeCard.module.css";
-import { useRecipes } from "@/context/RecipeContext";
 
 interface Props {
-  recipe: Recipe;
-  onClick: () => void;
-  currentUserEmail: string | null; // for user-specific actions
-  onSave?: (id: string) => void; // optional save callback for Spoonacular
-  onDelete?: (id: string) => void; // optional delete callback
+  recipe: Recipe; // Recipe object
+  currentUserEmail: string | null; // Logged-in user email
+  onClick: () => void; // Opens RecipeModal
+  onSave?: (id: string) => void; // Save callback for Spoonacular recipes
+  onDelete?: (id: string) => void; // Delete callback for user recipes
 }
 
 export default function RecipeCard({
   recipe,
-  onClick,
   currentUserEmail,
+  onClick,
   onSave,
   onDelete,
 }: Props) {
-  const { deleteRecipe } = useRecipes();
-  const image = recipe.image || "/placeholder.png";
+  const image = recipe.image || "/placeholder.png"; // Fallback image
 
-  // Check if recipe is saved by the current user
+  // -----------------------------
+  // Determine if recipe belongs to current user
+  // -----------------------------
   const isUserRecipe =
     recipe.source !== "spoonacular" && recipe.author === currentUserEmail;
 
-  const handleDelete = async () => {
-    if (!onDelete && isUserRecipe) {
-      // default delete if no callback
-      await deleteRecipe(recipe.id);
-    } else if (onDelete) {
+  // -----------------------------
+  // Delete click handler
+  // -----------------------------
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click from opening modal
+    if (onDelete) {
       onDelete(recipe.id);
+    } else if (isUserRecipe) {
+      console.warn("Delete function not provided!");
     }
   };
 
-  const handleSave = () => {
+  // -----------------------------
+  // Save click handler
+  // -----------------------------
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click from opening modal
     if (onSave) onSave(recipe.id);
   };
 
   return (
     <div className={styles.card} onClick={onClick}>
-      <div className={styles.header}>
-        {image && (
-          <img src={image} alt={recipe.title} className={styles.image} />
+      {/* Recipe Image */}
+      <img src={image} alt={recipe.title} className={styles.image} />
+
+      {/* Action Buttons */}
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          marginTop: "0.5rem",
+          justifyContent: "flex-end",
+        }}
+      >
+        {/* Delete button only for saved user recipes */}
+        {isUserRecipe && (
+          <button onClick={handleDelete} className={styles.actionBtn}>
+            Delete
+          </button>
         )}
-        <div
-          style={{
-            position: "absolute",
-            top: 5,
-            right: 5,
-            display: "flex",
-            gap: "0.25rem",
-          }}
-        >
-          {/* Conditionally show buttons */}
-          {isUserRecipe && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete();
-              }}
-              className={styles.icon}
-              title="Delete Recipe"
-            >
-              🗑
-            </button>
-          )}
-          {recipe.source === "spoonacular" && onSave && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSave();
-              }}
-              className={styles.icon}
-              title="Save Recipe"
-            >
-              💾
-            </button>
-          )}
-        </div>
+
+        {/* Save button only for Spoonacular recipes not yet saved */}
+        {recipe.source === "spoonacular" && onSave && (
+          <button onClick={handleSave} className={styles.actionBtn}>
+            Save to Recipes
+          </button>
+        )}
       </div>
 
-      <div className={styles.text}>
-        <h3 className={styles.title}>{recipe.title}</h3>
-        <div className={styles.meta}>
-          <span>{recipe.source}</span>
-        </div>
-      </div>
+      {/* Recipe Title */}
+      <h3 className={styles.title}>{recipe.title}</h3>
 
+      {/* Recipe Source */}
+      <p className={styles.source}>{recipe.source}</p>
+
+      {/* Optional "View Full Recipe" button (also opens modal) */}
       <button className={styles.viewBtn}>View Full Recipe</button>
     </div>
   );

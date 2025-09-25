@@ -1,99 +1,208 @@
-// PATH: src/components/AddRecipeForm.tsx
 "use client";
 
 import React, { useState } from "react";
-import styles from "@/styles/addRecipeForm.module.css";
 import { useRecipes } from "@/context/RecipeContext";
+import styles from "@/styles/addRecipeForm.module.css";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 
 export default function AddRecipeForm() {
   const { addRecipe } = useRecipes();
 
-  const [title, setTitle] = useState("");
-  const [ingredients, setIngredients] = useState<string[]>([""]);
-  const [instructions, setInstructions] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
+  // -----------------------------
+  // Form state
+  // -----------------------------
+  const [recipeTitle, setRecipeTitle] = useState("");
+  const [ingredientsList, setIngredientsList] = useState<string[]>([""]);
+  const [instructionsText, setInstructionsText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formSuccess, setFormSuccess] = useState(false);
+  const [formError, setFormError] = useState("");
 
-  const handleIngredientChange = (index: number, value: string) => {
-    const updated = [...ingredients];
-    updated[index] = value;
-    setIngredients(updated);
+  // -----------------------------
+  // Drag-and-drop reorder
+  // -----------------------------
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const reordered = Array.from(ingredientsList);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    setIngredientsList(reordered);
   };
 
-  const addIngredientField = () => setIngredients([...ingredients, ""]);
+  // -----------------------------
+  // Input helpers
+  // -----------------------------
+  const handleIngredientChange = (index: number, value: string) => {
+    const updated = [...ingredientsList];
+    updated[index] = value;
+    setIngredientsList(updated);
+  };
 
+  const addIngredientField = () => setIngredientsList([...ingredientsList, ""]);
+
+  const removeIngredientField = (index: number) => {
+    if (ingredientsList.length === 1) return;
+    setIngredientsList(ingredientsList.filter((_, i) => i !== index));
+  };
+
+  // -----------------------------
+  // Submit
+  // -----------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess(false);
+    setIsSubmitting(true);
+    setFormError("");
+    setFormSuccess(false);
+
+    if (!recipeTitle.trim() || !ingredientsList.some((i) => i.trim())) {
+      setFormError("Title and at least one ingredient are required.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
-      if (!title.trim() || !ingredients.some((ing) => ing.trim())) {
-        setError("Title and at least one ingredient are required");
-        setLoading(false);
-        return;
-      }
-
-      // Use RecipeContext to add recipe
       await addRecipe({
-        title,
-        ingredients: ingredients.filter((i) => i.trim() !== ""),
-        instructions,
+        title: recipeTitle.trim(),
+        ingredients: ingredientsList.filter((i) => i.trim() !== ""),
+        instructions: instructionsText.trim(),
         source: "user",
+        author: localStorage.getItem("userEmail") || "",
       });
 
-      setSuccess(true);
-      setTitle("");
-      setIngredients([""]);
-      setInstructions("");
+      setRecipeTitle("");
+      setIngredientsList([""]);
+      setInstructionsText("");
+      setFormSuccess(true);
     } catch (err) {
-      console.error("Failed to create recipe", err);
-      setError("Failed to create recipe");
+      console.error(err);
+      setFormError("Failed to create recipe.");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
+  // -----------------------------
+  // Render
+  // -----------------------------
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <h2>Create Your Recipe</h2>
+      <h2 className={styles.formHeader}>Create Your Recipe</h2>
 
-      <label>Title</label>
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-      />
-
-      <label>Ingredients</label>
-      {ingredients.map((ing, i) => (
+      {/* Title */}
+      <div className={styles.formSection}>
+        <label htmlFor="recipe-title">Title</label>
         <input
-          key={i}
+          id="recipe-title"
           type="text"
-          value={ing}
-          onChange={(e) => handleIngredientChange(i, e.target.value)}
+          value={recipeTitle}
+          onChange={(e) => setRecipeTitle(e.target.value)}
+          placeholder="Recipe title"
           required
         />
-      ))}
-      <button type="button" onClick={addIngredientField}>
-        + Add Ingredient
-      </button>
+      </div>
 
-      <label>Instructions</label>
-      <textarea
-        value={instructions}
-        onChange={(e) => setInstructions(e.target.value)}
-      />
+      {/* Ingredients */}
+      <div className={styles.formSection}>
+        <label>Ingredients (drag ☰ to reorder)</label>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="ingredients">
+            {(provided) => (
+              <div
+                className={styles.ingredientsContainer}
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+              >
+                {ingredientsList.map((ingredient, index) => (
+                  <Draggable
+                    key={index.toString()}
+                    draggableId={index.toString()}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <div
+                        className={styles.ingredientRow}
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                      >
+                        {/* Drag handle */}
+                        <span
+                          className={styles.dragHandle}
+                          {...provided.dragHandleProps}
+                        >
+                          ☰
+                        </span>
 
-      <button type="submit" disabled={loading}>
-        {loading ? "Saving..." : "Save Recipe"}
-      </button>
+                        {/* Input */}
+                        <input
+                          type="text"
+                          value={ingredient}
+                          onChange={(e) =>
+                            handleIngredientChange(index, e.target.value)
+                          }
+                          placeholder={`Ingredient ${index + 1}`}
+                          required={index === 0}
+                        />
 
-      {success && <p className={styles.success}>✅ Recipe created!</p>}
-      {error && <p className={styles.error}>❌ {error}</p>}
+                        {/* Remove button */}
+                        {ingredientsList.length > 1 && (
+                          <button
+                            type="button"
+                            className={styles.removeIngredientBtn}
+                            onClick={() => removeIngredientField(index)}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+
+        <button
+          type="button"
+          className={styles.addIngredientBtn}
+          onClick={addIngredientField}
+        >
+          + Add Ingredient
+        </button>
+      </div>
+
+      {/* Instructions */}
+      <div className={styles.formSection}>
+        <label htmlFor="recipe-instructions">Instructions</label>
+        <textarea
+          id="recipe-instructions"
+          value={instructionsText}
+          onChange={(e) => setInstructionsText(e.target.value)}
+          placeholder="Step-by-step instructions"
+          className={styles.autoGrowTextarea}
+        />
+      </div>
+
+      {/* Feedback */}
+      {formSuccess && <p className={styles.success}>✅ Recipe created!</p>}
+      {formError && <p className={styles.error}>❌ {formError}</p>}
+
+      {/* Submit */}
+      <div className={styles.submitContainer}>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={styles.submitBtn}
+        >
+          {isSubmitting ? "Saving..." : "Save Recipe"}
+        </button>
+      </div>
     </form>
   );
 }

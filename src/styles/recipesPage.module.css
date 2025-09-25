@@ -1,83 +1,35 @@
-/* Path: src/styles/recipesPage.module.css */
+/* ===========================================
+PATH: src/styles/recipesPage.module.css
+Recipes Page Layout
+=========================================== */
 
-.container {
+.page {
   padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-.title {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 1.5rem;
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* default desktop */
 }
 
-/* Tabs */
 .tabs {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
-.tab {
-  background: #f3f3f3;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s ease;
+/* -------------------------------------------
+Responsive overrides
+------------------------------------------- */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* tablets */
+  }
 }
 
-.tab:hover {
-  background: #e6e6e6;
-}
-
-.activeTab {
-  background: #4cafef;
-  color: white;
-  font-weight: bold;
-}
-
-/* Search Bar */
-.searchForm {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.searchInput {
-  flex: 1;
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-}
-
-.searchButton {
-  padding: 0.75rem 1.25rem;
-  border-radius: 8px;
-  border: none;
-  background: #4cafef;
-  color: white;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.searchButton:hover {
-  background: #3ba6d8;
-}
-
-/* Recipes Grid */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.25rem;
-}
-
-.empty {
-  text-align: center;
-  color: #777;
-  font-size: 1.1rem;
-  margin-top: 2rem;
+@media (max-width: 375px) {
+  .grid {
+    grid-template-columns: 1fr; /* single column for small mobiles */
+  }
 }

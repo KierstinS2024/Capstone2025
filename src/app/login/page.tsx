@@ -50,11 +50,14 @@ export default function LoginPage() {
     setLoading(false);
 
     if (success) {
-      router.replace("/dashboard"); // ✅ guaranteed redirect after login
+      // ✅ store email for recipe creation
+      localStorage.setItem("userEmail", email.toLowerCase());
+      router.replace("/dashboard"); // redirect after login
     } else {
       setError("Invalid email or password");
     }
   };
+
 
   return (
     <main className="auth-page">

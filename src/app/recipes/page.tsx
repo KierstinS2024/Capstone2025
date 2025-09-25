@@ -1,96 +1,81 @@
 // ===========================================
 // PATH: src/app/recipes/page.tsx
+// High-end Recipe Page
+// Features:
+// - User-specific "Your Recipes"
+// - Spoonacular search with daily limit handling
+// - Recipe save/delete logic
+// - Recipe modal for full details
+// - Finite grids (no infinite scroll)
+// - Loading and error feedback
 // ===========================================
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useRecipes } from "@/context/RecipeContext";
-import { Recipe } from "@/types/recipe";
+import React, { useState, useEffect } from "react";
+import Navbar from "@/components/Navbar";
 import RecipeCard from "@/components/RecipeCard";
 import RecipeModal from "@/components/RecipeModal";
-import Navbar from "@/components/Navbar";
+import AddRecipeForm from "@/components/AddRecipeForm";
+import { useRecipes } from "@/context/RecipeContext";
+import { Recipe } from "@/types/recipe";
 
 export default function RecipesPage() {
   const { recipes: userRecipes, searchSpoonacular, addRecipe } = useRecipes();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
-  // Spoonacular state
+  const [searchQuery, setSearchQuery] = useState(""); // Search bar query
   const [spoonacularResults, setSpoonacularResults] = useState<Recipe[]>([]);
-  const [spoonacularPage, setSpoonacularPage] = useState(1);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [loadingSpoonacular, setLoadingSpoonacular] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [spoonacularError, setSpoonacularError] = useState<string | null>(null);
   const [savingRecipeIds, setSavingRecipeIds] = useState<Set<string>>(
     new Set()
   );
-  const [spoonacularError, setSpoonacularError] = useState<string | null>(null);
+  const [showAddRecipeForm, setShowAddRecipeForm] = useState(false);
 
-  const observer = useRef<IntersectionObserver | null>(null);
+  // Current user email for user-specific filtering
+  const currentUserEmail =
+    typeof window !== "undefined" ? localStorage.getItem("userEmail") : null;
 
-  // Infinite scroll for Spoonacular
-  const lastRecipeRef = useCallback(
-    (node: HTMLDivElement) => {
-      if (loadingSpoonacular) return;
-      if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          setSpoonacularPage((prev) => prev + 1);
-        }
-      });
-      if (node) observer.current.observe(node);
-    },
-    [loadingSpoonacular, hasMore]
-  );
-
-  // Filter user recipes by search query
-  const filteredUserRecipes = (userRecipes || []).filter((r): r is Recipe =>
-    r.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Spoonacular search
-  const fetchSpoonacular = useCallback(async () => {
-    if (!searchQuery.trim()) return;
-    setLoadingSpoonacular(true);
-    setSpoonacularError(null);
-
-    try {
-      const results = await searchSpoonacular(searchQuery);
-      setSpoonacularResults((prev) =>
-        spoonacularPage === 1 ? results : [...prev, ...results]
-      );
-      if (results.length === 0) setHasMore(false);
-    } catch (err: any) {
-      setSpoonacularError(
-        err.message === "quota"
-          ? "Daily Spoonacular limit reached. Please try again tomorrow."
-          : "Spoonacular search failed. Try again later."
-      );
-      console.error(err);
-    } finally {
-      setLoadingSpoonacular(false);
+  // -----------------------------
+  // Spoonacular search effect
+  // -----------------------------
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSpoonacularResults([]);
+      setSpoonacularError(null);
+      return;
     }
-  }, [searchQuery, spoonacularPage, searchSpoonacular]);
 
-  // Reset Spoonacular results on query change
-  useEffect(() => {
-    setSpoonacularResults([]);
-    setSpoonacularPage(1);
-    setHasMore(true);
-    setSpoonacularError(null);
-  }, [searchQuery]);
+    const fetchResults = async () => {
+      setLoadingSpoonacular(true);
+      setSpoonacularError(null);
 
-  useEffect(() => {
-    fetchSpoonacular();
-  }, [fetchSpoonacular, spoonacularPage]);
+      try {
+        const results = await searchSpoonacular(searchQuery);
+        setSpoonacularResults(results);
+      } catch (err: any) {
+        setSpoonacularError(
+          err.message === "quota"
+            ? "Daily Spoonacular limit reached. Please try again tomorrow."
+            : "Spoonacular search failed. Try again later."
+        );
+      } finally {
+        setLoadingSpoonacular(false);
+      }
+    };
 
-  // Save a Spoonacular recipe to user collection
-  const handleSaveSpoonacular = async (id: string) => {
-    if (savingRecipeIds.has(id)) return;
+    fetchResults();
+  }, [searchQuery, searchSpoonacular]);
 
+  // -----------------------------
+  // Save Spoonacular recipe
+  // -----------------------------
+  const handleSaveRecipe = async (id: string) => {
+    if (savingRecipeIds.has(id)) return; // prevent duplicate saves
     setSavingRecipeIds((prev) => new Set(prev).add(id));
+
     try {
-      const userEmail = localStorage.getItem("userEmail") || "";
-      await addRecipe(Number(id), userEmail);
+      await addRecipe(Number(id)); // fetch & save Spoonacular recipe
       alert("Recipe saved!");
     } catch (err) {
       console.error(err);
@@ -104,27 +89,77 @@ export default function RecipesPage() {
     }
   };
 
+  // -----------------------------
+  // Filter user's saved recipes
+  // -----------------------------
+  const filteredUserRecipes = userRecipes.filter((r) =>
+    r.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <>
       <Navbar />
+
       <main style={{ padding: "1rem", maxWidth: "1200px", margin: "0 auto" }}>
         <h1 style={{ marginBottom: "1rem" }}>Recipes</h1>
 
-        {/* Search input */}
-        <input
-          type="text"
-          placeholder="Search recipes..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "0.5rem",
-            marginBottom: "2rem",
-            borderRadius: "8px",
-            border: "1px solid #ccc",
-          }}
-        />
+        {/* Search input + Add Recipe button */}
+        <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem" }}>
+          <input
+            type="text"
+            placeholder="Search recipes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              flex: 1,
+              padding: "0.5rem",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+            }}
+          />
+          <button
+            onClick={() => setShowAddRecipeForm(true)}
+            style={{
+              padding: "0.5rem 1rem",
+              borderRadius: "8px",
+              backgroundColor: "#3498db",
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            + Add Recipe
+          </button>
+        </div>
 
+        {/* Add Recipe Modal */}
+        {showAddRecipeForm && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              backgroundColor: "rgba(0,0,0,0.6)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 9999,
+              padding: "1rem",
+            }}
+            onClick={() => setShowAddRecipeForm(false)}
+          >
+            <div
+              style={{ maxWidth: "500px", width: "100%" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <AddRecipeForm />
+            </div>
+          </div>
+        )}
+
+        {/* Two-column layout */}
         <div
           style={{
             display: "grid",
@@ -133,9 +168,11 @@ export default function RecipesPage() {
             alignItems: "start",
           }}
         >
+          {/* ----------------------------- */}
           {/* User Recipes */}
+          {/* ----------------------------- */}
           <div>
-            <h2 style={{ marginBottom: "1rem" }}>Your Recipes</h2>
+            <h2>Your Recipes</h2>
             {filteredUserRecipes.length === 0 ? (
               <p>No recipes found.</p>
             ) : (
@@ -150,7 +187,7 @@ export default function RecipesPage() {
                   <RecipeCard
                     key={recipe.id}
                     recipe={recipe}
-                    currentUserEmail={localStorage.getItem("userEmail")}
+                    currentUserEmail={currentUserEmail}
                     onClick={() => setSelectedRecipe(recipe)}
                   />
                 ))}
@@ -158,44 +195,42 @@ export default function RecipesPage() {
             )}
           </div>
 
-          {/* Spoonacular Results */}
+          {/* ----------------------------- */}
+          {/* Spoonacular Search Results */}
+          {/* ----------------------------- */}
           <div>
-            <h2 style={{ marginBottom: "1rem" }}>Spoonacular</h2>
-            {spoonacularError ? (
+            <h2>Spoonacular</h2>
+            {spoonacularError && (
               <p style={{ color: "red" }}>{spoonacularError}</p>
-            ) : spoonacularResults.length === 0 &&
-              searchQuery &&
-              !loadingSpoonacular ? (
-              <p>No results found.</p>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-                  gap: "1rem",
-                }}
-              >
-                {spoonacularResults.map((result, index) => {
-                  const isSaving = savingRecipeIds.has(result.id);
-                  const isLast = index === spoonacularResults.length - 1;
-                  return (
-                    <div key={result.id} ref={isLast ? lastRecipeRef : null}>
-                      <RecipeCard
-                        recipe={result}
-                        onClick={() => setSelectedRecipe(result)}
-                        onSave={handleSaveSpoonacular}
-                        currentUserEmail={localStorage.getItem("userEmail")}
-                      />
-                    </div>
-                  );
-                })}
-                {loadingSpoonacular && <p>Loading more...</p>}
-              </div>
             )}
+            {!spoonacularError && loadingSpoonacular && <p>Loading...</p>}
+            {!loadingSpoonacular &&
+              spoonacularResults.length === 0 &&
+              searchQuery && <p>No results found.</p>}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                gap: "1rem",
+              }}
+            >
+              {spoonacularResults.map((result) => (
+                <RecipeCard
+                  key={result.id}
+                  recipe={result}
+                  currentUserEmail={currentUserEmail}
+                  onClick={() => setSelectedRecipe(result)}
+                  onSave={() => handleSaveRecipe(result.id)}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
+        {/* ----------------------------- */}
         {/* Recipe Modal */}
+        {/* ----------------------------- */}
         {selectedRecipe && (
           <RecipeModal
             recipe={selectedRecipe}
