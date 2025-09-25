@@ -1,5 +1,6 @@
 // ===========================================
 // PATH: src/context/RecipeContext.tsx
+// RecipeContext — manages recipes (user + saved Spoonacular)
 // ===========================================
 "use client";
 
@@ -37,7 +38,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   // -----------------------------
-  // Normalize API response to Recipe type
+  // Normalize backend/Spoonacular response to Recipe type
   // -----------------------------
   const normalize = (r: any): Recipe => ({
     id: r._id || r.id,
@@ -50,16 +51,25 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     updatedAt: r.updatedAt,
     temporary: r.temporary,
     linkedMealPlanIds: r.linkedMealPlanIds || [],
+    author: r.author || null,
   });
 
   // -----------------------------
-  // Fetch all recipes from backend
+  // Fetch user-specific recipes
   // -----------------------------
   async function fetchRecipes() {
     try {
       setLoading(true);
-      const res = await fetch("/api/recipes");
+
+      const userEmail =
+        typeof window !== "undefined"
+          ? localStorage.getItem("userEmail")
+          : null;
+
+      // Fetch only recipes created by the current user
+      const res = await fetch(`/api/recipes?author=${userEmail}`);
       if (!res.ok) throw new Error("Failed to fetch recipes");
+
       const data = await res.json();
       setRecipes(data.map(normalize));
       setError(null);
@@ -78,7 +88,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   }
 
   // -----------------------------
-  // Fetch recipe from local or Spoonacular API
+  // Fetch recipe (local or Spoonacular API)
   // -----------------------------
   async function fetchRecipe(id: string): Promise<Recipe | undefined> {
     const local = getRecipe(id);
@@ -95,8 +105,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
 
   // -----------------------------
   // Add a new recipe
-  // - Supports temporary Spoonacular recipes
-  // - Optionally link to a meal plan
+  // Supports temporary Spoonacular recipes
   // -----------------------------
   async function addRecipe(
     recipeOrId: Partial<Omit<Recipe, "id">> | number,
@@ -104,28 +113,36 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     linkedMealPlanId?: string
   ): Promise<Recipe> {
     try {
+      const userEmail =
+        typeof window !== "undefined"
+          ? localStorage.getItem("userEmail")
+          : null;
+      if (!userEmail) throw new Error("User not logged in");
+
       let recipeData: Partial<Omit<Recipe, "id">>;
 
       if (typeof recipeOrId === "number") {
-        // Fetch from Spoonacular API if ID is numeric
+        // Save Spoonacular recipe
         const spoon = await apiGetSpoonacularRecipe(recipeOrId.toString());
         recipeData = {
           title: spoon.title,
-          instructions: spoon.instructions || "No instructions provided.",
+          instructions: spoon.instructions || "",
           ingredients: spoon.ingredients || [],
           image: spoon.image,
           source: "spoonacular",
           temporary,
           linkedMealPlanIds: linkedMealPlanId ? [linkedMealPlanId] : [],
+          author: userEmail,
         };
       } else {
-        // Otherwise, use provided data
+        // User-created recipe
         recipeData = {
           ...recipeOrId,
           temporary,
           linkedMealPlanIds: linkedMealPlanId
             ? [...(recipeOrId.linkedMealPlanIds || []), linkedMealPlanId]
             : recipeOrId.linkedMealPlanIds || [],
+          author: userEmail,
         };
       }
 
@@ -138,8 +155,11 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) throw new Error("Failed to save recipe");
 
       const newRecipe = normalize(await res.json());
+
+      // Optimistically update local state so the UI updates instantly
       setRecipes((prev) => [newRecipe, ...prev]);
-      return newRecipe;
+
+      return newRecipe; // <-- return the created recipe for immediate use
     } catch (err: any) {
       setError(err.message);
       throw err;
@@ -147,8 +167,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   }
 
   // -----------------------------
-  // Remove a temporary recipe
-  // - Typically called when removing a meal from a plan
+  // Remove temporary recipe (e.g., unlinked from meal plan)
   // -----------------------------
   async function unlinkTemporaryRecipe(id: string) {
     try {
@@ -161,7 +180,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   }
 
   // -----------------------------
-  // Update a recipe
+  // Update user-owned recipe
   // -----------------------------
   async function updateRecipe(id: string, updates: Partial<Recipe>) {
     try {
@@ -171,6 +190,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(updates),
       });
       if (!res.ok) throw new Error("Failed to update recipe");
+
       const updated = normalize(await res.json());
       setRecipes((prev) => prev.map((r) => (r.id === id ? updated : r)));
     } catch (err: any) {
@@ -179,12 +199,13 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   }
 
   // -----------------------------
-  // Delete a recipe
+  // Delete user-owned recipe
   // -----------------------------
   async function deleteRecipe(id: string) {
     try {
       const res = await fetch(`/api/recipes/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete recipe");
+
       setRecipes((prev) => prev.filter((r) => r.id !== id));
     } catch (err: any) {
       setError(err.message);
@@ -192,7 +213,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   }
 
   // -----------------------------
-  // Spoonacular API helpers
+  // Spoonacular helpers
   // -----------------------------
   async function getSpoonacularRecipe(id: string) {
     return apiGetSpoonacularRecipe(id);
@@ -202,6 +223,9 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
     return apiSearchSpoonacular(query);
   }
 
+  // -----------------------------
+  // Initial fetch on mount
+  // -----------------------------
   useEffect(() => {
     fetchRecipes();
   }, []);

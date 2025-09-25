@@ -1,66 +1,86 @@
+// ===========================================
 // PATH: src/lib/spoonacularApi.ts
+// Spoonacular API helper functions
+// Fully typed and robust with error handling
+// ===========================================
+
 import { Recipe } from "@/types/recipe";
 
+// Use your public environment variable for Spoonacular API key
 const API_KEY = process.env.NEXT_PUBLIC_SPOONACULAR_API_KEY;
 
 /**
- * Search Spoonacular recipes by query
- * Returns minimal info (id, title, image) — instructions require full fetch
+ * Search Spoonacular recipes by a query string
+ * Returns minimal recipe info: id, title, image
+ * Ingredients and instructions require full recipe fetch
+ * @param query string search term
+ * @returns Array of Recipe objects (partial)
  */
 export async function searchSpoonacular(query: string): Promise<Recipe[]> {
-  const res = await fetch(
-    `https://api.spoonacular.com/recipes/complexSearch?query=${encodeURIComponent(
-      query
-    )}&number=10&apiKey=${API_KEY}`
-  );
+  // Encode query for URL
+  const url = `https://api.spoonacular.com/recipes/complexSearch?query=${encodeURIComponent(
+    query
+  )}&number=10&apiKey=${API_KEY}`;
 
-  // Check for HTTP errors
+  const res = await fetch(url);
+
+  // Try to parse response body, even on error
+  const data = await res.json().catch(() => ({}));
+
+  // Handle HTTP error
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    // Spoonacular returns 402 / 429 for quota exceeded
+    // Special handling for quota exceeded
     if (data?.status === "failure" && data?.code === 402) {
-      throw new Error("quota"); // NEW: special error for quota
+      throw new Error("quota");
     }
     throw new Error("Spoonacular search failed");
   }
 
-  const data = await res.json();
-
-  return data.results.map((r: any) => ({
+  // Map results to Recipe type (minimal info)
+  return (data.results || []).map((r: any) => ({
     id: String(r.id),
     title: r.title,
-    ingredients: [], // search doesn’t return ingredients
-    instructions: "", // need full fetch for this
+    ingredients: [], // search API does not provide ingredients
+    instructions: "", // need full fetch for instructions
     image: r.image,
     source: "spoonacular",
   }));
 }
 
 /**
- * Get full Spoonacular recipe details
+ * Fetch full Spoonacular recipe details by ID
+ * Returns all fields: title, ingredients, instructions, image
+ * @param id string recipe ID
+ * @returns Recipe object (full)
  */
 export async function getSpoonacularRecipe(id: string): Promise<Recipe> {
-  const res = await fetch(
-    `https://api.spoonacular.com/recipes/${id}/information?apiKey=${API_KEY}`
-  );
+  const url = `https://api.spoonacular.com/recipes/${id}/information?apiKey=${API_KEY}`;
 
+  const res = await fetch(url);
+
+  // Parse response body safely
+  const data = await res.json().catch(() => ({}));
+
+  // Handle HTTP error
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
+    console.error("Spoonacular fetch error:", data);
+
+    // Special error for quota exceeded
     if (data?.status === "failure" && data?.code === 402) {
-      throw new Error("quota"); // special error for quota
+      throw new Error("quota");
     }
+
     throw new Error("Spoonacular fetch failed");
   }
 
-  const data = await res.json();
-
+  // Map Spoonacular response to our Recipe type
   return {
     id: String(data.id),
     title: data.title,
     ingredients: data.extendedIngredients?.map((i: any) => i.original) || [],
     instructions:
       data.instructions ||
-      data.summary?.replace(/<[^>]+>/g, "") || // fallback: strip HTML
+      data.summary?.replace(/<[^>]+>/g, "") || // fallback: strip HTML if instructions missing
       "",
     image: data.image,
     source: "spoonacular",

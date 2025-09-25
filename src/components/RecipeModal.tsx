@@ -1,106 +1,81 @@
 // ===========================================
 // PATH: src/components/RecipeModal.tsx
-// Recipe Modal Component
-// - Displays full recipe details
-// - Supports saving Spoonacular recipes
-// - Supports deleting user-created recipes
-// - Handles loading, error messages, and user-specific actions
+// RecipeModal — view full recipe details and edit/delete for user recipes
+// Now uses parseInstructions for HTML/line-break rendering
 // ===========================================
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Recipe } from "@/types/recipe";
-import { parseInstructions } from "@/utils/parseInstructions";
 import { useRecipes } from "@/context/RecipeContext";
+import { parseInstructions } from "@/utils/parseInstructions";
 
 interface RecipeModalProps {
-  recipe: Recipe; // Recipe to display
-  onClose: () => void; // Close modal callback
+  recipe: Recipe;
+  onClose: () => void;
+  onDelete: (id: string) => Promise<void>; // parent callback
 }
 
-export default function RecipeModal({ recipe, onClose }: RecipeModalProps) {
-  const { addRecipe, deleteRecipe, getSpoonacularRecipe } = useRecipes();
+export default function RecipeModal({
+  recipe,
+  onClose,
+  onDelete,
+}: RecipeModalProps) {
+  const { updateRecipe } = useRecipes(); // delete is delegated to parent
 
-  // -----------------------------
-  // State
-  // -----------------------------
-  const [fullRecipe, setFullRecipe] = useState<Recipe>(recipe);
-  const [loading, setLoading] = useState(false); // Spoonacular fetch loading
-  const [saving, setSaving] = useState(false); // Save button loading
-  const [error, setError] = useState(""); // Error message
-  const [recipeSaved, setRecipeSaved] = useState(false); // Track if already saved
-
-  // Get logged-in user email
-  const userEmail =
+  const currentUserEmail =
     typeof window !== "undefined" ? localStorage.getItem("userEmail") : null;
 
-  // -----------------------------
-  // Fetch full Spoonacular recipe if not already loaded
-  // -----------------------------
-  useEffect(() => {
-    const fetchFullRecipe = async () => {
-      if (recipe.source === "spoonacular" && !recipe.instructions) {
-        setLoading(true);
-        setError("");
-        try {
-          const data = await getSpoonacularRecipe(recipe.id);
-          setFullRecipe(data);
-        } catch (err: any) {
-          setError(
-            err.message === "quota"
-              ? "Spoonacular daily limit reached. Try again tomorrow."
-              : "Failed to fetch recipe details."
-          );
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    fetchFullRecipe();
-  }, [recipe, getSpoonacularRecipe]);
+  const isUserOwned = recipe.author === currentUserEmail;
 
   // -----------------------------
-  // Determine if this is a user-created recipe
+  // Local state for editing
   // -----------------------------
-  const isUserRecipe =
-    recipe.source !== "spoonacular" && recipe.author === userEmail;
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(recipe.title);
+  const [instructions, setInstructions] = useState(recipe.instructions);
+  const [ingredients, setIngredients] = useState(recipe.ingredients.join(", "));
+  const [image, setImage] = useState(recipe.image || "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // -----------------------------
-  // Save Spoonacular recipe
+  // Save edited recipe
   // -----------------------------
   const handleSave = async () => {
-    if (!userEmail) return;
-    setSaving(true);
-    setError("");
-
+    setLoading(true);
+    setError(null);
     try {
-      await addRecipe({ ...fullRecipe, author: userEmail });
-      setRecipeSaved(true);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to save recipe.");
+      await updateRecipe(recipe.id, {
+        title,
+        instructions,
+        ingredients: ingredients
+          .split(",")
+          .map((i) => i.trim())
+          .filter(Boolean),
+        image,
+      });
+      setEditing(false);
+    } catch (err: any) {
+      setError(err.message || "Failed to update recipe");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
   // -----------------------------
-  // Delete user recipe
+  // Delete recipe via parent callback
   // -----------------------------
   const handleDelete = async () => {
-    if (!fullRecipe.id) return;
+    if (!confirm("Are you sure you want to delete this recipe?")) return;
     try {
-      await deleteRecipe(fullRecipe.id);
-      onClose(); // Close modal after deletion
+      await onDelete(recipe.id);
+      onClose();
     } catch (err) {
-      console.error(err);
-      setError("Failed to delete recipe.");
+      console.error("Failed to delete recipe", err);
     }
   };
 
-  // -----------------------------
-  // Render modal
-  // -----------------------------
   return (
     <div
       style={{
@@ -109,127 +84,158 @@ export default function RecipeModal({ recipe, onClose }: RecipeModalProps) {
         left: 0,
         width: "100vw",
         height: "100vh",
-        backgroundColor: "rgba(0,0,0,0.6)",
+        backgroundColor: "rgba(0,0,0,0.5)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 9999,
-        overflowY: "auto",
-        padding: "1rem",
+        zIndex: 999,
       }}
-      onClick={onClose} // click outside closes modal
+      onClick={onClose} // close modal when clicking outside
     >
       <div
         style={{
-          backgroundColor: "#fff",
+          background: "#fff",
           borderRadius: "12px",
+          padding: "1rem",
           maxWidth: "600px",
-          width: "100%",
-          padding: "1.5rem",
-          position: "relative",
-          boxShadow: "0 5px 20px rgba(0,0,0,0.2)",
+          width: "90%",
+          maxHeight: "90vh",
+          overflowY: "auto",
         }}
-        onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+        onClick={(e) => e.stopPropagation()} // prevent modal close on click inside
       >
-        {/* Close button */}
+        {editing ? (
+          <>
+            <h2>Edit Recipe</h2>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.5rem",
+                marginBottom: "0.5rem",
+              }}
+            />
+            <textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.5rem",
+                marginBottom: "0.5rem",
+                minHeight: "80px",
+              }}
+            />
+            <input
+              value={ingredients}
+              onChange={(e) => setIngredients(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.5rem",
+                marginBottom: "0.5rem",
+              }}
+            />
+            <input
+              value={image}
+              onChange={(e) => setImage(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.5rem",
+                marginBottom: "0.5rem",
+              }}
+            />
+            {error && <p style={{ color: "red" }}>{error}</p>}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "0.5rem",
+              }}
+            >
+              <button
+                onClick={() => setEditing(false)}
+                style={{ padding: "0.5rem 1rem" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={loading}
+                style={{
+                  padding: "0.5rem 1rem",
+                  backgroundColor: "#2ecc71",
+                  color: "#fff",
+                }}
+              >
+                {loading ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2>{recipe.title}</h2>
+            {recipe.image && (
+              <img
+                src={recipe.image}
+                alt={recipe.title}
+                style={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  marginBottom: "0.5rem",
+                }}
+              />
+            )}
+            <h3>Ingredients:</h3>
+            <ul>
+              {recipe.ingredients.map((ing, idx) => (
+                <li key={idx}>{ing}</li>
+              ))}
+            </ul>
+            <h3>Instructions:</h3>
+            <div>{parseInstructions(recipe.instructions)}</div>
+
+            {isUserOwned && (
+              <div
+                style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}
+              >
+                <button
+                  onClick={() => setEditing(true)}
+                  style={{
+                    padding: "0.5rem 1rem",
+                    backgroundColor: "#3498db",
+                    color: "#fff",
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={handleDelete}
+                  style={{
+                    padding: "0.5rem 1rem",
+                    backgroundColor: "#e74c3c",
+                    color: "#fff",
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </>
+        )}
         <button
           onClick={onClose}
           style={{
             position: "absolute",
-            top: "1rem",
-            right: "1rem",
-            fontSize: "1.5rem",
-            background: "none",
+            top: "10px",
+            right: "10px",
+            background: "transparent",
             border: "none",
+            fontSize: "1.5rem",
             cursor: "pointer",
           }}
         >
-          ×
+          &times;
         </button>
-
-        {/* Save / Delete Actions */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "0.5rem",
-            marginBottom: "1rem",
-          }}
-        >
-          {isUserRecipe ? (
-            <button
-              onClick={handleDelete}
-              style={{
-                padding: "0.5rem 1rem",
-                backgroundColor: "#e74c3c",
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-              }}
-            >
-              Delete
-            </button>
-          ) : (
-            <button
-              onClick={handleSave}
-              disabled={saving || recipeSaved}
-              style={{
-                padding: "0.5rem 1rem",
-                backgroundColor: "#2ecc71",
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
-                cursor: saving || recipeSaved ? "not-allowed" : "pointer",
-              }}
-            >
-              {recipeSaved
-                ? "Saved!"
-                : saving
-                ? "Saving..."
-                : "Save to Recipes"}
-            </button>
-          )}
-        </div>
-
-        {/* Recipe Title */}
-        <h2 style={{ marginBottom: "1rem" }}>{fullRecipe.title}</h2>
-
-        {/* Recipe Image */}
-        {fullRecipe.image && (
-          <img
-            src={fullRecipe.image}
-            alt={fullRecipe.title}
-            style={{
-              width: "100%",
-              borderRadius: "8px",
-              marginBottom: "1rem",
-              objectFit: "cover",
-            }}
-          />
-        )}
-
-        {/* Loading & Error */}
-        {loading && <p>Loading recipe details…</p>}
-        {error && <p style={{ color: "red" }}>{error}</p>}
-
-        {/* Ingredients */}
-        {fullRecipe.ingredients?.length > 0 && (
-          <div style={{ marginBottom: "1rem" }}>
-            <h3>Ingredients</h3>
-            <ul style={{ paddingLeft: "1.2rem" }}>
-              {fullRecipe.ingredients.map((ing, idx) => (
-                <li key={idx}>{ing}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Instructions */}
-        <div>
-          <h3>Instructions</h3>
-          {parseInstructions(fullRecipe.instructions)}
-        </div>
       </div>
     </div>
   );

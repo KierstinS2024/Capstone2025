@@ -1,13 +1,7 @@
 // ===========================================
 // PATH: src/app/recipes/page.tsx
-// High-end Recipe Page
-// Features:
-// - User-specific "Your Recipes"
-// - Spoonacular search with daily limit handling
-// - Recipe save/delete logic
-// - Recipe modal for full details
-// - Finite grids (no infinite scroll)
-// - Loading and error feedback
+// RecipesPage — displays user recipes + Spoonacular search
+// Fully integrated add/delete handling for card & modal
 // ===========================================
 "use client";
 
@@ -20,9 +14,9 @@ import { useRecipes } from "@/context/RecipeContext";
 import { Recipe } from "@/types/recipe";
 
 export default function RecipesPage() {
-  const { recipes: userRecipes, searchSpoonacular, addRecipe } = useRecipes();
+  const { recipes, searchSpoonacular, addRecipe, deleteRecipe } = useRecipes();
 
-  const [searchQuery, setSearchQuery] = useState(""); // Search bar query
+  const [searchQuery, setSearchQuery] = useState("");
   const [spoonacularResults, setSpoonacularResults] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [loadingSpoonacular, setLoadingSpoonacular] = useState(false);
@@ -31,10 +25,6 @@ export default function RecipesPage() {
     new Set()
   );
   const [showAddRecipeForm, setShowAddRecipeForm] = useState(false);
-
-  // Current user email for user-specific filtering
-  const currentUserEmail =
-    typeof window !== "undefined" ? localStorage.getItem("userEmail") : null;
 
   // -----------------------------
   // Spoonacular search effect
@@ -56,7 +46,7 @@ export default function RecipesPage() {
       } catch (err: any) {
         setSpoonacularError(
           err.message === "quota"
-            ? "Daily Spoonacular limit reached. Please try again tomorrow."
+            ? "Daily Spoonacular limit reached. Try again tomorrow."
             : "Spoonacular search failed. Try again later."
         );
       } finally {
@@ -71,11 +61,11 @@ export default function RecipesPage() {
   // Save Spoonacular recipe
   // -----------------------------
   const handleSaveRecipe = async (id: string) => {
-    if (savingRecipeIds.has(id)) return; // prevent duplicate saves
+    if (savingRecipeIds.has(id)) return;
     setSavingRecipeIds((prev) => new Set(prev).add(id));
 
     try {
-      await addRecipe(Number(id)); // fetch & save Spoonacular recipe
+      await addRecipe(Number(id));
       alert("Recipe saved!");
     } catch (err) {
       console.error(err);
@@ -90,9 +80,22 @@ export default function RecipesPage() {
   };
 
   // -----------------------------
-  // Filter user's saved recipes
+  // Delete recipe handler (updates grid immediately)
   // -----------------------------
-  const filteredUserRecipes = userRecipes.filter((r) =>
+  const handleDeleteRecipe = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this recipe?")) return;
+    try {
+      await deleteRecipe(id);
+      if (selectedRecipe?.id === id) setSelectedRecipe(null);
+    } catch (err) {
+      console.error("Failed to delete recipe", err);
+    }
+  };
+
+  // -----------------------------
+  // Filter user recipes by search query
+  // -----------------------------
+  const filteredUserRecipes = recipes.filter((r) =>
     r.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -132,7 +135,7 @@ export default function RecipesPage() {
           </button>
         </div>
 
-        {/* Add Recipe Modal */}
+        {/* Add Recipe Form Modal */}
         {showAddRecipeForm && (
           <div
             style={{
@@ -141,100 +144,101 @@ export default function RecipesPage() {
               left: 0,
               width: "100vw",
               height: "100vh",
-              backgroundColor: "rgba(0,0,0,0.6)",
+              background: "rgba(0,0,0,0.4)",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              zIndex: 9999,
-              padding: "1rem",
+              zIndex: 100,
             }}
-            onClick={() => setShowAddRecipeForm(false)}
           >
-            <div
-              style={{ maxWidth: "500px", width: "100%" }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <AddRecipeForm />
-            </div>
+            <AddRecipeForm
+              onClose={() => setShowAddRecipeForm(false)}
+              onSuccess={(newRecipe) => {
+                setSelectedRecipe(newRecipe); // open modal immediately for new recipe
+                setShowAddRecipeForm(false);
+              }}
+            />
           </div>
         )}
 
-        {/* Two-column layout */}
+        {/* User Recipes */}
+        <h2>Your Recipes</h2>
+        {filteredUserRecipes.length === 0 && <p>No recipes found.</p>}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "2rem",
-            alignItems: "start",
+            gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
+            gap: "1rem",
+            marginBottom: "2rem",
           }}
         >
-          {/* ----------------------------- */}
-          {/* User Recipes */}
-          {/* ----------------------------- */}
-          <div>
-            <h2>Your Recipes</h2>
-            {filteredUserRecipes.length === 0 ? (
-              <p>No recipes found.</p>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-                  gap: "1rem",
-                }}
-              >
-                {filteredUserRecipes.map((recipe) => (
-                  <RecipeCard
-                    key={recipe.id}
-                    recipe={recipe}
-                    currentUserEmail={currentUserEmail}
-                    onClick={() => setSelectedRecipe(recipe)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          {filteredUserRecipes.map((recipe) => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              onClick={() => setSelectedRecipe(recipe)}
+              onDelete={handleDeleteRecipe}
+            />
+          ))}
+        </div>
 
-          {/* ----------------------------- */}
-          {/* Spoonacular Search Results */}
-          {/* ----------------------------- */}
-          <div>
-            <h2>Spoonacular</h2>
-            {spoonacularError && (
-              <p style={{ color: "red" }}>{spoonacularError}</p>
-            )}
-            {!spoonacularError && loadingSpoonacular && <p>Loading...</p>}
-            {!loadingSpoonacular &&
-              spoonacularResults.length === 0 &&
-              searchQuery && <p>No results found.</p>}
-
+        {/* Spoonacular Results */}
+        {searchQuery && (
+          <>
+            <h2>Spoonacular Results</h2>
+            {loadingSpoonacular && <p>Loading...</p>}
+            {spoonacularError && <p>{spoonacularError}</p>}
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
                 gap: "1rem",
               }}
             >
-              {spoonacularResults.map((result) => (
-                <RecipeCard
-                  key={result.id}
-                  recipe={result}
-                  currentUserEmail={currentUserEmail}
-                  onClick={() => setSelectedRecipe(result)}
-                  onSave={() => handleSaveRecipe(result.id)}
-                />
+              {spoonacularResults.map((recipe) => (
+                <div
+                  key={recipe.id}
+                  style={{
+                    border: "1px solid #ccc",
+                    borderRadius: "8px",
+                    padding: "1rem",
+                  }}
+                >
+                  <h3>{recipe.title}</h3>
+                  {recipe.image && (
+                    <img
+                      src={recipe.image}
+                      alt={recipe.title}
+                      style={{ width: "100%", borderRadius: "4px" }}
+                    />
+                  )}
+                  <button
+                    disabled={savingRecipeIds.has(recipe.id)}
+                    onClick={() => handleSaveRecipe(recipe.id)}
+                    style={{
+                      marginTop: "0.5rem",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "8px",
+                      backgroundColor: "#2ecc71",
+                      color: "#fff",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {savingRecipeIds.has(recipe.id) ? "Saving..." : "Save"}
+                  </button>
+                </div>
               ))}
             </div>
-          </div>
-        </div>
+          </>
+        )}
 
-        {/* ----------------------------- */}
         {/* Recipe Modal */}
-        {/* ----------------------------- */}
         {selectedRecipe && (
           <RecipeModal
             recipe={selectedRecipe}
             onClose={() => setSelectedRecipe(null)}
+            onDelete={handleDeleteRecipe}
           />
         )}
       </main>
