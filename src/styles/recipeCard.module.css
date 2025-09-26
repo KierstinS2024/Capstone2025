@@ -1,71 +1,63 @@
 /* ===========================================
-PATH: src/styles/recipeCard.module.css
-Recipe Card Styles
+   RecipeCard styles
 =========================================== */
 
 .card {
-  display: flex;
-  flex-direction: column;
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid #ccc;
+  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s;
 }
 
 .card:hover {
-  transform: translateY(-4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
-.card img {
+.cardImage {
   width: 100%;
-  height: 160px; /* default height for desktop */
+  height: 150px;
   object-fit: cover;
 }
 
-.title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0.5rem;
+.cardContent {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
-.source {
-  font-size: 0.8rem;
-  color: #777;
-  margin: 0 0.5rem 0.5rem 0.5rem;
+.cardTitle {
+  margin: 0 0 0.5rem 0;
 }
 
-.actionBtn {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  padding: 0.3rem 0.6rem;
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.button {
+  flex: 1;
+  padding: 0.25rem;
   border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-
-.viewBtn {
-  background-color: transparent;
   border: none;
-  color: #2c3e50;
-  text-decoration: underline;
-  margin: 0.5rem;
   cursor: pointer;
 }
 
-/* -------------------------------------------
-Responsive overrides
-------------------------------------------- */
-@media (max-width: 768px) {
-  .card img {
-    height: 140px; /* slightly smaller for tablets */
-  }
+.deleteButton {
+  background-color: #e74c3c;
+  color: #fff;
 }
 
-@media (max-width: 375px) {
-  .card img {
-    height: 120px; /* smaller for mobile */
-  }
+.viewButton {
+  background-color: #3498db;
+  color: #fff;
+}
+
+.spoonacularLabel {
+  color: #555;
+  font-size: 0.8rem;
 }

@@ -1,92 +1,123 @@
 /* ===========================================
-   PATH: src/styles/mealplan-editor.module.css
-   Styles for MealPlanEditor + RecipeSidebar
-   =========================================== */
+PATH: src/styles/mealplan-editor.module.css
+Improved styling for MealPlanEditor + RecipeSidebar
+=========================================== */
 
-/* Overall layout: sidebar + editor grid */
+/* -------------------------------------------
+Layout: sidebar + main editor
+------------------------------------------- */
 .editorLayout {
   display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
   align-items: flex-start;
 }
 
 /* Sidebar with recipe list */
 .sidebar {
-  width: 220px;
+  width: 240px;
   min-height: 400px;
   padding: 1rem;
-  border: 2px solid #ddd;
-  border-radius: 0.75rem;
-  background: #fafafa;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-md);
+  background: var(--color-background-light);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.sidebar:hover {
+  transform: translateY(-2px);
 }
 
 .sidebar h3 {
-  margin-bottom: 0.75rem;
-  font-size: 1rem;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
+  color: var(--color-heading);
 }
 
 /* Recipe cards inside sidebar */
 .recipeCard {
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 0.5rem;
-  background: #fff;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   cursor: grab;
-  transition: background 0.2s;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .recipeCard:active {
   cursor: grabbing;
+  transform: scale(0.98);
 }
 
 .recipeCard:hover {
-  background: #f1f1f1;
+  background: var(--color-background-light);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Editor detail section */
+/* -------------------------------------------
+Editor detail section
+------------------------------------------- */
 .detail {
   flex: 1;
+  min-width: 0;
 }
 
 /* Table grid for meal plan */
 .planTable {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 0.5rem;
   margin-top: 1rem;
 }
 
-.planTable th,
-.planTable td {
-  border: 1px solid #ddd;
+.planTable th {
+  text-align: center;
   padding: 0.75rem;
+  font-weight: 600;
+  background: var(--color-background-light);
+  color: var(--color-heading);
+}
+
+.planTable td {
   text-align: center;
   vertical-align: middle;
+  padding: 0.5rem;
 }
 
 /* Empty meal slot */
 .slot {
   min-height: 60px;
-  background: #fdfdfd;
-  border-radius: 0.5rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.slot:hover {
+  background: var(--color-background-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Highlight when dragging over */
 .highlight {
-  background: #e3f7ff;
-  border: 2px dashed #3b82f6;
+  background: var(--color-accent-light);
+  border: 2px dashed var(--color-accent-dark);
+  box-shadow: var(--shadow-md);
 }
 
-/* Text when slot is empty */
+/* Empty slot text */
 .empty {
-  color: #aaa;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
+  font-style: italic;
 }
 
 /* Assigned recipe slot */
@@ -96,9 +127,16 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 0.5rem;
-  background: #fff;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+
+.recipeSlot:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 /* Recipe button inside slot */
@@ -108,36 +146,61 @@
   background: none;
   border: none;
   font-size: 0.9rem;
-  color: #333;
+  color: var(--color-text);
   cursor: pointer;
 }
 
 .recipeBtn:hover {
   text-decoration: underline;
+  color: var(--color-accent-dark);
 }
 
 /* Remove button (×) */
 .removeBtn {
   border: none;
   background: none;
-  color: #e11d48;
-  font-size: 1rem;
+  color: var(--color-error);
+  font-size: 1.1rem;
+  font-weight: bold;
   cursor: pointer;
+  transition: color 0.2s;
+}
+
+.removeBtn:hover {
+  color: #9b1c2d;
 }
 
 /* Save button */
 .saveBtn {
   margin-top: 1.5rem;
   padding: 0.75rem 1.25rem;
-  background: #3b82f6;
-  color: white;
+  background: var(--color-accent);
+  color: #fff;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
 }
 
 .saveBtn:hover {
-  background: #2563eb;
+  background: var(--color-accent-dark);
+  transform: translateY(-1px);
+}
+
+/* Responsive tweaks */
+@media (max-width: 900px) {
+  .editorLayout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  .planTable th,
+  .planTable td {
+    padding: 0.5rem;
+  }
 }

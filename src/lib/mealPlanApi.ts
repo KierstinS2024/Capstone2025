@@ -1,21 +1,25 @@
+// ===========================================
 // PATH: src/lib/mealPlanApi.ts
-// Client-side API helpers for Meal Plans.
-// Normalizes MongoDB _id → id and ensures full MealSlots
+//
+// Client-side API helpers for Meal Plans
+// - Normalizes MongoDB docs into clean TS objects
+// - Guarantees all 3 meal slots per day
+// - Matches backend contract: **only one plan per user**
 // ===========================================
 
-import { apiFetch } from "./api";
+import { apiFetch } from "./api"; // Generic wrapper (adds auth, error handling, etc.)
 import { MealPlan, MealType } from "@/types/mealPlan";
 
-// -----------------------------
-// Normalizer
-// Ensures each date has breakfast/lunch/dinner and uses id
-// -----------------------------
+// -------------------------------------------
+// Helper: normalizeMealPlan()
+// Converts MongoDB doc → MealPlan
+// - Ensures breakfast/lunch/dinner always exist
+// - Maps `_id` → `id`
+// -------------------------------------------
 function normalizeMealPlan(plan: any): MealPlan {
-  // Ensure we always have the full 3 meal slots for each day
   const normalizedMeals: Record<string, Record<MealType, string | null>> = {};
 
   Object.entries(plan.meals || {}).forEach(([day, meals]) => {
-    // meals may be incomplete from server → fill with nulls
     const m = meals as Partial<Record<MealType, string | null>>;
     normalizedMeals[day] = {
       breakfast: m?.breakfast ?? null,
@@ -26,26 +30,28 @@ function normalizeMealPlan(plan: any): MealPlan {
 
   return {
     ...plan,
-    id: plan._id || plan.id, // normalize Mongo _id into id
+    id: plan._id || plan.id,
     meals: normalizedMeals,
-    _id: undefined, // drop raw _id to avoid confusion
+    _id: undefined, // strip raw Mongo field
   } as MealPlan;
 }
 
-// -----------------------------
-// CRUD API Calls
-// -----------------------------
+// ==================================================
+// API METHODS
+// ==================================================
 
 /**
- * Get all meal plans (normalized)
+ * Get the user’s active meal plan
+ * - Backend guarantees: one plan per user OR null
  */
-export async function getMealPlans(): Promise<MealPlan[]> {
-  const plans = await apiFetch<any[]>("/api/meal-plans");
-  return (plans || []).map(normalizeMealPlan);
+export async function getMealPlanForUser(): Promise<MealPlan | null> {
+  const plan = await apiFetch<any>("/api/meal-plans");
+  return plan ? normalizeMealPlan(plan) : null;
 }
 
 /**
- * Get one meal plan by id (normalized)
+ * Get a meal plan by ID
+ * - Enforces ownership server-side
  */
 export async function getMealPlan(id: string): Promise<MealPlan> {
   const plan = await apiFetch<any>(`/api/meal-plans/${id}`);
@@ -53,7 +59,18 @@ export async function getMealPlan(id: string): Promise<MealPlan> {
 }
 
 /**
+ * Get the active plan overlapping a specific week
+ * - GET /api/meal-plans/week/[date]
+ * - Returns array for consistency
+ */
+export async function getWeekMealPlan(date: string): Promise<MealPlan[]> {
+  const plans = await apiFetch<any[]>(`/api/meal-plans/week/${date}`);
+  return (plans || []).map(normalizeMealPlan);
+}
+
+/**
  * Create a new meal plan
+ * - Only allowed if none exists
  */
 export async function createMealPlan(
   data: Partial<MealPlan>
@@ -80,10 +97,8 @@ export async function updateMealPlan(
 }
 
 /**
- * Delete a meal plan
+ * Delete the user’s plan
  */
 export async function deleteMealPlan(id: string): Promise<void> {
-  await apiFetch(`/api/meal-plans/${id}`, {
-    method: "DELETE",
-  });
+  await apiFetch(`/api/meal-plans/${id}`, { method: "DELETE" });
 }

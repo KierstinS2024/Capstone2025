@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useShoppingList } from "../context/ShoppingListContext";
-import styles from "../styles/shoppinglist-detail.module.css";
+import { useShoppingList } from "@/context/ShoppingListContext";
+import styles from "@/styles/shoppinglist-detail.module.css";
 
 export default function ShoppingListPage() {
   const { list, loading, add, toggle, remove, clear } = useShoppingList();

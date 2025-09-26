@@ -1,21 +1,24 @@
 // ===========================================
 // PATH: src/components/AddToMealPlanModal.tsx
-// Unified Add-to-MealPlan modal
+// Modal for adding an existing recipe to a meal plan
+// - Allows selecting breakfast/lunch/dinner
+// - Directly updates the MealPlanContext
+// - No temporary recipe logic
 // ===========================================
+
 "use client";
 
 import React, { useState } from "react";
 import { MealPlan, MealType } from "@/types/mealPlan";
 import { useMealPlans } from "@/context/MealPlanContext";
-import { useRecipes } from "@/context/RecipeContext";
 import { Recipe } from "@/types/recipe";
 import { parseInstructions } from "@/utils/parseInstructions";
 
 interface Props {
-  recipe?: Recipe;
-  plan: MealPlan;
-  onClose: () => void;
-  onAdd?: (mealType: MealType, recipe: Recipe) => void;
+  recipe?: Recipe; // Recipe to add
+  plan: MealPlan; // Target meal plan
+  onClose: () => void; // Close modal
+  onAdd?: (mealType: MealType, recipe: Recipe) => void; // Callback after adding
 }
 
 export default function AddToMealPlanModal({
@@ -24,51 +27,28 @@ export default function AddToMealPlanModal({
   onClose,
   onAdd,
 }: Props) {
-  const { updateMeal } = useMealPlans();
-  const { addRecipe } = useRecipes();
-  const [mealType, setMealType] = useState<MealType>("dinner");
-  const [loading, setLoading] = useState(false);
+  const { updateMeal } = useMealPlans(); // Context to update meal slots
+  const [mealType, setMealType] = useState<MealType>("dinner"); // Default selected slot
+  const [loading, setLoading] = useState(false); // Loading state while adding
 
-  // -----------------------------
-  // Add recipe to meal plan
-  // -----------------------------
+  // -------------------------------------------
+  // Add the selected recipe to the chosen meal slot
+  // -------------------------------------------
   const handleAdd = async () => {
-    if (!plan.id || !recipe) return;
+    if (!plan.id || !recipe) return; // Safety check
 
     setLoading(true);
     try {
-      let recipeToAdd: Recipe;
-
-      // If Spoonacular recipe → persist as temp user recipe
-      if (recipe.source === "spoonacular" && !recipe.id?.startsWith("db_")) {
-        recipeToAdd = await addRecipe(
-          {
-            title: recipe.title,
-            ingredients: recipe.ingredients,
-            instructions: recipe.instructions,
-            image: recipe.image,
-            source: "spoonacular",
-            temporary: true,
-            linkedMealPlanIds: [plan.id],
-          },
-          true // temporary flag
-        );
-      } else {
-        recipeToAdd = recipe;
-
-        // Ensure plan linkage
-        if (plan.id && !recipeToAdd.linkedMealPlanIds?.includes(plan.id)) {
-          recipeToAdd.linkedMealPlanIds = [
-            ...(recipeToAdd.linkedMealPlanIds || []),
-            plan.id,
-          ];
-        }
-      }
-
+      // Today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split("T")[0];
-      await updateMeal(plan.id, today, mealType, recipeToAdd.id);
 
-      if (onAdd) onAdd(mealType, recipeToAdd);
+      // Update the meal slot in backend & context
+      await updateMeal(plan.id, today, mealType, recipe.id);
+
+      // Callback to parent if provided
+      if (onAdd) onAdd(mealType, recipe);
+
+      // Close the modal
       onClose();
     } catch (err) {
       console.error("Failed to add recipe to meal plan:", err);
@@ -77,11 +57,12 @@ export default function AddToMealPlanModal({
     }
   };
 
-  // -----------------------------
-  // Render
-  // -----------------------------
+  // -------------------------------------------
+  // Render modal
+  // -------------------------------------------
   return (
     <div className="modal">
+      {/* Header */}
       <h3>
         Add {recipe ? <strong>{recipe.title}</strong> : "a recipe"} to{" "}
         <strong>{plan.title || `${plan.startDate} → ${plan.endDate}`}</strong>
@@ -100,7 +81,7 @@ export default function AddToMealPlanModal({
         </select>
       </label>
 
-      {/* Recipe preview */}
+      {/* Recipe instructions preview */}
       {recipe ? (
         <div style={{ margin: "1rem 0", whiteSpace: "pre-wrap" }}>
           {parseInstructions(recipe.instructions)}
@@ -109,7 +90,7 @@ export default function AddToMealPlanModal({
         <p>Please select a recipe to add.</p>
       )}
 
-      {/* Actions */}
+      {/* Action buttons */}
       <div style={{ marginTop: "1rem" }}>
         {recipe && (
           <button onClick={handleAdd} disabled={loading}>

@@ -1,191 +1,216 @@
+// ===========================================
+// PATH: src/app/meal-plans/page.tsx
+//
+// MealPlansPage — main entry for meal plans
+// - Shows create plan form if user has no plan
+// - Shows current plan editor if plan exists
+// - Handles deletion & active plan management
+// - Fully TypeScript-safe with string-only dates
+// ===========================================
+
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useMealPlans } from "@/context/MealPlanContext";
+import { useAuth } from "@/context/AuthContext";
 import MealPlanEditor from "@/components/MealPlanEditor";
 import Navbar from "@/components/Navbar";
 import { todayISO, addDays } from "@/lib/helpers";
+import styles from "@/styles/theme-mealplan.module.css";
 
 export default function MealPlansPage() {
+  // -------------------------------
+  // Contexts
+  // -------------------------------
+  const { user, loading: authLoading } = useAuth();
   const {
-    activePlan,
-    mealPlans,
+    activePlan: currentPlan,
     setActivePlan,
-    loading,
+    loading: planLoading,
     createMealPlan,
     deleteMealPlan,
   } = useMealPlans();
 
-  const [showForm, setShowForm] = useState(false);
-  const [startDate, setStartDate] = useState(todayISO());
-  const [endDate, setEndDate] = useState(addDays(todayISO(), 6) || todayISO());
-  const [error, setError] = useState<string | null>(null);
+  // -------------------------------
+  // Local state for "create plan" form
+  // -------------------------------
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // Automatically select the first plan if none is active
-  useEffect(() => {
-    if (!activePlan && mealPlans.length > 0) {
-      setActivePlan(mealPlans[0]);
-    }
-  }, [activePlan, mealPlans, setActivePlan]);
+  // Dates are always strings (never null)
+  const [newStartDate, setNewStartDate] = useState<string>(todayISO());
+  const [newEndDate, setNewEndDate] = useState<string>(addDays(todayISO(), 6)!);
 
-  const isOverlap = mealPlans.some((plan) => {
-    if (activePlan?.id === plan.id) return false;
-    const newStart = new Date(startDate).getTime();
-    const newEnd = new Date(endDate).getTime();
-    const planStart = new Date(plan.startDate).getTime();
-    const planEnd = new Date(plan.endDate).getTime();
-    return newStart <= planEnd && newEnd >= planStart;
-  });
+  const [formError, setFormError] = useState<string | null>(null);
 
-  function handleOpenForm() {
-    setShowForm(true);
-    setError(null);
-    setStartDate(todayISO());
-    setEndDate(addDays(todayISO(), 6) || todayISO());
+  // -------------------------------
+  // Open the "create plan" form
+  // -------------------------------
+  function handleOpenCreateForm() {
+    setShowCreateForm(true);
+    setFormError(null);
+    setNewStartDate(todayISO());
+    setNewEndDate(addDays(todayISO(), 6)!);
   }
 
-  async function handleCreatePlan(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
+  // -------------------------------
+  // Handle creation of a new meal plan
+  // -------------------------------
+  async function handleCreatePlan(event: React.FormEvent) {
+    event.preventDefault();
+    setFormError(null);
 
-    if (isOverlap) {
-      setError("Selected date range overlaps an existing plan.");
+    if (!user?.id) {
+      setFormError("Your account is still loading. Please wait a moment.");
       return;
     }
 
-    let safeEnd = endDate;
-    if (new Date(endDate) < new Date(startDate)) {
-      safeEnd = addDays(startDate, 6) || startDate;
-      setEndDate(safeEnd);
+    // Ensure end date is always after start date
+    let safeEndDate = newEndDate;
+    if (new Date(safeEndDate) < new Date(newStartDate)) {
+      // Add 6 days to start date as fallback
+      safeEndDate = addDays(newStartDate, 6) ?? todayISO();
+      setNewEndDate(safeEndDate);
     }
 
     try {
-      const newPlan = await createMealPlan({
-        startDate,
-        endDate: safeEnd,
-        meals: {},
+      // Create meal plan via context API
+      const createdPlan = await createMealPlan({
+        startDate: newStartDate,
+        endDate: safeEndDate,
+        meals: {}, // empty initial plan
       });
 
-      // ✅ Focus on the new plan immediately
-      setActivePlan(newPlan);
-
-      // ✅ Auto-close the form
-      setShowForm(false);
-    } catch (err: any) {
-      console.error(err);
-      setError(
-        err?.message ||
-          "Failed to create meal plan. Dates may overlap an existing plan."
-      );
+      // Set newly created plan as active
+      setActivePlan(createdPlan);
+      setShowCreateForm(false);
+    } catch (error: any) {
+      console.error("Failed to create plan:", error);
+      setFormError(error?.message || "Failed to create meal plan.");
     }
   }
 
-  async function handleDeletePlan(id: string) {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this meal plan?"
-    );
+  // -------------------------------
+  // Handle deletion of the current meal plan
+  // -------------------------------
+  async function handleDeletePlan(planId: string) {
+    const confirmed = window.confirm("Delete this meal plan?");
     if (!confirmed) return;
 
-    await deleteMealPlan(id);
-    // activePlan automatically updated in context
+    try {
+      await deleteMealPlan(planId);
+      setActivePlan(null);
+    } catch (error) {
+      console.error("Failed to delete plan:", error);
+    }
   }
 
-  if (loading) {
+  // -------------------------------
+  // Show loading state while auth or plan is loading
+  // -------------------------------
+  if (authLoading || planLoading) {
     return (
-      <div>
+      <div className={styles.pageContainer}>
         <Navbar />
-        <p>Loading meal plans...</p>
+        <p>Loading your meal plans...</p>
       </div>
     );
   }
 
+  // -------------------------------
+  // Main UI
+  // -------------------------------
   return (
-    <div>
+    <div className={styles.pageContainer}>
       <Navbar />
-      <h1>Meal Plans</h1>
+      <h1 className={styles.heading1}>Meal Plans</h1>
 
-      {/* Create Plan Button + Form */}
-      {!showForm ? (
-        <button onClick={handleOpenForm}>+ Create Meal Plan</button>
-      ) : (
-        <form onSubmit={handleCreatePlan} style={{ marginBottom: "1rem" }}>
+      {/* ----------------------------------------
+          Show "Create Meal Plan" button if no plan
+          ---------------------------------------- */}
+      {!currentPlan && !showCreateForm && (
+        <button
+          className={`${styles.button} ${styles.buttonPrimary}`}
+          onClick={handleOpenCreateForm}
+        >
+          + Create Meal Plan
+        </button>
+      )}
+
+      {/* ----------------------------------------
+          Create Meal Plan Form
+          ---------------------------------------- */}
+      {!currentPlan && showCreateForm && (
+        <form className={styles.createPlanForm} onSubmit={handleCreatePlan}>
           <label>
             Start Date:
             <input
               type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              value={newStartDate} // always a string
+              onChange={(e) => setNewStartDate(e.target.value)}
             />
           </label>
-          <label style={{ marginLeft: "1rem" }}>
+
+          <label>
             End Date:
             <input
               type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              value={newEndDate} // always a string
+              onChange={(e) => setNewEndDate(e.target.value)}
             />
           </label>
+
           <button
             type="submit"
-            style={{ marginLeft: "1rem" }}
-            disabled={isOverlap}
+            className={`${styles.button} ${styles.buttonPrimary}`}
+            disabled={!user?.id}
           >
             Save
           </button>
+
           <button
             type="button"
+            className={`${styles.button} ${styles.buttonSecondary}`}
             onClick={() => {
-              setShowForm(false);
-              setError(null);
+              setShowCreateForm(false);
+              setFormError(null);
             }}
-            style={{ marginLeft: "0.5rem" }}
           >
             Cancel
           </button>
 
-          {isOverlap && (
-            <p style={{ color: "red", marginTop: "0.5rem" }}>
-              Selected date range overlaps an existing plan.
-            </p>
-          )}
-          {error && !isOverlap && (
-            <p style={{ color: "red", marginTop: "0.5rem" }}>{error}</p>
-          )}
+          {formError && <p className={styles.formError}>{formError}</p>}
         </form>
       )}
 
-      {/* Switch between existing plans */}
-      {mealPlans.length > 0 && (
-        <div style={{ marginBottom: "1rem" }}>
-          <h2>Your Plans</h2>
-          <ul>
-            {mealPlans.map((plan) => (
-              <li key={plan.id} style={{ marginBottom: "0.5rem" }}>
-                <button
-                  onClick={() => setActivePlan(plan)}
-                  style={{
-                    fontWeight: activePlan?.id === plan.id ? "bold" : "normal",
-                    marginRight: "0.5rem",
-                  }}
-                >
-                  {plan.startDate} → {plan.endDate}
-                </button>
-                <button
-                  onClick={() => handleDeletePlan(plan.id)}
-                  style={{ color: "red" }}
-                >
-                  Delete
-                </button>
-              </li>
-            ))}
-          </ul>
+      {/* ----------------------------------------
+          Show Active Plan Editor
+          ---------------------------------------- */}
+      {currentPlan && (
+        <div>
+          <h2 className={styles.heading2}>Your Current Plan</h2>
+
+          <div className={styles.planItem}>
+            <span className={styles.planDates}>
+              {currentPlan.startDate} → {currentPlan.endDate}
+            </span>
+
+            <button
+              className={`${styles.button} ${styles.buttonDanger}`}
+              onClick={() => handleDeletePlan(currentPlan.id)}
+            >
+              Delete Plan
+            </button>
+          </div>
+
+          {/* MealPlanEditor renders the week table and supports drag/drop */}
+          <MealPlanEditor plan={currentPlan} />
         </div>
       )}
 
-      {/* Active Plan Editor */}
-      {activePlan ? (
-        <MealPlanEditor plan={activePlan} />
-      ) : (
+      {/* ----------------------------------------
+          Empty state: no plan
+          ---------------------------------------- */}
+      {!currentPlan && !showCreateForm && (
         <p>No meal plan available. Create one to get started!</p>
       )}
     </div>

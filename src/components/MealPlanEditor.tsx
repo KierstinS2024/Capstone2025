@@ -1,94 +1,145 @@
 // ===========================================
 // PATH: src/components/MealPlanEditor.tsx
-// Meal plan editor with drag-and-drop slots
+//
+// MealPlanEditor — week-based table for planning meals
+// - Drag-and-drop from RecipeSidebar
+// - Instant updates to backend/context
+// - Warns before overwriting slots
+// - Integrates RecipeModal in read-only mode
+// - Fully TypeScript-safe
 // ===========================================
 
 "use client";
 
-import React, { useState } from "react";
-import { MealPlan } from "@/types/mealPlan";
+import React, { useState, useEffect } from "react";
+import { MealPlan, MealType } from "@/types/mealPlan";
 import { useMealPlans } from "@/context/MealPlanContext";
 import { useRecipes } from "@/context/RecipeContext";
-import RecipeModal from "./RecipeModal";
-import { formatDateRange, getWeekDates } from "@/lib/helpers";
-import { DragDropContext, Droppable } from "@hello-pangea/dnd"; // ✅ updated import
+import RecipeModal from "./RecipeModal"; // now supports optional delete
 import RecipeSidebar from "./RecipeSidebar";
-import styles from "@/styles/mealplan-editor.module.css";
+import { formatDateRange, getWeekDates } from "@/lib/helpers";
+import { DragDropContext, Droppable } from "@hello-pangea/dnd";
+import styles from "@/styles/theme-mealplan.module.css";
 
+// Props: MealPlan object to edit
 interface Props {
   plan: MealPlan;
 }
 
 export default function MealPlanEditor({ plan }: Props) {
-  const { updateMealPlan } = useMealPlans();
-  const { recipes } = useRecipes();
+  const { updateMeal } = useMealPlans(); // slot update function (context + backend)
+  const { recipes } = useRecipes(); // all recipes available to the user
 
-  // Local editing state (clone to avoid mutating prop)
-  const [editingPlan, setEditingPlan] = useState(structuredClone(plan));
-  const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
+  // Local copy of plan for immediate UI updates
+  const [editingPlan, setEditingPlan] = useState<MealPlan>(
+    structuredClone(plan)
+  );
 
-  // Dates for table columns
+  // Currently open recipe modal (null = no modal open)
+  const [recipeModalId, setRecipeModalId] = useState<string | null>(null);
+
+  // Toast messages for quick feedback
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sync local state when prop `plan` changes
+  useEffect(() => {
+    setEditingPlan(structuredClone(plan));
+  }, [plan]);
+
+  // Compute array of ISO dates (start → end)
   const weekDays = getWeekDates(editingPlan.startDate, editingPlan.endDate);
 
-  /** Assign a recipe to a slot (day + meal) */
+  // -------------------------------
+  // Helper: show temporary toast
+  // -------------------------------
+  function showToast(message: string, duration = 1500) {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), duration);
+  }
+
+  // -------------------------------
+  // Update a single meal slot
+  // -------------------------------
   function handleUpdateMeal(
     day: string,
-    meal: "breakfast" | "lunch" | "dinner",
+    meal: MealType,
     recipeId: string | null
   ) {
-    const copy = structuredClone(editingPlan);
-    if (!copy.meals[day]) copy.meals[day] = {};
-    copy.meals[day][meal] = recipeId;
-    setEditingPlan(copy);
-  }
-
-  /** Save meal plan back to context/API */
-  async function handleSave() {
-    try {
-      const updated = await updateMealPlan(editingPlan.id, editingPlan);
-      setEditingPlan(structuredClone(updated));
-      alert("Meal plan saved!");
-    } catch (err: any) {
-      console.error(err);
-      alert("Failed to save meal plan: " + err.message);
+    // Validate recipe exists if recipeId provided
+    if (recipeId && !recipes.find((r) => r.id === recipeId)) {
+      alert("Selected recipe does not exist.");
+      return;
     }
+
+    // Clone plan safely
+    const planCopy = structuredClone(editingPlan);
+    const existingRecipe = planCopy.meals[day]?.[meal];
+
+    // Confirm overwrite if replacing
+    if (existingRecipe && recipeId && existingRecipe !== recipeId) {
+      const overwriteConfirmed = confirm(
+        "This slot already has a recipe. Replace it?"
+      );
+      if (!overwriteConfirmed) return;
+    }
+
+    // Ensure day object exists
+    if (!planCopy.meals[day]) planCopy.meals[day] = {};
+
+    // Update local state
+    planCopy.meals[day][meal] = recipeId;
+    setEditingPlan(planCopy);
+
+    // Update backend/context asynchronously
+    updateMeal(planCopy.id, day, meal, recipeId)
+      .then(() => {
+        showToast(
+          recipeId
+            ? `Added ${
+                recipes.find((r) => r.id === recipeId)?.title
+              } to ${meal}`
+            : `Removed ${meal} for ${day}`
+        );
+      })
+      .catch((err) => {
+        console.error("Failed to update meal:", err);
+        showToast("Failed to update meal");
+      });
   }
 
-  // Recipe currently being viewed in modal
-  const recipeToView = viewingRecipeId
-    ? recipes.find((r) => r.id === viewingRecipeId)
+  // Recipe object currently shown in modal
+  const currentRecipe = recipeModalId
+    ? recipes.find((r) => r.id === recipeModalId)
     : null;
 
+  // -------------------------------
+  // Render
+  // -------------------------------
   return (
     <DragDropContext
       onDragEnd={(result) => {
         const { destination, draggableId } = result;
         if (!destination) return;
 
-        // Ignore dragging back into recipe list
+        // Ignore drags into sidebar
         if (destination.droppableId.startsWith("recipes")) return;
 
-        // droppableId is formatted like "2025-09-23|breakfast"
+        // droppableId format: "YYYY-MM-DD|mealType"
         const [day, meal] = destination.droppableId.split("|");
-
-        handleUpdateMeal(
-          day,
-          meal as "breakfast" | "lunch" | "dinner",
-          draggableId
-        );
+        handleUpdateMeal(day, meal as MealType, draggableId);
       }}
     >
       <div className={styles.editorLayout}>
-        {/* Sidebar containing available recipes */}
+        {/* Sidebar with draggable recipes */}
         <RecipeSidebar />
 
         <div className={styles.detail}>
-          <h2>
+          <h2 className={styles.heading2}>
             Meal Plan:{" "}
             {formatDateRange(editingPlan.startDate, editingPlan.endDate)}
           </h2>
 
-          {/* Grid of meal slots */}
+          {/* Meal plan week table */}
           <table className={styles.planTable}>
             <thead>
               <tr>
@@ -101,9 +152,12 @@ export default function MealPlanEditor({ plan }: Props) {
             <tbody>
               {weekDays.map((day) => {
                 const dayMeals = editingPlan.meals[day] || {};
+
                 return (
                   <tr key={day}>
                     <td>{day}</td>
+
+                    {/* For each meal slot */}
                     {(["breakfast", "lunch", "dinner"] as const).map((meal) => {
                       const recipeId = dayMeals[meal] ?? null;
                       const recipe = recipes.find((r) => r.id === recipeId);
@@ -112,7 +166,6 @@ export default function MealPlanEditor({ plan }: Props) {
                         <Droppable droppableId={`${day}|${meal}`} key={meal}>
                           {(provided, snapshot) => (
                             <td>
-                              {/* Wrapper div needed so ref is not attached to <td> */}
                               <div
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
@@ -124,14 +177,16 @@ export default function MealPlanEditor({ plan }: Props) {
                               >
                                 {recipe ? (
                                   <div className={styles.recipeSlot}>
+                                    {/* Recipe name opens modal */}
                                     <button
-                                      className={styles.recipeBtn}
                                       onClick={() =>
-                                        setViewingRecipeId(recipe.id)
+                                        setRecipeModalId(recipe.id)
                                       }
                                     >
                                       {recipe.title}
                                     </button>
+
+                                    {/* Remove button */}
                                     <button
                                       className={styles.removeBtn}
                                       onClick={() =>
@@ -159,18 +214,17 @@ export default function MealPlanEditor({ plan }: Props) {
             </tbody>
           </table>
 
-          {/* Save button */}
-          <button className={styles.saveBtn} onClick={handleSave}>
-            Save Meal Plan
-          </button>
+          {/* Toast feedback */}
+          {toastMessage && <div className={styles.toast}>{toastMessage}</div>}
         </div>
       </div>
 
-      {/* Recipe detail modal */}
-      {recipeToView && (
+      {/* Recipe modal (read-only: no delete passed) */}
+      {currentRecipe && (
         <RecipeModal
-          recipe={recipeToView}
-          onClose={() => setViewingRecipeId(null)}
+          recipe={currentRecipe}
+          onClose={() => setRecipeModalId(null)}
+          // no onDelete → modal runs in read-only mode
         />
       )}
     </DragDropContext>

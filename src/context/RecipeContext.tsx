@@ -1,7 +1,8 @@
 // ===========================================
 // PATH: src/context/RecipeContext.tsx
-// RecipeContext — manages user recipes + saved Spoonacular recipes
-// No temporary recipes or automatic meal plan linking
+// RecipeContext — manages user and Spoonacular recipes
+// - Provides functions to fetch, add, update, delete, and search recipes
+// - Single source of truth for recipe data
 // ===========================================
 "use client";
 
@@ -13,7 +14,7 @@ import {
 } from "@/lib/spoonacularApi";
 
 // -----------------------------
-// Define the context type
+// Context type definition
 // -----------------------------
 interface RecipeContextType {
   recipes: Recipe[];
@@ -30,12 +31,12 @@ interface RecipeContextType {
 }
 
 // -----------------------------
-// Create the context
+// Create context
 // -----------------------------
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
 // -----------------------------
-// RecipeProvider component
+// RecipeProvider — wraps app and provides recipe state & functions
 // -----------------------------
 export function RecipeProvider({ children }: { children: React.ReactNode }) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -43,7 +44,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   // -----------------------------
-  // Normalize backend/Spoonacular response to Recipe type
+  // Normalize backend/Spoonacular recipe to app Recipe type
   // -----------------------------
   const normalize = (r: any): Recipe => ({
     id: r._id || r.id,
@@ -58,7 +59,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   });
 
   // -----------------------------
-  // Fetch user-specific recipes from backend
+  // Fetch all recipes for the current user
   // -----------------------------
   async function fetchRecipes() {
     try {
@@ -90,7 +91,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   }
 
   // -----------------------------
-  // Fetch recipe (local state or Spoonacular API)
+  // Fetch recipe from local state or Spoonacular API
   // -----------------------------
   async function fetchRecipe(id: string): Promise<Recipe | undefined> {
     const local = getRecipe(id);
@@ -106,8 +107,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
   }
 
   // -----------------------------
-  // Add a new recipe
-  // Can be user-created or saved Spoonacular recipe
+  // Add a recipe (user or Spoonacular)
   // -----------------------------
   async function addRecipe(
     recipeOrId: Partial<Omit<Recipe, "id">> | number
@@ -149,9 +149,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) throw new Error("Failed to save recipe");
 
       const newRecipe = normalize(await res.json());
-
-      // Optimistically update local state
-      setRecipes((prev) => [newRecipe, ...prev]);
+      setRecipes((prev) => [newRecipe, ...prev]); // Update local state optimistically
 
       return newRecipe;
     } catch (err: any) {
@@ -236,7 +234,7 @@ export function RecipeProvider({ children }: { children: React.ReactNode }) {
 }
 
 // -----------------------------
-// Hook to use RecipeContext
+// Hook for using RecipeContext
 // -----------------------------
 export function useRecipes() {
   const context = useContext(RecipeContext);

@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useRecipes } from "@/context/RecipeContext";
-import "@/styles/addMealForm.css";
+import "@/styles/addMealForm.module.css";
 
 export default function AddMealForm({
   onAdd,
@@ -18,7 +18,7 @@ export default function AddMealForm({
       <select value={selected} onChange={(e) => setSelected(e.target.value)}>
         <option value="">Select recipe</option>
         {recipes.map((r) => (
-          <option key={r._id} value={r._id}>
+          <option key={r.id} value={r.id}>
             {r.title}
           </option>
         ))}

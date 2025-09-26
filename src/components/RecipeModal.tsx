@@ -1,19 +1,25 @@
 // ===========================================
 // PATH: src/components/RecipeModal.tsx
-// RecipeModal — view full recipe details and edit/delete for user recipes
-// Now uses parseInstructions for HTML/line-break rendering
+// RecipeModal — view full recipe details with optional edit/delete
+// - Uses parseInstructions for formatting instructions
+// - Delete button only shows if user owns recipe AND parent provides onDelete
 // ===========================================
+
 "use client";
 
 import React, { useState } from "react";
 import { Recipe } from "@/types/recipe";
 import { useRecipes } from "@/context/RecipeContext";
 import { parseInstructions } from "@/utils/parseInstructions";
+import "@/styles/recipeModal.module.css";
 
+// -----------------------------
+// Props
+// -----------------------------
 interface RecipeModalProps {
-  recipe: Recipe;
-  onClose: () => void;
-  onDelete: (id: string) => Promise<void>; // parent callback
+  recipe: Recipe; // recipe being displayed
+  onClose: () => void; // close modal
+  onDelete?: (id: string) => Promise<void>; // optional parent callback for deletion
 }
 
 export default function RecipeModal({
@@ -21,11 +27,13 @@ export default function RecipeModal({
   onClose,
   onDelete,
 }: RecipeModalProps) {
-  const { updateRecipe } = useRecipes(); // delete is delegated to parent
+  const { updateRecipe } = useRecipes(); // edit/update handled via context
 
+  // Get current logged-in user
   const currentUserEmail =
     typeof window !== "undefined" ? localStorage.getItem("userEmail") : null;
 
+  // Recipe is owned if created by the logged-in user
   const isUserOwned = recipe.author === currentUserEmail;
 
   // -----------------------------
@@ -64,13 +72,15 @@ export default function RecipeModal({
   };
 
   // -----------------------------
-  // Delete recipe via parent callback
+  // Delete recipe (only if onDelete provided)
   // -----------------------------
   const handleDelete = async () => {
+    if (!onDelete) return; // guard: parent didn’t provide delete
     if (!confirm("Are you sure you want to delete this recipe?")) return;
+
     try {
       await onDelete(recipe.id);
-      onClose();
+      onClose(); // close modal after delete
     } catch (err) {
       console.error("Failed to delete recipe", err);
     }
@@ -90,10 +100,11 @@ export default function RecipeModal({
         justifyContent: "center",
         zIndex: 999,
       }}
-      onClick={onClose} // close modal when clicking outside
+      onClick={onClose} // close modal if user clicks background
     >
       <div
         style={{
+          position: "relative",
           background: "#fff",
           borderRadius: "12px",
           padding: "1rem",
@@ -102,8 +113,11 @@ export default function RecipeModal({
           maxHeight: "90vh",
           overflowY: "auto",
         }}
-        onClick={(e) => e.stopPropagation()} // prevent modal close on click inside
+        onClick={(e) => e.stopPropagation()} // prevent close when clicking inside modal
       >
+        {/* -----------------------------
+            Edit Mode
+        ----------------------------- */}
         {editing ? (
           <>
             <h2>Edit Recipe</h2>
@@ -144,7 +158,9 @@ export default function RecipeModal({
                 marginBottom: "0.5rem",
               }}
             />
+
             {error && <p style={{ color: "red" }}>{error}</p>}
+
             <div
               style={{
                 display: "flex",
@@ -173,7 +189,11 @@ export default function RecipeModal({
           </>
         ) : (
           <>
+            {/* -----------------------------
+                View Mode
+            ----------------------------- */}
             <h2>{recipe.title}</h2>
+
             {recipe.image && (
               <img
                 src={recipe.image}
@@ -185,15 +205,22 @@ export default function RecipeModal({
                 }}
               />
             )}
+
             <h3>Ingredients:</h3>
             <ul>
               {recipe.ingredients.map((ing, idx) => (
                 <li key={idx}>{ing}</li>
               ))}
             </ul>
+
             <h3>Instructions:</h3>
             <div>{parseInstructions(recipe.instructions)}</div>
 
+            {/* -----------------------------
+                Action buttons (only if user owns recipe)
+                - Edit always available for owner
+                - Delete only if parent provided onDelete
+            ----------------------------- */}
             {isUserOwned && (
               <div
                 style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}
@@ -208,20 +235,26 @@ export default function RecipeModal({
                 >
                   Edit
                 </button>
-                <button
-                  onClick={handleDelete}
-                  style={{
-                    padding: "0.5rem 1rem",
-                    backgroundColor: "#e74c3c",
-                    color: "#fff",
-                  }}
-                >
-                  Delete
-                </button>
+                {onDelete && (
+                  <button
+                    onClick={handleDelete}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      backgroundColor: "#e74c3c",
+                      color: "#fff",
+                    }}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             )}
           </>
         )}
+
+        {/* -----------------------------
+            Close button (always present)
+        ----------------------------- */}
         <button
           onClick={onClose}
           style={{

@@ -1,17 +1,25 @@
 // ===========================================
 // PATH: src/components/AddRecipeForm.tsx
 // AddRecipeForm — create new user recipe
-// Updated to notify parent page immediately on add
+// Combines drag-drop UI with parent notification logic
 // ===========================================
+
 "use client";
 
 import React, { useState } from "react";
 import { useRecipes } from "@/context/RecipeContext";
 import { Recipe } from "@/types/recipe";
+import styles from "@/styles/addRecipeForm.module.css"; // external CSS module
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "@hello-pangea/dnd";
 
 interface AddRecipeFormProps {
-  onClose: () => void;
-  onSuccess?: (newRecipe: Recipe) => void; // NEW: pass newly added recipe
+  onClose: () => void; // called when user cancels or after success
+  onSuccess?: (newRecipe: Recipe) => void; // notify parent of new recipe
 }
 
 export default function AddRecipeForm({
@@ -20,33 +28,62 @@ export default function AddRecipeForm({
 }: AddRecipeFormProps) {
   const { addRecipe } = useRecipes();
 
+  // -----------------------------
+  // Form state
+  // -----------------------------
   const [title, setTitle] = useState("");
+  const [ingredients, setIngredients] = useState<string[]>([""]); // multiple ingredients
   const [instructions, setInstructions] = useState("");
-  const [ingredients, setIngredients] = useState<string>(""); // comma-separated
   const [image, setImage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // -----------------------------
+  // Drag-and-drop reorder logic
+  // -----------------------------
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const updated = Array.from(ingredients);
+    const [moved] = updated.splice(result.source.index, 1);
+    updated.splice(result.destination.index, 0, moved);
+    setIngredients(updated);
+  };
+
+  // -----------------------------
+  // Ingredient field helpers
+  // -----------------------------
+  const handleIngredientChange = (index: number, value: string) => {
+    const updated = [...ingredients];
+    updated[index] = value;
+    setIngredients(updated);
+  };
+
+  const addIngredientField = () => setIngredients([...ingredients, ""]);
+
+  const removeIngredientField = (index: number) =>
+    setIngredients(ingredients.filter((_, i) => i !== index));
+
+  // -----------------------------
+  // Submit logic
+  // -----------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const ingredientList = ingredients
-        .split(",")
-        .map((i) => i.trim())
-        .filter(Boolean);
+      const cleanIngredients = ingredients.map((i) => i.trim()).filter(Boolean);
 
-      // Expect addRecipe to return the newly created recipe
+      // Save new recipe to DB
       const newRecipe = await addRecipe({
-        title,
-        instructions,
-        ingredients: ingredientList,
-        image,
+        title: title.trim(),
+        instructions: instructions.trim(),
+        ingredients: cleanIngredients,
+        image: image.trim(),
       });
 
-      if (onSuccess) onSuccess(newRecipe); // notify parent page immediately
+      // notify parent + close form
+      if (onSuccess) onSuccess(newRecipe);
       onClose();
     } catch (err: any) {
       setError(err.message || "Failed to add recipe");
@@ -55,96 +92,137 @@ export default function AddRecipeForm({
     }
   };
 
+  // -----------------------------
+  // Render form
+  // -----------------------------
   return (
-    <div
-      style={{
-        background: "#fff",
-        padding: "1rem",
-        borderRadius: "12px",
-        width: "400px",
-        maxWidth: "90%",
-      }}
-    >
-      <h2>Add New Recipe</h2>
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-      >
+    <form className={styles.form} onSubmit={handleSubmit}>
+      <h2 className={styles.formHeader}>Add New Recipe</h2>
+
+      {/* Title */}
+      <div className={styles.formSection}>
+        <label htmlFor="title">Title</label>
         <input
+          id="title"
           required
-          placeholder="Title"
+          placeholder="Recipe title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          style={{
-            padding: "0.5rem",
-            borderRadius: "6px",
-            border: "1px solid #ccc",
-          }}
         />
+      </div>
+
+      {/* Ingredients (drag & drop reorderable list) */}
+      <div className={styles.formSection}>
+        <label>Ingredients (drag ☰ to reorder)</label>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="ingredients">
+            {(provided) => (
+              <div
+                className={styles.ingredientsContainer}
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+              >
+                {ingredients.map((ingredient, index) => (
+                  <Draggable
+                    key={index.toString()}
+                    draggableId={index.toString()}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <div
+                        className={styles.ingredientRow}
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                      >
+                        {/* Drag handle */}
+                        <span
+                          className={styles.dragHandle}
+                          {...provided.dragHandleProps}
+                        >
+                          ☰
+                        </span>
+
+                        {/* Input */}
+                        <input
+                          type="text"
+                          value={ingredient}
+                          onChange={(e) =>
+                            handleIngredientChange(index, e.target.value)
+                          }
+                          placeholder={`Ingredient ${index + 1}`}
+                          required={index === 0}
+                        />
+
+                        {/* Remove button */}
+                        {ingredients.length > 1 && (
+                          <button
+                            type="button"
+                            className={styles.removeIngredientBtn}
+                            onClick={() => removeIngredientField(index)}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+
+        {/* Add more ingredients */}
+        <button
+          type="button"
+          className={styles.addIngredientBtn}
+          onClick={addIngredientField}
+        >
+          + Add Ingredient
+        </button>
+      </div>
+
+      {/* Instructions */}
+      <div className={styles.formSection}>
+        <label htmlFor="instructions">Instructions</label>
         <textarea
-          placeholder="Instructions"
+          id="instructions"
+          placeholder="Step-by-step instructions"
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
-          style={{
-            padding: "0.5rem",
-            borderRadius: "6px",
-            border: "1px solid #ccc",
-            minHeight: "80px",
-          }}
+          className={styles.autoGrowTextarea}
         />
+      </div>
+
+      {/* Image */}
+      <div className={styles.formSection}>
+        <label htmlFor="image">Image URL</label>
         <input
-          placeholder="Ingredients (comma-separated)"
-          value={ingredients}
-          onChange={(e) => setIngredients(e.target.value)}
-          style={{
-            padding: "0.5rem",
-            borderRadius: "6px",
-            border: "1px solid #ccc",
-          }}
-        />
-        <input
-          placeholder="Image URL"
+          id="image"
+          placeholder="https://..."
           value={image}
           onChange={(e) => setImage(e.target.value)}
-          style={{
-            padding: "0.5rem",
-            borderRadius: "6px",
-            border: "1px solid #ccc",
-          }}
         />
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <div
-          style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}
+      </div>
+
+      {/* Error message */}
+      {error && <p className={styles.error}>❌ {error}</p>}
+
+      {/* Submit + Cancel buttons */}
+      <div className={styles.submitContainer}>
+        <button
+          type="button"
+          onClick={onClose}
+          className={styles.cancelBtn}
+          disabled={loading}
         >
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: "#ccc",
-              cursor: "pointer",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: "#2ecc71",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            {loading ? "Saving..." : "Save"}
-          </button>
-        </div>
-      </form>
-    </div>
+          Cancel
+        </button>
+        <button type="submit" disabled={loading} className={styles.submitBtn}>
+          {loading ? "Saving..." : "Save Recipe"}
+        </button>
+      </div>
+    </form>
   );
 }

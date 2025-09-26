@@ -1,14 +1,16 @@
 // ===========================================
 // PATH: src/components/RecipeSidebar.tsx
-// Sidebar with draggable recipe cards
+// RecipeSidebar — lists all recipes
+// - Drag-and-drop to MealPlanEditor
+// - Cannot drop back into sidebar
 // ===========================================
 
 "use client";
 
 import React from "react";
 import { useRecipes } from "@/context/RecipeContext";
-import { Draggable, Droppable } from "@hello-pangea/dnd"; // ✅ updated import
-import styles from "@/styles/mealplan-editor.module.css";
+import { Draggable, Droppable } from "@hello-pangea/dnd";
+import styles from "@/styles/theme-mealplan.module.css";
 
 export default function RecipeSidebar() {
   const { recipes } = useRecipes();
@@ -21,10 +23,11 @@ export default function RecipeSidebar() {
           ref={provided.innerRef}
           {...provided.droppableProps}
         >
-          <h3>Recipes</h3>
+          <h3 className={styles.heading3}>Recipes</h3>
 
-          {recipes.map((r, index) => (
-            <Draggable draggableId={r.id} index={index} key={r.id}>
+          {/* Map recipes → draggable */}
+          {recipes.map((recipe, index) => (
+            <Draggable key={recipe.id} draggableId={recipe.id} index={index}>
               {(provided) => (
                 <div
                   ref={provided.innerRef}
@@ -32,12 +35,13 @@ export default function RecipeSidebar() {
                   {...provided.dragHandleProps}
                   className={styles.recipeCard}
                 >
-                  {r.title}
+                  {recipe.title}
                 </div>
               )}
             </Draggable>
           ))}
 
+          {/* Placeholder for drag spacing */}
           {provided.placeholder}
         </div>
       )}

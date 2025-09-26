@@ -1,6 +1,9 @@
 // ===========================================
 // PATH: src/app/api/meal-plans/week/[date]/route.ts
-// Get all meal plans for a specific week starting from a date
+//
+// GET → Returns the user's active meal plan if it overlaps the given week
+// - Since only one plan exists per user, this returns [plan] or []
+// - Overlap check: plan.startDate <= weekEnd && plan.endDate >= weekStart
 // ===========================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -8,57 +11,63 @@ import { connectDB } from "@/lib/db";
 import MealPlan from "@/models/MealPlan";
 import { getUserFromRequest } from "@/lib/serverAuth";
 
-/** Reuse the same normalizer/formatter */
-function normalizeMeals(meals: any = {}) {
-  const normalized: Record<
-    string,
-    { breakfast: string | null; lunch: string | null; dinner: string | null }
-  > = {};
-  Object.entries(meals).forEach(([day, slots]) => {
-    const s = slots as Partial<
-      Record<"breakfast" | "lunch" | "dinner", string | null>
-    >;
-    normalized[day] = {
-      breakfast: s?.breakfast ?? null,
-      lunch: s?.lunch ?? null,
-      dinner: s?.dinner ?? null,
-    };
-  });
-  return normalized;
-}
-
+// -------------------------------------------
+// Helper: format MongoDB doc for frontend
+// Converts ObjectIds + Dates to plain JSON
+// -------------------------------------------
 function formatMealPlan(doc: any) {
   return {
     id: doc._id.toString(),
     title: doc.title,
     startDate: doc.startDate,
     endDate: doc.endDate,
-    meals: normalizeMeals(doc.meals),
-    user: doc.user || null,
+    meals: doc.meals || {},
+    user: doc.user?.toString() || null,
     createdAt: doc.createdAt?.toISOString?.(),
     updatedAt: doc.updatedAt?.toISOString?.(),
   };
 }
 
+// -----------------------------
+// GET /api/meal-plans/week/[date]
+// Returns [plan] if active meal plan overlaps the given week
+// Otherwise returns []
+// -----------------------------
 export async function GET(
   req: NextRequest,
   { params }: { params: { date: string } }
 ) {
   await connectDB();
 
-  const userId = await getUserFromRequest(req);
-  if (!userId) {
+  // ✅ Authenticate
+  const payload = await getUserFromRequest(req);
+  if (!payload)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = payload.id;
+
+  // ✅ Validate date
+  const weekStart = new Date(params.date);
+  if (isNaN(weekStart.getTime())) {
+    return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+  }
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+
+  // ✅ Fetch the only meal plan for this user
+  const plan = (await MealPlan.findOne({ user: userId }).lean()) as
+    | (typeof MealPlan.schema.obj & { startDate: Date; endDate: Date })
+    | null;
+
+  // ✅ Check overlap (plan exists & has start/end dates)
+  if (plan && plan.startDate && plan.endDate) {
+    const start = new Date(plan.startDate);
+    const end = new Date(plan.endDate);
+
+    if (start <= weekEnd && end >= weekStart) {
+      return NextResponse.json([formatMealPlan(plan)]);
+    }
   }
 
-  const startDate = new Date(params.date);
-  const endDate = new Date(startDate);
-  endDate.setDate(startDate.getDate() + 7);
-
-  const weekPlans = await MealPlan.find({
-    user: userId,
-    startDate: { $gte: startDate, $lte: endDate },
-  }).lean();
-
-  return NextResponse.json(weekPlans.map(formatMealPlan));
+  // No overlap → return empty array
+  return NextResponse.json([]);
 }

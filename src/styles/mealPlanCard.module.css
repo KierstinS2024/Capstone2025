@@ -1,41 +1,39 @@
 .planCard {
   padding: 1.5rem;
   border-radius: 12px;
-  background-color: var(--card); /* white card */
+  background-color: var(--card);
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  width: 100%; /* fill left column */
+  gap: 1.25rem;
+  width: 100%;
 }
 
 .dateRange {
   font-weight: 600;
   font-size: 1.1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.25rem;
   color: var(--text);
+  text-align: left;
 }
 
 .meals {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  flex-wrap: wrap; /* wrap on smaller screens */
-}
-
-/* Individual meal card container */
-.mealCardContainer {
-  flex: 1 1 calc(33.333% - 0.66rem); /* three columns with gap adjustment */
 }
 
 /* Mobile / tablet adjustments */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .meals {
-    flex-direction: column; /* stack vertically */
-    gap: 0.75rem;
+    grid-template-columns: repeat(2, 1fr);
   }
+}
 
-  .mealCardContainer {
-    flex: 1 1 100%; /* full width each */
+@media (max-width: 600px) {
+  .meals {
+    grid-template-columns: 1fr; /* stack vertically */
+    gap: 0.75rem;
   }
 }
 
@@ -57,10 +55,12 @@
   border: none;
   border-radius: 8px;
   font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s ease-in-out;
+  transition: background 0.2s ease-in-out, transform 0.2s ease;
 }
 
 .createPlanButton:hover {
   background-color: var(--primary-hover);
+  transform: translateY(-2px);
 }

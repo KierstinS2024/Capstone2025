@@ -1,28 +1,32 @@
 // ===========================================
 // PATH: src/lib/helpers.ts
 // Shared utility functions for dates and formatting
+// Fully TypeScript-safe: no functions return null
 // ===========================================
 
 /**
  * Format a date range for display.
  * Example: "Sep 15 – Sep 21"
- * If start or end is invalid, returns a safe placeholder.
+ * If start or end is invalid, returns a safe placeholder "—".
+ *
+ * @param start ISO string for start date
+ * @param end ISO string for end date
+ * @returns Formatted string like "Sep 15 – Sep 21" or "—"
  */
 export function formatDateRange(
-  start: string | null | undefined,
-  end: string | null | undefined
+  start: string | undefined,
+  end: string | undefined
 ): string {
-  // Convert strings to Date objects
   const s = start ? new Date(start) : null;
   const e = end ? new Date(end) : null;
 
-  // Validate dates
+  // Validate that both dates are valid
   if (!s || isNaN(s.getTime()) || !e || isNaN(e.getTime())) {
     console.warn("Invalid date passed to formatDateRange:", start, end);
-    return "—"; // fallback display
+    return "—"; // safe fallback
   }
 
-  // Return formatted short month/day strings
+  // Return short month/day format
   return `${s.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -31,25 +35,23 @@ export function formatDateRange(
 
 /**
  * Get today's date in ISO format YYYY-MM-DD
+ *
+ * @returns string YYYY-MM-DD
  */
 export function todayISO(): string {
   return new Date().toISOString().split("T")[0];
 }
 
 /**
- * Generate an array of ISO date strings from start → end (inclusive).
- * Used for rendering custom-length meal plans (default = 7 days).
- * If start or end are invalid, returns an empty array.
+ * Generate an array of ISO date strings from start → end (inclusive)
+ * Used for rendering meal plans week by week.
+ * If dates are invalid, returns an empty array.
+ *
+ * @param start ISO string start date
+ * @param end ISO string end date
+ * @returns array of strings ["YYYY-MM-DD", ...]
  */
-export function getWeekDates(
-  start: string | null | undefined,
-  end: string | null | undefined
-): string[] {
-  if (!start || !end) {
-    console.warn("Missing start or end date in getWeekDates:", start, end);
-    return [];
-  }
-
+export function getWeekDates(start: string, end: string): string[] {
   const startDate = new Date(start);
   const endDate = new Date(end);
 
@@ -61,10 +63,9 @@ export function getWeekDates(
   const days: string[] = [];
   let current = new Date(startDate);
 
-  // Walk from start → end, inclusive
   while (current <= endDate) {
     days.push(current.toISOString().split("T")[0]);
-    current.setDate(current.getDate() + 1);
+    current.setDate(current.getDate() + 1); // increment by 1 day
   }
 
   return days;
@@ -72,14 +73,26 @@ export function getWeekDates(
 
 /**
  * Add N days to a date string (YYYY-MM-DD).
- * Returns YYYY-MM-DD format or null if invalid.
+ * Fully type-safe: never returns null.
+ * If the input date is invalid, returns today's date as fallback.
+ *
+ * @param dateStr ISO string "YYYY-MM-DD"
+ * @param days Number of days to add
+ * @returns new ISO string "YYYY-MM-DD"
  */
-export function addDays(dateStr: string, days: number): string | null {
+export function addDays(dateStr: string, days: number): string {
   const date = new Date(dateStr);
+
   if (isNaN(date.getTime())) {
-    console.warn("Invalid date passed to addDays:", dateStr);
-    return null;
+    console.warn(
+      "Invalid date passed to addDays, using today instead:",
+      dateStr
+    );
+    const fallback = new Date();
+    fallback.setDate(fallback.getDate() + days);
+    return fallback.toISOString().split("T")[0];
   }
+
   date.setDate(date.getDate() + days);
   return date.toISOString().split("T")[0];
 }
