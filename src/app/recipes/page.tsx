@@ -1,8 +1,12 @@
 // ===========================================
 // PATH: src/app/recipes/page.tsx
 // RecipesPage — displays user recipes + Spoonacular search
-// Fully integrated add/delete handling for card & modal
-// Includes debounce for search and unified RecipeCard usage
+// Features:
+//  - User recipe grid with delete + modal view
+//  - Spoonacular search with debounce
+//  - Fetch full Spoonacular recipe before opening modal
+//  - Add Recipe form modal
+//  - Save Spoonacular recipe to user collection
 // ===========================================
 "use client";
 
@@ -15,7 +19,13 @@ import { useRecipes } from "@/context/RecipeContext";
 import { Recipe } from "@/types/recipe";
 
 export default function RecipesPage() {
-  const { recipes, searchSpoonacular, addRecipe, deleteRecipe } = useRecipes();
+  const {
+    recipes,
+    searchSpoonacular,
+    addRecipe,
+    deleteRecipe,
+    getSpoonacularRecipe,
+  } = useRecipes();
 
   // -----------------------------
   // Component state
@@ -37,16 +47,13 @@ export default function RecipesPage() {
 
   useEffect(() => {
     if (!searchQuery.trim()) {
-      // Reset results if query is empty
       setSpoonacularResults([]);
       setSpoonacularError(null);
       return;
     }
 
-    // Clear previous debounce timer
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
-    // Set new debounce timer
     searchTimeout.current = setTimeout(async () => {
       setLoadingSpoonacular(true);
       setSpoonacularError(null);
@@ -67,7 +74,7 @@ export default function RecipesPage() {
   }, [searchQuery, searchSpoonacular]);
 
   // -----------------------------
-  // Save Spoonacular recipe
+  // Save Spoonacular recipe to user collection
   // -----------------------------
   const handleSaveRecipe = async (id: string) => {
     if (savingRecipeIds.has(id)) return; // prevent double clicks
@@ -107,6 +114,25 @@ export default function RecipesPage() {
   const filteredUserRecipes = recipes.filter((r) =>
     r.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // -----------------------------
+  // Handle clicking "View Full Recipe" for Spoonacular
+  // Fetch full recipe before opening modal
+  // -----------------------------
+  const handleViewFullRecipe = async (recipe: Recipe) => {
+    // Only fetch if it's a Spoonacular recipe and we don't have full instructions
+    if (recipe.source === "spoonacular" && !recipe.instructions) {
+      try {
+        const fullRecipe = await getSpoonacularRecipe(recipe.id);
+        setSelectedRecipe(fullRecipe);
+      } catch (err) {
+        console.error("Failed to fetch full Spoonacular recipe", err);
+        alert("Failed to load full recipe. Try again later.");
+      }
+    } else {
+      setSelectedRecipe(recipe); // user recipe or already full Spoonacular
+    }
+  };
 
   return (
     <>
@@ -185,7 +211,7 @@ export default function RecipesPage() {
             <RecipeCard
               key={recipe.id}
               recipe={recipe}
-              onClick={() => setSelectedRecipe(recipe)}
+              onClick={() => handleViewFullRecipe(recipe)} // use handler
               onDelete={handleDeleteRecipe} // user-owned: allow delete
             />
           ))}
@@ -209,7 +235,7 @@ export default function RecipesPage() {
                 <RecipeCard
                   key={recipe.id}
                   recipe={recipe}
-                  onClick={() => setSelectedRecipe(recipe)} // opens modal
+                  onClick={() => handleViewFullRecipe(recipe)} // fetch full recipe before modal
                   onDelete={undefined} // read-only
                 >
                   {/* Extra Save button (child prop) */}

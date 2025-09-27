@@ -1,13 +1,5 @@
 // ===========================================
 // PATH: src/context/MealPlanContext.tsx
-//
-// React Context for Meal Plans
-// - Tracks a single activePlan per user
-// - Supports slot-level updates (breakfast/lunch/dinner)
-// - Automatically syncs with backend
-// - Uses plain JSON cloning to prevent Mongoose $__parent errors
-// ===========================================
-
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -25,22 +17,21 @@ import { useAuth } from "@/context/AuthContext";
 // Context type definition
 // -------------------------------------------
 interface MealPlanContextType {
-  hasPlan: boolean; // whether user has an active plan
-  loading: boolean; // true while fetching data
-  activePlan: MealPlan | null; // currently active meal plan
-  setActivePlan: (plan: MealPlan | null) => void; // safely set plan
-
-  fetchMealPlanForUser: () => Promise<void>; // fetch single plan for logged-in user
-  fetchMealPlan: (id: string) => Promise<MealPlan | null>; // fetch plan by id
-  createMealPlan: (data: Partial<MealPlan>) => Promise<MealPlan>; // create new plan
-  updateMealPlan: (id: string, data: Partial<MealPlan>) => Promise<MealPlan>; // update full plan
-  deleteMealPlan: (id: string) => Promise<void>; // delete plan
+  hasPlan: boolean;
+  loading: boolean;
+  activePlan: MealPlan | null;
+  setActivePlan: (plan: MealPlan | null) => void;
+  fetchMealPlanForUser: () => Promise<void>;
+  fetchMealPlan: (id: string) => Promise<MealPlan | null>;
+  createMealPlan: (data: Partial<MealPlan>) => Promise<MealPlan>;
+  updateMealPlan: (id: string, data: Partial<MealPlan>) => Promise<MealPlan>;
+  deleteMealPlan: (id: string) => Promise<void>;
   updateMeal: (
     planId: string,
     day: string,
     mealType: MealType,
     recipeId: string | null
-  ) => Promise<void>; // update single meal slot
+  ) => Promise<void>;
 }
 
 // -------------------------------------------
@@ -51,38 +42,37 @@ const MealPlanContext = createContext<MealPlanContextType | undefined>(
 );
 
 // -------------------------------------------
-// Provider component
+// Provider
 // -------------------------------------------
 export function MealPlanProvider({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading } = useAuth(); // auth info
+  const { user, loading: authLoading } = useAuth();
+
   const [activePlan, setActivePlanInternal] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   const hasPlan = !!activePlan;
 
   // -------------------------------------------
-  // Wrapper to deep-clone plan to prevent mutation issues
+  // Deep clone setter to prevent Mongoose $__parent issues
   // -------------------------------------------
   const setActivePlan = (plan: MealPlan | null) => {
-    // Use structuredClone or null
     setActivePlanInternal(plan ? structuredClone(plan) : null);
   };
 
   // -------------------------------------------
-  // Auto-fetch plan after login / clear on logout
+  // Auto-fetch plan on login; clear on logout
   // -------------------------------------------
   useEffect(() => {
     if (authLoading) return;
-    if (user?.id) {
-      fetchMealPlanForUser();
-    } else {
+    if (user?.id) fetchMealPlanForUser();
+    else {
       setActivePlan(null);
       setLoading(false);
     }
   }, [user, authLoading]);
 
   // -------------------------------------------
-  // Fetch user's single meal plan
+  // Fetch current user's plan
   // -------------------------------------------
   async function fetchMealPlanForUser() {
     if (!user?.id) return;
@@ -99,7 +89,7 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
   }
 
   // -------------------------------------------
-  // Fetch plan by ID (rarely used)
+  // Fetch any plan by ID (rare)
   // -------------------------------------------
   async function fetchMealPlan(id: string): Promise<MealPlan | null> {
     try {
@@ -112,23 +102,32 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
   }
 
   // -------------------------------------------
-  // Create new meal plan (only if none exists)
+  // Create new plan
   // -------------------------------------------
   async function createMealPlan(data: Partial<MealPlan>): Promise<MealPlan> {
     if (!user?.id)
       throw new Error("Cannot create meal plan until user is loaded");
-    if (activePlan)
-      throw new Error("You already have a meal plan. Delete first.");
-    if (!data.startDate || !data.endDate)
-      throw new Error("startDate and endDate required");
 
-    const newPlan = await apiCreateMealPlan(data);
-    setActivePlan(newPlan);
-    return newPlan;
+    if (loading) throw new Error("Please wait until the current plan loads");
+
+    if (activePlan)
+      throw new Error("You already have a meal plan. Delete it first");
+
+    if (!data.startDate || !data.endDate)
+      throw new Error("startDate and endDate are required");
+
+    setLoading(true);
+    try {
+      const newPlan = await apiCreateMealPlan(data);
+      setActivePlan(newPlan);
+      return newPlan;
+    } finally {
+      setLoading(false);
+    }
   }
 
   // -------------------------------------------
-  // Update entire meal plan (sync context)
+  // Update entire plan
   // -------------------------------------------
   async function updateMealPlan(
     id: string,
@@ -148,8 +147,7 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
   }
 
   // -------------------------------------------
-  // Update a single meal slot (e.g. Tuesday lunch)
-  // Safe: only sends meals object and avoids Mongoose $__parent errors
+  // Update single meal slot safely
   // -------------------------------------------
   async function updateMeal(
     planId: string,
@@ -157,39 +155,35 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
     mealType: MealType,
     recipeId: string | null
   ) {
+    // Ensure we have the active plan
     const plan = activePlan;
     if (!plan || plan.id !== planId) throw new Error("Meal plan not found");
 
-    // -------------------------------
-    // Deep clone meals as plain JSON
-    // This avoids Mongoose internal keys like $__parent
-    // -------------------------------
+    // -----------------------------
+    // Step 1: Deep clone the meals to strip Mongoose internals
+    // Step 2: Ensure all days have breakfast/lunch/dinner keys
+    // -----------------------------
     const mealsCopy: Record<
       string,
-      Record<MealType, string | null>
+      { breakfast: string | null; lunch: string | null; dinner: string | null }
     > = JSON.parse(JSON.stringify(plan.meals || {}));
 
-    // Initialize day if missing
     if (!mealsCopy[day])
       mealsCopy[day] = { breakfast: null, lunch: null, dinner: null };
 
-    // Update the specific meal slot
     mealsCopy[day][mealType] = recipeId;
 
-    // -------------------------------
-    // Update backend with only meals object
-    // -------------------------------
-    await updateMealPlan(planId, { meals: mealsCopy });
+    // -----------------------------
+    // Step 3: Send normalized meals to backend
+    // -----------------------------
+    const updatedPlan = await updateMealPlan(planId, { meals: mealsCopy });
 
-    // -------------------------------
-    // Update local context immediately for instant UI feedback
-    // -------------------------------
-    setActivePlan({ ...plan, meals: mealsCopy });
+    // -----------------------------
+    // Step 4: Update local state
+    // -----------------------------
+    setActivePlan(updatedPlan);
   }
 
-  // -------------------------------------------
-  // Provide context values
-  // -------------------------------------------
   return (
     <MealPlanContext.Provider
       value={{
@@ -211,7 +205,7 @@ export function MealPlanProvider({ children }: { children: React.ReactNode }) {
 }
 
 // -------------------------------------------
-// Hook for safe consumption
+// Custom hook
 // -------------------------------------------
 export function useMealPlans(): MealPlanContextType {
   const ctx = useContext(MealPlanContext);

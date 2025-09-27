@@ -1,6 +1,7 @@
 // ===========================================
 // PATH: src/app/signup/page.tsx
 // Full Signup Page with Animated, Color-Coded Password Strength Meter
+// Auto-login after successful signup and redirect to /dashboard
 // ===========================================
 "use client";
 
@@ -15,9 +16,11 @@ const passwordRegex =
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignupPage() {
-  const { signup, user } = useAuth();
+  // --- AuthContext provides signup, login, and current user ---
+  const { signup, login, user } = useAuth();
   const router = useRouter();
 
+  // --- Form state ---
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +28,7 @@ export default function SignupPage() {
   const [validEmail, setValidEmail] = useState(false);
   const [validPassword, setValidPassword] = useState(false);
 
-  // Track individual password criteria
+  // --- Track individual password criteria ---
   const [criteria, setCriteria] = useState({
     length: false,
     uppercase: false,
@@ -34,15 +37,19 @@ export default function SignupPage() {
     specialChar: false,
   });
 
-  // Redirect to dashboard if already logged in
+  // --- Redirect to dashboard if already logged in ---
   useEffect(() => {
-    if (user) router.replace("/dashboard");
+    if (user) {
+      router.replace("/dashboard"); // Skip signup page if logged in
+    }
   }, [user, router]);
 
-  // Update validation whenever email or password changes
+  // --- Validate email and password on input change ---
   useEffect(() => {
+    // Email format check
     setValidEmail(emailRegex.test(email));
 
+    // Password criteria
     const length = password.length >= 8;
     const uppercase = /[A-Z]/.test(password);
     const lowercase = /[a-z]/.test(password);
@@ -53,15 +60,18 @@ export default function SignupPage() {
     setValidPassword(length && uppercase && lowercase && number && specialChar);
   }, [email, password]);
 
+  // --- Handle form submit ---
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
+    // --- Validate email ---
     if (!validEmail) {
       setError("Please enter a valid email address.");
       return;
     }
 
+    // --- Validate password ---
     if (!validPassword) {
       setError(
         "Password must be at least 8 characters, include uppercase, lowercase, number, and special character."
@@ -70,14 +80,30 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-    const success = await signup(email, password);
-    setLoading(false);
 
-    if (!success) {
+    // --- Signup user in backend ---
+    const signupSuccess = await signup(email, password);
+
+    if (signupSuccess) {
+      // --- Auto-login after successful signup ---
+      const loginSuccess = await login(email, password);
+
+      if (loginSuccess) {
+        // Redirect to dashboard after login
+        router.replace("/dashboard");
+      } else {
+        setError(
+          "Signup succeeded, but auto-login failed. Please try logging in manually."
+        );
+      }
+    } else {
       setError("Signup failed. Email may already be in use.");
     }
+
+    setLoading(false);
   };
 
+  // --- Password strength criteria list for UI ---
   const criteriaList = [
     { label: "8+ characters", met: criteria.length },
     { label: "Uppercase letter", met: criteria.uppercase },
@@ -86,7 +112,7 @@ export default function SignupPage() {
     { label: "Special character", met: criteria.specialChar },
   ];
 
-  // Count number of criteria met for coloring bars
+  // Count number of criteria met for coloring strength bars
   const metCount = criteriaList.filter((c) => c.met).length;
 
   return (
@@ -94,8 +120,10 @@ export default function SignupPage() {
       <form className="auth-form" onSubmit={handleSignup}>
         <h1>Sign Up</h1>
 
+        {/* Inline error message */}
         {error && <p className="error">{error}</p>}
 
+        {/* Email input */}
         <input
           type="email"
           placeholder="Email"
@@ -108,6 +136,7 @@ export default function SignupPage() {
           <p className="error-small">Invalid email format</p>
         )}
 
+        {/* Password input */}
         <input
           type="password"
           placeholder="Password"
@@ -138,6 +167,7 @@ export default function SignupPage() {
           </div>
         )}
 
+        {/* Strength labels */}
         {password && (
           <div className="strength-labels">
             {criteriaList.map((c, i) => (
@@ -146,6 +176,7 @@ export default function SignupPage() {
           </div>
         )}
 
+        {/* Submit button */}
         <button
           type="submit"
           disabled={loading || !validEmail || !validPassword}
@@ -153,6 +184,7 @@ export default function SignupPage() {
           {loading ? "Creating account..." : "Create Account"}
         </button>
 
+        {/* Switch to login */}
         <p className="switch-auth">
           Already have an account? <a href="/login">Login</a>
         </p>

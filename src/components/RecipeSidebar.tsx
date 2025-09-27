@@ -1,8 +1,9 @@
 // ===========================================
 // PATH: src/components/RecipeSidebar.tsx
-// RecipeSidebar — lists all recipes
-// - Drag-and-drop to MealPlanEditor
-// - Cannot drop back into sidebar
+// RecipeSidebar — lists all recipes for drag-and-drop
+// - Fully read-only (cannot drop back into sidebar)
+// - Styled with theme-mealplan.module.css
+// - Provides visual feedback when dragging
 // ===========================================
 
 "use client";
@@ -13,6 +14,7 @@ import { Draggable, Droppable } from "@hello-pangea/dnd";
 import styles from "@/styles/theme-mealplan.module.css";
 
 export default function RecipeSidebar() {
+  // Grab all recipes from context
   const { recipes } = useRecipes();
 
   return (
@@ -25,15 +27,19 @@ export default function RecipeSidebar() {
         >
           <h3 className={styles.heading3}>Recipes</h3>
 
-          {/* Map recipes → draggable */}
+          {/* Map each recipe → draggable item */}
           {recipes.map((recipe, index) => (
             <Draggable key={recipe.id} draggableId={recipe.id} index={index}>
-              {(provided) => (
+              {(provided, snapshot) => (
                 <div
                   ref={provided.innerRef}
                   {...provided.draggableProps}
                   {...provided.dragHandleProps}
-                  className={styles.recipeCard}
+                  className={
+                    snapshot.isDragging
+                      ? `${styles.recipeCard} ${styles.dragging}`
+                      : styles.recipeCard
+                  }
                 >
                   {recipe.title}
                 </div>
@@ -41,7 +47,7 @@ export default function RecipeSidebar() {
             </Draggable>
           ))}
 
-          {/* Placeholder for drag spacing */}
+          {/* Placeholder ensures proper spacing during drag */}
           {provided.placeholder}
         </div>
       )}

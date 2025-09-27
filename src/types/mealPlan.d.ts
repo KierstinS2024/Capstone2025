@@ -1,7 +1,9 @@
 // ===========================================
 // PATH: src/types/mealPlan.d.ts
+//
 // TypeScript types for MealPlan
-// Fully type-safe: startDate/endDate always strings
+// Best practice: frontend always uses ISO strings
+// Backend stores real Date objects, but API normalizes
 // ===========================================
 
 /**
@@ -13,7 +15,7 @@ export type MealType = "breakfast" | "lunch" | "dinner";
  * Frontend-facing MealPlan interface
  * - Dates are always ISO strings (YYYY-MM-DD)
  * - Meals object maps date → meal slots
- * - Handles optional fields safely
+ * - Optional metadata handled safely
  */
 export interface MealPlan {
   id: string; // normalized from MongoDB _id
