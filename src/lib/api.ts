@@ -1,21 +1,52 @@
+// ===========================================
 // PATH: src/lib/api.ts
-// Generic API wrapper for client-side fetch calls to Next.js API routes.
-// Automatically includes credentials so httpOnly cookies are sent with requests.
+// ===========================================
 
-export async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    credentials: "include", // send cookies with requests
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
+import { User } from "@/context/AuthContext";
+
+// -----------------------------
+// Login
+// -----------------------------
+export async function login(email: string, password: string): Promise<void> {
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+    headers: { "Content-Type": "application/json" },
   });
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(errorText || `API request failed: ${res.status}`);
-  }
+  if (!res.ok) throw new Error("Login failed");
+}
 
-  return res.json() as Promise<T>;
+// -----------------------------
+// Signup
+// -----------------------------
+export async function signup(
+  email: string,
+  password: string,
+  name?: string
+): Promise<void> {
+  const res = await fetch("/api/auth/signup", {
+    method: "POST",
+    body: JSON.stringify({ email, password, name }),
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) throw new Error("Signup failed");
+}
+
+// -----------------------------
+// Logout
+// -----------------------------
+export async function logout(): Promise<void> {
+  const res = await fetch("/api/auth/logout", { method: "POST" });
+  if (!res.ok) throw new Error("Logout failed");
+}
+
+// -----------------------------
+// Get current logged-in user
+// -----------------------------
+export async function me(): Promise<User | null> {
+  const res = await fetch("/api/auth/me");
+  if (!res.ok) return null;
+  return (await res.json()) as User;
 }

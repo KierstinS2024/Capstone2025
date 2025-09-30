@@ -1,15 +1,15 @@
 // ===========================================
 // PATH: src/app/login/page.tsx
+// Styled Login Page
 // ===========================================
+
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import "@/styles/auth.css";
-
-// Basic email format validation
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginPage() {
   const { login, user } = useAuth();
@@ -19,49 +19,31 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [validEmail, setValidEmail] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) router.replace("/dashboard");
+    if (user) {
+      router.replace("/dashboard");
+    }
   }, [user, router]);
 
-  // Validate email on change
-  useEffect(() => {
-    setValidEmail(emailRegex.test(email));
-  }, [email]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (!validEmail) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
-    if (!password) {
-      setError("Please enter your password.");
-      return;
-    }
-
     setLoading(true);
-    const success = await login(email, password);
-    setLoading(false);
-
-    if (success) {
-      // ✅ store email for recipe creation
-      localStorage.setItem("userEmail", email.toLowerCase());
-      router.replace("/dashboard"); // redirect after login
-    } else {
-      setError("Invalid email or password");
+    try {
+      await login(email.trim().toLowerCase(), password);
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
-
   return (
     <main className="auth-page">
-      <form className="auth-form" onSubmit={handleLogin}>
+      <form className="auth-form" onSubmit={handleSubmit}>
         <h1>Login</h1>
 
         {error && <p className="error">{error}</p>}
@@ -71,12 +53,8 @@ export default function LoginPage() {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className={validEmail || email === "" ? "" : "input-error"}
           required
         />
-        {!validEmail && email !== "" && (
-          <p className="error-small">Invalid email format</p>
-        )}
 
         <input
           type="password"
@@ -86,12 +64,12 @@ export default function LoginPage() {
           required
         />
 
-        <button type="submit" disabled={loading || !validEmail || !password}>
+        <button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        <p>
-          Don't have an account? <a href="/signup">Sign Up</a>
+        <p className="switch-auth">
+          Don’t have an account? <Link href="/signup">Sign up here</Link>
         </p>
       </form>
     </main>

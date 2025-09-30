@@ -1,43 +1,47 @@
+// ===========================================
 // PATH: src/components/RecipeDetail.tsx
+// ===========================================
 "use client";
 
 import React, { useState } from "react";
 import { Recipe } from "@/types/recipe";
 import { useShoppingList } from "@/context/ShoppingListContext";
 import { useRecipes } from "@/context/RecipeContext";
+import { useAuth } from "@/context/AuthContext";
 import { parseInstructions } from "@/utils/parseInstructions";
 import styles from "@/styles/recipeDetail.module.css";
 
 interface Props {
-  recipe: Recipe; // Recipe to display
+  recipe: Recipe;
 }
 
 export default function RecipeDetail({ recipe }: Props) {
-  const { add, addBulk } = useShoppingList(); // shopping list context
-  const { addRecipe, deleteRecipe } = useRecipes(); // recipe context
+  // -----------------------------
+  // Context hooks
+  // -----------------------------
+  const { user } = useAuth();
+  const { add, addBulk } = useShoppingList();
+  const { addRecipe, deleteRecipe } = useRecipes();
 
+  // -----------------------------
+  // State
+  // -----------------------------
   const [addingIngredient, setAddingIngredient] = useState<string | null>(null);
   const [addingAll, setAddingAll] = useState(false);
   const [savingRecipe, setSavingRecipe] = useState(false);
   const [recipeSaved, setRecipeSaved] = useState(false);
 
-  // Current user email
-  const userEmail =
-    typeof window !== "undefined" ? localStorage.getItem("userEmail") : null;
-
-  // Check if recipe belongs to current user
   const isUserRecipe =
-    recipe.source !== "spoonacular" && recipe.author === userEmail;
+    recipe.author === user?.email && recipe.source !== "spoonacular";
 
   // -----------------------------
-  // Add single ingredient to shopping list
+  // Add single ingredient
   // -----------------------------
   const handleAddIngredient = async (ingredient: string) => {
     setAddingIngredient(ingredient);
     try {
       await add(ingredient);
-    } catch (err) {
-      console.error("Failed to add ingredient:", err);
+    } catch {
       alert("Failed to add ingredient");
     } finally {
       setAddingIngredient(null);
@@ -45,15 +49,14 @@ export default function RecipeDetail({ recipe }: Props) {
   };
 
   // -----------------------------
-  // Add all ingredients to shopping list
+  // Add all ingredients
   // -----------------------------
   const handleAddAll = async () => {
     if (!recipe.ingredients?.length) return;
     setAddingAll(true);
     try {
       await addBulk(recipe.ingredients);
-    } catch (err) {
-      console.error("Failed to add all ingredients:", err);
+    } catch {
       alert("Failed to add ingredients");
     } finally {
       setAddingAll(false);
@@ -61,10 +64,10 @@ export default function RecipeDetail({ recipe }: Props) {
   };
 
   // -----------------------------
-  // Save Spoonacular recipe to user's recipes
+  // Save Spoonacular recipe
   // -----------------------------
   const handleSaveRecipe = async () => {
-    if (recipe.source !== "spoonacular" || !userEmail) return;
+    if (recipe.source !== "spoonacular" || !user?.email) return;
 
     setSavingRecipe(true);
     try {
@@ -74,12 +77,11 @@ export default function RecipeDetail({ recipe }: Props) {
         instructions: recipe.instructions,
         image: recipe.image,
         source: "spoonacular",
-        author: userEmail,
+        author: user.email,
       });
       setRecipeSaved(true);
       alert("Recipe saved!");
-    } catch (err) {
-      console.error("Failed to save recipe:", err);
+    } catch {
       alert("Failed to save recipe");
     } finally {
       setSavingRecipe(false);
@@ -95,19 +97,18 @@ export default function RecipeDetail({ recipe }: Props) {
     try {
       await deleteRecipe(recipe.id);
       alert("Recipe deleted!");
-      // Optional: redirect or close view
-    } catch (err) {
-      console.error("Failed to delete recipe:", err);
+    } catch {
       alert("Failed to delete recipe");
     }
   };
 
+  // -----------------------------
+  // Render
+  // -----------------------------
   return (
     <div className={styles.container}>
-      {/* Action buttons: Save/Delete */}
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
         {isUserRecipe && <button onClick={handleDeleteRecipe}>Delete</button>}
-
         {recipe.source === "spoonacular" && !recipeSaved && (
           <button onClick={handleSaveRecipe} disabled={savingRecipe}>
             {savingRecipe ? "Saving..." : "Save to My Recipes"}
@@ -115,15 +116,11 @@ export default function RecipeDetail({ recipe }: Props) {
         )}
       </div>
 
-      {/* Recipe title */}
       <h2 className={styles.title}>{recipe.title}</h2>
-
-      {/* Recipe image */}
       {recipe.image && (
         <img src={recipe.image} alt={recipe.title} className={styles.image} />
       )}
 
-      {/* Ingredients */}
       <h3>Ingredients</h3>
       <ul className={styles.ingredients}>
         {recipe.ingredients?.map((ing, idx) => (
@@ -147,7 +144,6 @@ export default function RecipeDetail({ recipe }: Props) {
         {addingAll ? "Adding All..." : "Add All to Shopping List"}
       </button>
 
-      {/* Instructions */}
       <h3>Instructions</h3>
       <div className={styles.instructions}>
         {parseInstructions(recipe.instructions)}

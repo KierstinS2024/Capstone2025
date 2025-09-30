@@ -1,244 +1,181 @@
 // ===========================================
 // PATH: src/context/RecipeContext.tsx
-// RecipeContext — manages user and Spoonacular recipes
-// - Provides functions to fetch, add, update, delete, and search recipes
-// - Single source of truth for recipe data
 // ===========================================
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import { Recipe } from "@/types/recipe";
-import {
-  getSpoonacularRecipe as apiGetSpoonacularRecipe,
-  searchSpoonacular as apiSearchSpoonacular,
-} from "@/lib/spoonacularApi";
+import * as recipeApi from "@/lib/recipeApi";
+import * as spoonacularApi from "@/lib/spoonacularApi"; // updated import
+import { useAuth } from "./AuthContext";
 
-// -----------------------------
-// Context type definition
-// -----------------------------
+// Context type
 interface RecipeContextType {
-  recipes: Recipe[];
+  recipes: Recipe[]; // saved recipes (DB)
   loading: boolean;
-  error: string | null;
-  fetchRecipes: () => Promise<void>;
-  getRecipe: (id: string) => Recipe | undefined;
-  fetchRecipe: (id: string) => Promise<Recipe | undefined>;
-  addRecipe: (recipe: Partial<Omit<Recipe, "id">> | number) => Promise<Recipe>;
+  searchResults: Recipe[]; // Spoonacular full results
+  searchRecipes: (query: string) => Promise<void>;
+  saveRecipeFromSearch: (recipe: Recipe) => Promise<void>;
+  addRecipe: (
+    recipe: Omit<Recipe, "id" | "createdAt" | "updatedAt">
+  ) => Promise<Recipe>;
   updateRecipe: (id: string, updates: Partial<Recipe>) => Promise<void>;
   deleteRecipe: (id: string) => Promise<void>;
-  getSpoonacularRecipe: (id: string) => Promise<Recipe>;
-  searchSpoonacular: (query: string) => Promise<Recipe[]>;
+  refreshRecipes: () => Promise<void>;
 }
 
-// -----------------------------
-// Create context
-// -----------------------------
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
-// -----------------------------
-// RecipeProvider — wraps app and provides recipe state & functions
-// -----------------------------
-export function RecipeProvider({ children }: { children: React.ReactNode }) {
+export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user, loading: authLoading } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
   // -----------------------------
-  // Normalize backend/Spoonacular recipe to app Recipe type
+  // Fetch saved recipes from DB
   // -----------------------------
-  const normalize = (r: any): Recipe => ({
-    id: r._id || r.id,
-    title: r.title,
-    instructions: r.instructions,
-    ingredients: r.ingredients,
-    source: r.source || "user",
-    image: r.image,
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
-    author: r.author || null,
-  });
-
-  // -----------------------------
-  // Fetch all recipes for the current user
-  // -----------------------------
-  async function fetchRecipes() {
+  const refreshRecipes = async () => {
+    if (!user?.email) return;
+    setLoading(true);
     try {
-      setLoading(true);
-
-      const userEmail =
-        typeof window !== "undefined"
-          ? localStorage.getItem("userEmail")
-          : null;
-
-      const res = await fetch(`/api/recipes?author=${userEmail}`);
-      if (!res.ok) throw new Error("Failed to fetch recipes");
-
-      const data = await res.json();
-      setRecipes(data.map(normalize));
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
+      const fetched = await recipeApi.getRecipes(user.email);
+      setRecipes(fetched);
+    } catch (err) {
+      console.error("Failed to fetch recipes:", err);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  // -----------------------------
-  // Get recipe from local state
-  // -----------------------------
-  function getRecipe(id: string) {
-    return recipes.find((r) => r.id === id);
-  }
-
-  // -----------------------------
-  // Fetch recipe from local state or Spoonacular API
-  // -----------------------------
-  async function fetchRecipe(id: string): Promise<Recipe | undefined> {
-    const local = getRecipe(id);
-    if (local) return local;
-
-    try {
-      const spoon = await apiGetSpoonacularRecipe(id);
-      return spoon;
-    } catch (err) {
-      console.error("Failed to fetch recipe:", err);
-      return undefined;
-    }
-  }
-
-  // -----------------------------
-  // Add a recipe (user or Spoonacular)
-  // -----------------------------
-  async function addRecipe(
-    recipeOrId: Partial<Omit<Recipe, "id">> | number
-  ): Promise<Recipe> {
-    try {
-      const userEmail =
-        typeof window !== "undefined"
-          ? localStorage.getItem("userEmail")
-          : null;
-      if (!userEmail) throw new Error("User not logged in");
-
-      let recipeData: Partial<Omit<Recipe, "id">>;
-
-      if (typeof recipeOrId === "number") {
-        // Saving a Spoonacular recipe
-        const spoon = await apiGetSpoonacularRecipe(recipeOrId.toString());
-        recipeData = {
-          title: spoon.title,
-          instructions: spoon.instructions || "",
-          ingredients: spoon.ingredients || [],
-          image: spoon.image,
-          source: "spoonacular",
-          author: userEmail,
-        };
-      } else {
-        // User-created recipe
-        recipeData = {
-          ...recipeOrId,
-          author: userEmail,
-        };
-      }
-
-      const res = await fetch("/api/recipes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(recipeData),
-      });
-
-      if (!res.ok) throw new Error("Failed to save recipe");
-
-      const newRecipe = normalize(await res.json());
-      setRecipes((prev) => [newRecipe, ...prev]); // Update local state optimistically
-
-      return newRecipe;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    }
-  }
-
-  // -----------------------------
-  // Update a user-owned recipe
-  // -----------------------------
-  async function updateRecipe(id: string, updates: Partial<Recipe>) {
-    try {
-      const res = await fetch(`/api/recipes/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      });
-      if (!res.ok) throw new Error("Failed to update recipe");
-
-      const updated = normalize(await res.json());
-      setRecipes((prev) => prev.map((r) => (r.id === id ? updated : r)));
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
-  // -----------------------------
-  // Delete a user-owned recipe
-  // -----------------------------
-  async function deleteRecipe(id: string) {
-    try {
-      const res = await fetch(`/api/recipes/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete recipe");
-
-      setRecipes((prev) => prev.filter((r) => r.id !== id));
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
-  // -----------------------------
-  // Spoonacular helpers
-  // -----------------------------
-  async function getSpoonacularRecipe(id: string) {
-    return apiGetSpoonacularRecipe(id);
-  }
-
-  async function searchSpoonacular(query: string) {
-    return apiSearchSpoonacular(query);
-  }
-
-  // -----------------------------
-  // Initial fetch on mount
-  // -----------------------------
   useEffect(() => {
-    fetchRecipes();
-  }, []);
+    if (!authLoading && user?.email) refreshRecipes();
+    else setRecipes([]);
+  }, [user, authLoading]);
 
   // -----------------------------
-  // Provide context values
+  // Add manually created recipe
   // -----------------------------
+  const addRecipe = async (
+    recipeData: Omit<Recipe, "id" | "createdAt" | "updatedAt">
+  ) => {
+    if (!user?.email) throw new Error("User not logged in");
+    setLoading(true);
+    try {
+      const newRecipe = await recipeApi.addRecipe(recipeData, user.email);
+      setRecipes((prev) => [...prev, newRecipe]);
+      return newRecipe;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // -----------------------------
+  // Update recipe
+  // -----------------------------
+  const updateRecipe = async (id: string, updates: Partial<Recipe>) => {
+    if (!user?.email) throw new Error("User not logged in");
+    setLoading(true);
+    try {
+      await recipeApi.updateRecipe(id, updates, user.email);
+      setRecipes((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // -----------------------------
+  // Delete recipe
+  // -----------------------------
+  const deleteRecipe = async (id: string) => {
+    if (!user?.email) throw new Error("User not logged in");
+    setLoading(true);
+    try {
+      await recipeApi.deleteRecipe(id, user.email);
+      setRecipes((prev) => prev.filter((r) => r.id !== id));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // -----------------------------
+  // Spoonacular Search (FULL recipe details)
+  // -----------------------------
+  const searchRecipes = async (query: string) => {
+    if (!query) return;
+    setLoading(true);
+    try {
+      // Step 1: search for recipe IDs
+      const partialResults = await spoonacularApi.searchSpoonacular(query);
+
+      // Step 2: fetch full recipe details for each
+      const fullResults = await Promise.all(
+        partialResults.map(async (r) => {
+          try {
+            return await spoonacularApi.getSpoonacularRecipe(r.id);
+          } catch (err) {
+            console.error(`Failed to fetch recipe ${r.id}`, err);
+            return r; // fallback to partial
+          }
+        })
+      );
+
+      setSearchResults(fullResults);
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // -----------------------------
+  // Save Spoonacular Recipe → DB
+  // -----------------------------
+  const saveRecipeFromSearch = async (recipe: Recipe) => {
+    if (!user?.email) throw new Error("User not logged in");
+
+    const recipeToSave: Omit<Recipe, "id" | "createdAt" | "updatedAt"> = {
+      author: user.email,
+      title: recipe.title,
+      image: recipe.image,
+      ingredients: recipe.ingredients || [],
+      instructions: recipe.instructions || "",
+      source: "spoonacular",
+    };
+
+    const saved = await recipeApi.addRecipe(recipeToSave, user.email);
+    setRecipes((prev) => [...prev, saved]);
+  };
+
   return (
     <RecipeContext.Provider
       value={{
         recipes,
         loading,
-        error,
-        fetchRecipes,
-        getRecipe,
-        fetchRecipe,
+        searchResults,
+        searchRecipes,
+        saveRecipeFromSearch,
         addRecipe,
         updateRecipe,
         deleteRecipe,
-        getSpoonacularRecipe,
-        searchSpoonacular,
+        refreshRecipes,
       }}
     >
       {children}
     </RecipeContext.Provider>
   );
-}
+};
 
-// -----------------------------
-// Hook for using RecipeContext
-// -----------------------------
-export function useRecipes() {
-  const context = useContext(RecipeContext);
-  if (!context)
-    throw new Error("useRecipes must be used within RecipeProvider");
-  return context;
-}
+export const useRecipes = () => {
+  const ctx = useContext(RecipeContext);
+  if (!ctx) throw new Error("useRecipes must be used within RecipeProvider");
+  return ctx;
+};

@@ -1,155 +1,90 @@
 // ===========================================
 // PATH: src/app/api/meal-plans/route.ts
-//
-// API Route for Meal Plans (collection-level)
-// Handles GET and POST requests.
-// -------------------------------------------
-// Business Rule: Only ONE active meal plan per user
+// Collection-level API routes for Meal Plans
+// - GET all meal plans for a user
+// - POST a new weekly meal plan
 // ===========================================
 
-import { NextResponse, type NextRequest } from "next/server";
-import { connectDB } from "@/lib/db";
-import MealPlan from "@/models/MealPlan";
-import { getUserFromRequest } from "@/lib/serverAuth";
+import { NextRequest, NextResponse } from "next/server";
+import { getAllMealPlans, createMealPlan } from "@/lib/db";
 
 // -------------------------------------------
-// Helper: normalizeMeals()
-// Ensures each day entry has breakfast/lunch/dinner keys
+// GET → Fetch all meal plans for a user
 // -------------------------------------------
-function normalizeMeals(
-  meals: Record<
-    string,
-    Partial<Record<"breakfast" | "lunch" | "dinner", string | null>>
-  > = {}
-) {
-  const normalized: Record<
-    string,
-    { breakfast: string | null; lunch: string | null; dinner: string | null }
-  > = {};
-
-  for (const [day, slots] of Object.entries(meals)) {
-    normalized[day] = {
-      breakfast: slots?.breakfast ?? null,
-      lunch: slots?.lunch ?? null,
-      dinner: slots?.dinner ?? null,
-    };
-  }
-  return normalized;
-}
-
-// -------------------------------------------
-// Helper: formatMealPlan()
-// Converts MongoDB doc → frontend JSON
-// - Dates: Date → ISO string (YYYY-MM-DD)
-// -------------------------------------------
-function formatMealPlan(doc: any) {
-  return {
-    id: doc._id.toString(),
-    title: doc.title,
-    startDate:
-      doc.startDate instanceof Date
-        ? doc.startDate.toISOString().split("T")[0]
-        : doc.startDate,
-    endDate:
-      doc.endDate instanceof Date
-        ? doc.endDate.toISOString().split("T")[0]
-        : doc.endDate,
-    meals: normalizeMeals(doc.meals),
-    user: doc.user?.toString() || null,
-    createdAt: doc.createdAt?.toISOString?.(),
-    updatedAt: doc.updatedAt?.toISOString?.(),
-  };
-}
-
-// -----------------------------
-// GET /api/meal-plans
-// Returns user's plan or null
-// -----------------------------
 export async function GET(req: NextRequest) {
-  await connectDB();
+  const { searchParams } = new URL(req.url);
+  const userEmail = searchParams.get("userEmail");
+  if (!userEmail)
+    return NextResponse.json({ error: "Missing userEmail" }, { status: 400 });
 
-  const payload = await getUserFromRequest(req);
-  if (!payload)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const plan = await MealPlan.findOne({ user: payload.id }).lean();
-  return NextResponse.json(plan ? formatMealPlan(plan) : null);
+  try {
+    const plans = await getAllMealPlans(userEmail);
+    return NextResponse.json(plans);
+  } catch (err) {
+    console.error("GET /api/meal-plans failed:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch meal plans" },
+      { status: 500 }
+    );
+  }
 }
 
-// -----------------------------
-// POST /api/meal-plans
-// Creates a new meal plan
-// -----------------------------
+// -------------------------------------------
+// POST → Create a new weekly meal plan
+// -------------------------------------------
 export async function POST(req: NextRequest) {
-  await connectDB();
-
-  const payload = await getUserFromRequest(req);
-  if (!payload)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const userId = payload.id;
+  const { searchParams } = new URL(req.url);
+  const userEmail = searchParams.get("userEmail");
+  if (!userEmail)
+    return NextResponse.json({ error: "Missing userEmail" }, { status: 400 });
 
   try {
     const body = await req.json();
-    const { startDate, endDate, title } = body;
 
-    // ✅ Validate required dates
-    if (!startDate || !endDate) {
-      return NextResponse.json(
-        { error: "startDate and endDate are required" },
-        { status: 400 }
-      );
-    }
+    // Ensure startDate is provided
+    const startDateStr = body.startDate;
+    if (!startDateStr)
+      return NextResponse.json({ error: "Missing startDate" }, { status: 400 });
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const startDate = new Date(startDateStr);
+    if (isNaN(startDate.getTime()))
+      return NextResponse.json({ error: "Invalid startDate" }, { status: 400 });
 
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return NextResponse.json(
-        { error: "Invalid startDate or endDate" },
-        { status: 400 }
-      );
-    }
-    if (end < start) {
-      return NextResponse.json(
-        { error: "endDate cannot be before startDate" },
-        { status: 400 }
-      );
-    }
+    // Calculate endDate (+6 days)
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
 
-    // ✅ Block if plan exists
-    const existing = await MealPlan.findOne({ user: userId }).lean();
-    if (existing) {
-      return NextResponse.json(
-        { error: "You already have an active meal plan. Delete it first." },
-        { status: 400 }
-      );
-    }
+    // Normalize meals if missing
+    const meals: Record<
+      string,
+      { breakfast?: string; lunch?: string; dinner?: string }
+    > = body.meals || {};
 
-    // ✅ Build safe insert object
-    const safeBody = {
+    // Create the plan using updated db.ts helper
+    const newPlan = await createMealPlan({
       ...body,
-      meals: normalizeMeals(body.meals),
-      title: title || `Meal Plan ${startDate} → ${endDate}`,
-      startDate: start,
-      endDate: end,
-      user: userId,
-    };
+      author: userEmail, // must match MealPlan field
+      weekStartDate: startDate.toISOString().split("T")[0],
+      weekEndDate: endDate.toISOString().split("T")[0],
+      meals,
+    });
 
-    const plan = await MealPlan.create(safeBody);
-    return NextResponse.json(formatMealPlan(plan));
+    return NextResponse.json(newPlan, { status: 201 });
   } catch (err: any) {
-    console.error("Failed to create meal plan:", err);
-
-    if (err.code === 11000) {
+    // Duplicate error handling (two possible sources)
+    if (
+      err.message?.includes("User already has an active meal plan") || // thrown in db.ts
+      err.code === 11000 // Mongo duplicate key error
+    ) {
       return NextResponse.json(
-        { error: "User already has an active meal plan" },
-        { status: 400 }
+        { error: "Meal plan already exists for this user" },
+        { status: 409 }
       );
     }
 
+    console.error("POST /api/meal-plans failed:", err);
     return NextResponse.json(
-      { error: err.message || "Failed to create meal plan" },
+      { error: "Failed to create meal plan" },
       { status: 500 }
     );
   }

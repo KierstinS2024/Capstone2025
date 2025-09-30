@@ -1,277 +1,137 @@
 // ===========================================
 // PATH: src/app/recipes/page.tsx
-// RecipesPage — displays user recipes + Spoonacular search
-// Features:
-//  - User recipe grid with delete + modal view
-//  - Spoonacular search with debounce
-//  - Fetch full Spoonacular recipe before opening modal
-//  - Add Recipe form modal
-//  - Save Spoonacular recipe to user collection
+// Recipes Page — mobile-first, polished, with Add Recipe modal
 // ===========================================
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import Navbar from "@/components/Navbar";
-import RecipeCard from "@/components/RecipeCard";
-import RecipeModal from "@/components/RecipeModal";
-import AddRecipeForm from "@/components/AddRecipeForm";
+import React, { useState } from "react";
 import { useRecipes } from "@/context/RecipeContext";
+import RecipeCard from "@/components/RecipeCard";
+import AddRecipeForm from "@/components/AddRecipeForm";
 import { Recipe } from "@/types/recipe";
+import styles from "@/styles/recipePage.module.css"; // Dedicated CSS for recipes page
 
 export default function RecipesPage() {
   const {
-    recipes,
-    searchSpoonacular,
-    addRecipe,
-    deleteRecipe,
-    getSpoonacularRecipe,
+    recipes, // Saved recipes from DB
+    loading, // Loading state for Spoonacular search
+    searchResults, // Spoonacular search results
+    searchRecipes, // Function to query Spoonacular
+    saveRecipeFromSearch,
+    deleteRecipe, // Delete recipe from DB
   } = useRecipes();
 
-  // -----------------------------
-  // Component state
-  // -----------------------------
-  const [searchQuery, setSearchQuery] = useState("");
-  const [spoonacularResults, setSpoonacularResults] = useState<Recipe[]>([]);
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [loadingSpoonacular, setLoadingSpoonacular] = useState(false);
-  const [spoonacularError, setSpoonacularError] = useState<string | null>(null);
-  const [savingRecipeIds, setSavingRecipeIds] = useState<Set<string>>(
-    new Set()
-  );
-  const [showAddRecipeForm, setShowAddRecipeForm] = useState(false);
+  // Local state for search input
+  const [query, setQuery] = useState("");
+
+  // Local state to control Add Recipe modal visibility
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   // -----------------------------
-  // Debounce timer for Spoonacular search
+  // Handle Spoonacular search submit
   // -----------------------------
-  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSpoonacularResults([]);
-      setSpoonacularError(null);
-      return;
-    }
-
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-
-    searchTimeout.current = setTimeout(async () => {
-      setLoadingSpoonacular(true);
-      setSpoonacularError(null);
-
-      try {
-        const results = await searchSpoonacular(searchQuery);
-        setSpoonacularResults(results);
-      } catch (err: any) {
-        setSpoonacularError(
-          err.message === "quota"
-            ? "Daily Spoonacular limit reached. Try again tomorrow."
-            : "Spoonacular search failed. Try again later."
-        );
-      } finally {
-        setLoadingSpoonacular(false);
-      }
-    }, 500); // 500ms debounce
-  }, [searchQuery, searchSpoonacular]);
-
-  // -----------------------------
-  // Save Spoonacular recipe to user collection
-  // -----------------------------
-  const handleSaveRecipe = async (id: string) => {
-    if (savingRecipeIds.has(id)) return; // prevent double clicks
-    setSavingRecipeIds((prev) => new Set(prev).add(id));
-
-    try {
-      await addRecipe(Number(id));
-      alert("Recipe saved!");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save recipe.");
-    } finally {
-      setSavingRecipeIds((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
-    }
-  };
-
-  // -----------------------------
-  // Delete recipe handler (updates grid immediately)
-  // -----------------------------
-  const handleDeleteRecipe = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this recipe?")) return;
-    try {
-      await deleteRecipe(id);
-      if (selectedRecipe?.id === id) setSelectedRecipe(null); // close modal if deleted
-    } catch (err) {
-      console.error("Failed to delete recipe", err);
-    }
-  };
-
-  // -----------------------------
-  // Filter user recipes by search query
-  // -----------------------------
-  const filteredUserRecipes = recipes.filter((r) =>
-    r.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // -----------------------------
-  // Handle clicking "View Full Recipe" for Spoonacular
-  // Fetch full recipe before opening modal
-  // -----------------------------
-  const handleViewFullRecipe = async (recipe: Recipe) => {
-    // Only fetch if it's a Spoonacular recipe and we don't have full instructions
-    if (recipe.source === "spoonacular" && !recipe.instructions) {
-      try {
-        const fullRecipe = await getSpoonacularRecipe(recipe.id);
-        setSelectedRecipe(fullRecipe);
-      } catch (err) {
-        console.error("Failed to fetch full Spoonacular recipe", err);
-        alert("Failed to load full recipe. Try again later.");
-      }
-    } else {
-      setSelectedRecipe(recipe); // user recipe or already full Spoonacular
-    }
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    await searchRecipes(query.trim());
   };
 
   return (
-    <>
-      <Navbar />
+    <div className={styles.recipesPage}>
+      {/* ---------- PAGE TITLE ---------- */}
+      <h1 className={styles.recipesTitle}>Recipes</h1>
 
-      <main style={{ padding: "1rem", maxWidth: "1200px", margin: "0 auto" }}>
-        <h1 style={{ marginBottom: "1rem" }}>Recipes</h1>
+      {/* ---------- SEARCH BAR ---------- */}
+      <form className={styles.recipesSearchForm} onSubmit={handleSearch}>
+        <input
+          type="text"
+          className={styles.recipesSearchInput}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search recipes..."
+        />
+        <button type="submit" className={styles.recipesSearchButton}>
+          Search
+        </button>
+      </form>
 
-        {/* Search input + Add Recipe button */}
-        <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem" }}>
-          <input
-            type="text"
-            placeholder="Search recipes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              flex: 1,
-              padding: "0.5rem",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-            }}
-          />
-          <button
-            onClick={() => setShowAddRecipeForm(true)}
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "8px",
-              backgroundColor: "#3498db",
-              color: "#fff",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            + Add Recipe
-          </button>
-        </div>
+      {/* ---------- MAIN LAYOUT ---------- */}
+      <div className={styles.recipesLayout}>
+        {/* ---------- LEFT COLUMN: SAVED RECIPES ---------- */}
+        <div className={styles.recipesSaved}>
+          <div className={styles.recipesSavedHeader}>
+            <h2 className={styles.recipesSubtitle}>My Recipes</h2>
 
-        {/* Add Recipe Form Modal */}
-        {showAddRecipeForm && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(0,0,0,0.4)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 100,
-            }}
-          >
-            <AddRecipeForm
-              onClose={() => setShowAddRecipeForm(false)}
-              onSuccess={(newRecipe) => {
-                setSelectedRecipe(newRecipe); // open modal for new recipe
-                setShowAddRecipeForm(false);
-              }}
-            />
-          </div>
-        )}
-
-        {/* User Recipes */}
-        <h2>Your Recipes</h2>
-        {filteredUserRecipes.length === 0 && <p>No recipes found.</p>}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-            gap: "1rem",
-            marginBottom: "2rem",
-          }}
-        >
-          {filteredUserRecipes.map((recipe) => (
-            <RecipeCard
-              key={recipe.id}
-              recipe={recipe}
-              onClick={() => handleViewFullRecipe(recipe)} // use handler
-              onDelete={handleDeleteRecipe} // user-owned: allow delete
-            />
-          ))}
-        </div>
-
-        {/* Spoonacular Results */}
-        {searchQuery && (
-          <>
-            <h2>Spoonacular Results</h2>
-            {loadingSpoonacular && <p>Loading...</p>}
-            {spoonacularError && <p>{spoonacularError}</p>}
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-                gap: "1rem",
-              }}
+            {/* Add Recipe button triggers modal */}
+            <button
+              className={styles.addButton}
+              onClick={() => setAddModalOpen(true)}
             >
-              {spoonacularResults.map((recipe) => (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  onClick={() => handleViewFullRecipe(recipe)} // fetch full recipe before modal
-                  onDelete={undefined} // read-only
-                >
-                  {/* Extra Save button (child prop) */}
-                  <button
-                    disabled={savingRecipeIds.has(recipe.id)}
-                    onClick={(e) => {
-                      e.stopPropagation(); // prevent modal open
-                      handleSaveRecipe(recipe.id);
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: "0.25rem",
-                      borderRadius: "6px",
-                      border: "none",
-                      backgroundColor: "#2ecc71",
-                      color: "#fff",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {savingRecipeIds.has(recipe.id) ? "Saving..." : "Save"}
-                  </button>
-                </RecipeCard>
-              ))}
-            </div>
-          </>
-        )}
+              + Add
+            </button>
+          </div>
 
-        {/* Recipe Modal */}
-        {selectedRecipe && (
-          <RecipeModal
-            recipe={selectedRecipe}
-            onClose={() => setSelectedRecipe(null)}
-            onDelete={handleDeleteRecipe}
-          />
-        )}
-      </main>
-    </>
+          {/* Empty state */}
+          {recipes.length === 0 && (
+            <p className={styles.recipesEmpty}>No recipes saved yet.</p>
+          )}
+
+          {/* Saved recipes list */}
+          <div className={styles.recipesSavedList}>
+            {recipes.map((recipe) => (
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                onDelete={deleteRecipe}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* ---------- RIGHT COLUMN: SEARCH RESULTS ---------- */}
+        <div className={styles.recipesSearchResults}>
+          <h2 className={styles.recipesSubtitle}>Search Results</h2>
+
+          {loading && <p className={styles.recipesLoading}>Loading...</p>}
+
+          {!loading && searchResults.length === 0 && (
+            <p className={styles.recipesEmpty}>
+              Search above to find new recipes.
+            </p>
+          )}
+
+          <div className={styles.recipesResultsList}>
+            {searchResults.map((recipe: Recipe) => (
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                // Save button inside RecipeCard handles saving
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ---------- ADD RECIPE MODAL ---------- */}
+      {addModalOpen && (
+        <div className={styles.modalBackdrop}>
+          <div className={styles.modalContent}>
+            {/* Modal header */}
+            <div className={styles.modalHeader}>
+              <h2>Add Recipe</h2>
+              <button
+                className={styles.closeButton}
+                onClick={() => setAddModalOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* AddRecipeForm accepts onClose to close modal */}
+            <AddRecipeForm onClose={() => setAddModalOpen(false)} />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

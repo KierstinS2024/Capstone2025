@@ -1,91 +1,79 @@
 // ===========================================
 // PATH: src/components/AddRecipeForm.tsx
-// AddRecipeForm — create new user recipe
-// Combines drag-drop UI with parent notification logic
+// AddRecipeForm Component — accepts optional onClose prop
 // ===========================================
-
 "use client";
 
 import React, { useState } from "react";
 import { useRecipes } from "@/context/RecipeContext";
-import { Recipe } from "@/types/recipe";
-import styles from "@/styles/addRecipeForm.module.css"; // external CSS module
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from "@hello-pangea/dnd";
+import { useAuth } from "@/context/AuthContext";
+import styles from "@/styles/addRecipeForm.module.css";
 
+// -----------------------------
+// Props type: onClose optional
+// -----------------------------
 interface AddRecipeFormProps {
-  onClose: () => void; // called when user cancels or after success
-  onSuccess?: (newRecipe: Recipe) => void; // notify parent of new recipe
+  onClose?: () => void; // Called when form/modal should close
 }
 
-export default function AddRecipeForm({
-  onClose,
-  onSuccess,
-}: AddRecipeFormProps) {
-  const { addRecipe } = useRecipes();
+export default function AddRecipeForm({ onClose }: AddRecipeFormProps) {
+  const { user } = useAuth(); // current logged-in user
+  const { addRecipe } = useRecipes(); // function to add recipe to DB
 
   // -----------------------------
-  // Form state
+  // Local form state
   // -----------------------------
   const [title, setTitle] = useState("");
-  const [ingredients, setIngredients] = useState<string[]>([""]); // multiple ingredients
+  const [ingredients, setIngredients] = useState("");
   const [instructions, setInstructions] = useState("");
   const [image, setImage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // -----------------------------
-  // Drag-and-drop reorder logic
-  // -----------------------------
-  const handleDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    const updated = Array.from(ingredients);
-    const [moved] = updated.splice(result.source.index, 1);
-    updated.splice(result.destination.index, 0, moved);
-    setIngredients(updated);
-  };
-
-  // -----------------------------
-  // Ingredient field helpers
-  // -----------------------------
-  const handleIngredientChange = (index: number, value: string) => {
-    const updated = [...ingredients];
-    updated[index] = value;
-    setIngredients(updated);
-  };
-
-  const addIngredientField = () => setIngredients([...ingredients, ""]);
-
-  const removeIngredientField = (index: number) =>
-    setIngredients(ingredients.filter((_, i) => i !== index));
-
-  // -----------------------------
-  // Submit logic
+  // Form submit handler
   // -----------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user?.email) {
+      setError("You must be logged in to add a recipe.");
+      return;
+    }
+
+    if (!title.trim() || !ingredients.trim() || !instructions.trim()) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const cleanIngredients = ingredients.map((i) => i.trim()).filter(Boolean);
-
-      // Save new recipe to DB
-      const newRecipe = await addRecipe({
+      await addRecipe({
         title: title.trim(),
+        ingredients: ingredients
+          .split(",")
+          .map((i) => i.trim())
+          .filter(Boolean),
         instructions: instructions.trim(),
-        ingredients: cleanIngredients,
-        image: image.trim(),
+        image: image.trim() || undefined,
+        author: user.email,
+        source: "user",
       });
 
-      // notify parent + close form
-      if (onSuccess) onSuccess(newRecipe);
-      onClose();
+      // Reset form
+      setTitle("");
+      setIngredients("");
+      setInstructions("");
+      setImage("");
+
+      alert("Recipe added successfully!");
+
+      // Close modal if onClose prop is passed
+      if (onClose) onClose();
     } catch (err: any) {
+      console.error(err);
       setError(err.message || "Failed to add recipe");
     } finally {
       setLoading(false);
@@ -97,132 +85,55 @@ export default function AddRecipeForm({
   // -----------------------------
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <h2 className={styles.formHeader}>Add New Recipe</h2>
+      <h2>Add New Recipe</h2>
 
-      {/* Title */}
-      <div className={styles.formSection}>
-        <label htmlFor="title">Title</label>
+      {error && <p className={styles.error}>{error}</p>}
+
+      <label>
+        Title
         <input
-          id="title"
-          required
-          placeholder="Recipe title"
+          type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          placeholder="Recipe title"
+          required
         />
-      </div>
+      </label>
 
-      {/* Ingredients (drag & drop reorderable list) */}
-      <div className={styles.formSection}>
-        <label>Ingredients (drag ☰ to reorder)</label>
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="ingredients">
-            {(provided) => (
-              <div
-                className={styles.ingredientsContainer}
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-              >
-                {ingredients.map((ingredient, index) => (
-                  <Draggable
-                    key={index.toString()}
-                    draggableId={index.toString()}
-                    index={index}
-                  >
-                    {(provided) => (
-                      <div
-                        className={styles.ingredientRow}
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                      >
-                        {/* Drag handle */}
-                        <span
-                          className={styles.dragHandle}
-                          {...provided.dragHandleProps}
-                        >
-                          ☰
-                        </span>
+      <label>
+        Ingredients (comma separated)
+        <input
+          type="text"
+          value={ingredients}
+          onChange={(e) => setIngredients(e.target.value)}
+          placeholder="e.g., eggs, milk, flour"
+          required
+        />
+      </label>
 
-                        {/* Input */}
-                        <input
-                          type="text"
-                          value={ingredient}
-                          onChange={(e) =>
-                            handleIngredientChange(index, e.target.value)
-                          }
-                          placeholder={`Ingredient ${index + 1}`}
-                          required={index === 0}
-                        />
-
-                        {/* Remove button */}
-                        {ingredients.length > 1 && (
-                          <button
-                            type="button"
-                            className={styles.removeIngredientBtn}
-                            onClick={() => removeIngredientField(index)}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-
-        {/* Add more ingredients */}
-        <button
-          type="button"
-          className={styles.addIngredientBtn}
-          onClick={addIngredientField}
-        >
-          + Add Ingredient
-        </button>
-      </div>
-
-      {/* Instructions */}
-      <div className={styles.formSection}>
-        <label htmlFor="instructions">Instructions</label>
+      <label>
+        Instructions
         <textarea
-          id="instructions"
-          placeholder="Step-by-step instructions"
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
-          className={styles.autoGrowTextarea}
+          placeholder="Step-by-step instructions"
+          required
         />
-      </div>
+      </label>
 
-      {/* Image */}
-      <div className={styles.formSection}>
-        <label htmlFor="image">Image URL</label>
+      <label>
+        Image URL (optional)
         <input
-          id="image"
-          placeholder="https://..."
+          type="text"
           value={image}
           onChange={(e) => setImage(e.target.value)}
+          placeholder="https://example.com/image.jpg"
         />
-      </div>
+      </label>
 
-      {/* Error message */}
-      {error && <p className={styles.error}>❌ {error}</p>}
-
-      {/* Submit + Cancel buttons */}
-      <div className={styles.submitContainer}>
-        <button
-          type="button"
-          onClick={onClose}
-          className={styles.cancelBtn}
-          disabled={loading}
-        >
-          Cancel
-        </button>
-        <button type="submit" disabled={loading} className={styles.submitBtn}>
-          {loading ? "Saving..." : "Save Recipe"}
-        </button>
-      </div>
+      <button type="submit" disabled={loading}>
+        {loading ? "Adding..." : "Add Recipe"}
+      </button>
     </form>
   );
 }

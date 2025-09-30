@@ -1,48 +1,124 @@
-/* ===========================================
-   PATH: src/styles/dashboard.module.css
-   Layout for dashboard + responsive sidebar
-   =========================================== */
+/* PATH: src/styles/dashboard.module.css */
 
-.dashboard {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 1.5rem;
+/* ---------------- Dashboard Container ---------------- */
+.dashboardContainer {
   display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  gap: 24px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
-.header {
+/* ---------------- Columns ---------------- */
+.leftColumn {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rightColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------------- Panel ---------------- */
+.panel {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* Panel Header */
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.panelHeader p {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* ---------------- Buttons ---------------- */
+.btnPrimary {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.2s ease;
+}
+
+.btnPrimary:hover {
+  background-color: #45a049;
+}
+
+/* ---------------- Loading Text ---------------- */
+.loading {
+  font-size: 1rem;
+  color: #777;
+  text-align: center;
+  margin-top: 50px;
+}
+
+/* ---------------- Empty State ---------------- */
+.emptyState {
+  font-size: 0.95rem;
+  color: #555;
   text-align: center;
 }
 
-.main {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 1.5rem;
+/* ---------------- WeeklyMealPlan Styling (optional overrides) ---------------- */
+.weeklyMealPlan {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-/* Responsive: collapse sidebar below content */
+.dayCard {
+  background-color: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.date {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.mealList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mealItem {
+  margin-bottom: 4px;
+}
+
+/* ---------------- Responsive ---------------- */
 @media (max-width: 900px) {
-  .main {
-    grid-template-columns: 1fr;
+  .dashboardContainer {
+    flex-direction: column;
   }
-}
-
-/* Shared card styling */
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  padding: 1.5rem;
-}
-
-/* Specific sections */
-.mealPlanSection {
-  composes: card;
-}
-
-.shoppingListSection {
-  composes: card;
+  .leftColumn, .rightColumn {
+    flex: 1;
+  }
 }

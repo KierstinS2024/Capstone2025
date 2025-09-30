@@ -1,24 +1,49 @@
-// src/components/ShoppingListComponent.tsx
+// ===========================================
+// PATH: src/components/ShoppingListComponent.tsx
+// ===========================================
+
 "use client";
 
-import { IShoppingList } from "@/types/shoppingList";
+import { useShoppingList } from "@/context/ShoppingListContext";
+import { useAuth } from "@/context/AuthContext";
+import styles from "@/styles/shoppinglist-detail.module.css";
 
-// Component for rendering shopping list items
-export default function ShoppingListComponent({
-  list,
-}: {
-  list: IShoppingList;
-}) {
+// -----------------------------
+// ShoppingListComponent
+// -----------------------------
+// - Uses AuthContext to ensure a user is logged in
+// - Uses ShoppingListContext to access the user's shopping list
+// - Displays the list items (name + quantity)
+// -----------------------------
+export default function ShoppingListComponent() {
+  const { user } = useAuth();
+  const { list, loading } = useShoppingList();
+
+  // Guard: must be logged in
+  if (!user) return <p>Please log in to view your shopping list.</p>;
+
+  // Guard: still loading
+  if (loading) return <p>Loading shopping list...</p>;
+
+  // Guard: no list found for this user
+  if (!list || list.ownerEmail !== user.email)
+    return <p>No shopping list found.</p>;
+
   return (
-    <div className="border rounded-lg shadow-md p-4 bg-white">
-      <h3 className="font-semibold text-lg">Shopping List</h3>
-      <ul className="mt-2 space-y-1">
-        {list.items.map((item, i) => (
-          <li key={i} className="flex justify-between items-center">
-            <span>{item.name}</span>
-            <span className="text-gray-500 text-sm">{item.quantity}</span>
-          </li>
-        ))}
+    <div className={styles.component}>
+      <h3 className={styles.heading}>Shopping List</h3>
+
+      <ul className={styles.items}>
+        {list.items.length ? (
+          list.items.map((item, i) => (
+            <li key={i} className={styles.item}>
+              <span>{item.name}</span>
+              <span className={styles.quantity}>{item.quantity}</span>
+            </li>
+          ))
+        ) : (
+          <p className={styles.empty}>No items in your shopping list.</p>
+        )}
       </ul>
     </div>
   );

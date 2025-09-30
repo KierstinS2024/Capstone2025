@@ -1,120 +1,85 @@
 .panel {
-  background-color: var(--card);
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: var(--shadow-soft);
-  max-width: 400px;
-  width: 100%;
-}
-
-/* Header */
-.panel h2 {
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
-  color: var(--text);
-}
-
-/* Manual add form */
-.addForm {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  height: 100%;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 600;
   margin-bottom: 1rem;
 }
 
-.addForm input {
+.list {
   flex: 1;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-}
-
-.addForm button {
-  padding: 0.5rem 1rem;
-  border: none;
-  background-color: var(--primary);
-  color: white;
-  font-weight: 500;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.addForm button:hover {
-  background-color: var(--primary-hover);
-}
-
-/* Generate buttons container */
-.generateButtons {
-  display: flex;
-  gap: 0.5rem;
+  overflow-y: auto;
   margin-bottom: 1rem;
-}
-
-.generateButtons button {
-  flex: 1;
-  padding: 0.5rem;
-  border-radius: 8px;
-  border: none;
-  background-color: var(--primary);
-  color: white;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.generateButtons button:hover {
-  background-color: var(--primary-hover);
-}
-
-/* Shopping list items */
-.itemList {
-  list-style: none;
   padding: 0;
-  margin: 0;
+  list-style: none;
 }
 
-.item {
+.listItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
+  background: #f9f9f9;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
 }
 
-.item label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text);
+.completed {
+  text-decoration: line-through;
+  color: #888;
 }
 
-/* Remove button for each item */
-.item button {
-  border: none;
+.deleteBtn {
   background: none;
-  color: #d9363e;
-  font-weight: bold;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.item button:hover {
-  color: #a80000;
-}
-
-/* Clear all button */
-.clearBtn {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
   border: none;
-  background-color: #b00020;
-  color: white;
-  font-weight: 500;
+  color: #d33;
+  font-size: 1.2rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
 }
 
-.clearBtn:hover {
-  background-color: #800016;
+.addRow {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.addRow input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 0.5rem;
+}
+
+.btnPrimary,
+.btnSecondary,
+.btnDanger {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btnPrimary {
+  background: #0070f3;
+  color: #fff;
+}
+
+.btnSecondary {
+  background: #eee;
+  color: #333;
+}
+
+.btnDanger {
+  background: #d33;
+  color: #fff;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
 }

@@ -1,26 +1,22 @@
 // ===========================================
-// PATH: src/app/api/meal-plans/week/[date]/route.ts
-//
-// API route for fetching a meal plan by week start date
-// Handles:
-//   - GET: return meal plan for given week
-//
-// Best practices implemented:
-//   - Always scoped to the authenticated user
-//   - Uses real Date queries in Mongo
-//   - Converts back to ISO string for frontend
+// PATH: src/app/api/meal-plans/week/[startDate]/route.ts
+// Weekly Meal Plan API
+// - GET  : Fetch a plan by weekStartDate
+// - POST : Create a new plan for that week
+// - PATCH: Update meals in that week’s plan
 // ===========================================
 
-import { NextResponse, type NextRequest } from "next/server";
-import { connectDB } from "@/lib/db";
-import MealPlan from "@/models/MealPlan";
-import { getUserFromRequest } from "@/lib/serverAuth";
+import { NextRequest, NextResponse } from "next/server";
+import { getAllMealPlans, createMealPlan, updateMealPlanById } from "@/lib/db";
 
 // -------------------------------------------
-// Helper: normalizeMeals
+// Utility: Normalize meals to full structure
 // -------------------------------------------
 function normalizeMeals(
-  meals: Record<string, Partial<Record<"breakfast" | "lunch" | "dinner", string | null>>> = {}
+  meals: Record<
+    string,
+    Partial<Record<"breakfast" | "lunch" | "dinner", string | null>>
+  > = {}
 ) {
   const normalized: Record<
     string,
@@ -37,67 +33,129 @@ function normalizeMeals(
 }
 
 // -------------------------------------------
-// Helper: formatMealPlan
+// GET → Fetch weekly meal plan
 // -------------------------------------------
-function formatMealPlan(doc: any) {
-  return {
-    id: doc._id.toString(),
-    title: doc.title,
-    startDate:
-      doc.startDate instanceof Date
-        ? doc.startDate.toISOString().split("T")[0]
-        : doc.startDate,
-    endDate:
-      doc.endDate instanceof Date
-        ? doc.endDate.toISOString().split("T")[0]
-        : doc.endDate,
-    meals: normalizeMeals(doc.meals),
-    user: doc.user?.toString() || null,
-    createdAt: doc.createdAt?.toISOString?.(),
-    updatedAt: doc.updatedAt?.toISOString?.(),
-  };
-}
-
-// -----------------------------
-// GET /api/meal-plans/week/:date
-// Returns the plan covering a given date
-// Example: GET /api/meal-plans/week/2025-09-22
-// -----------------------------
 export async function GET(
   req: NextRequest,
-  { params }: { params: { date: string } }
+  { params }: { params: { startDate: string } }
 ) {
-  await connectDB();
-
-  const payload = await getUserFromRequest(req);
-  if (!payload)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { startDate } = params;
+  const { searchParams } = new URL(req.url);
+  const userEmail = searchParams.get("userEmail");
+  if (!userEmail)
+    return NextResponse.json({ error: "Missing userEmail" }, { status: 400 });
 
   try {
-    const queryDate = new Date(params.date);
-    if (isNaN(queryDate.getTime())) {
+    const allPlans = await getAllMealPlans(userEmail);
+    const plan = allPlans.find((p) => p.weekStartDate === startDate);
+
+    if (!plan) return NextResponse.json(null);
+
+    plan.meals = normalizeMeals(plan.meals);
+    return NextResponse.json(plan);
+  } catch (err) {
+    console.error("GET /api/meal-plans/week failed:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch meal plan" },
+      { status: 500 }
+    );
+  }
+}
+
+// -------------------------------------------
+// POST → Create a new weekly meal plan
+// -------------------------------------------
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { startDate: string } }
+) {
+  const { startDate } = params;
+  const { searchParams } = new URL(req.url);
+  const userEmail = searchParams.get("userEmail");
+  if (!userEmail)
+    return NextResponse.json({ error: "Missing userEmail" }, { status: 400 });
+
+  try {
+    const body = await req.json();
+
+    // Derive weekEndDate
+    const start = new Date(startDate);
+    if (isNaN(start.getTime()))
+      return NextResponse.json({ error: "Invalid startDate" }, { status: 400 });
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    const weekEndDate = end.toISOString().split("T")[0];
+
+    const newPlan = await createMealPlan({
+      ...body,
+      author: userEmail,
+      weekStartDate: startDate,
+      weekEndDate,
+      meals: normalizeMeals(body.meals),
+    });
+
+    return NextResponse.json(newPlan, { status: 201 });
+  } catch (err: any) {
+    // Handle both db.ts custom error and Mongo duplicate key error
+    if (
+      err.message?.includes("User already has an active meal plan") ||
+      err.code === 11000
+    ) {
       return NextResponse.json(
-        { error: "Invalid date parameter" },
-        { status: 400 }
+        { error: "Meal plan already exists for this user" },
+        { status: 409 }
       );
     }
 
-    // ✅ Find plan that covers this date
-    const plan = await MealPlan.findOne({
-      user: payload.id,
-      startDate: { $lte: queryDate },
-      endDate: { $gte: queryDate },
-    }).lean();
-
-    if (!plan) {
-      return NextResponse.json(null);
-    }
-
-    return NextResponse.json(formatMealPlan(plan));
-  } catch (err: any) {
-    console.error("Failed to fetch weekly meal plan:", err);
+    console.error("POST /api/meal-plans/week failed:", err);
     return NextResponse.json(
-      { error: err.message || "Failed to fetch weekly meal plan" },
+      { error: "Failed to create meal plan" },
+      { status: 500 }
+    );
+  }
+}
+
+// -------------------------------------------
+// PATCH → Update meals in weekly plan
+// -------------------------------------------
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { startDate: string } }
+) {
+  const { startDate } = params;
+  const { searchParams } = new URL(req.url);
+  const userEmail = searchParams.get("userEmail");
+  if (!userEmail)
+    return NextResponse.json({ error: "Missing userEmail" }, { status: 400 });
+
+  try {
+    const body = await req.json();
+    const allPlans = await getAllMealPlans(userEmail);
+    const plan = allPlans.find((p) => p.weekStartDate === startDate);
+
+    if (!plan)
+      return NextResponse.json(
+        { error: "No meal plan found for this week" },
+        { status: 404 }
+      );
+
+    // Merge meals safely
+    const updatedMeals = {
+      ...normalizeMeals(plan.meals),
+      ...normalizeMeals(body.meals),
+    };
+
+    const updatedPlan = await updateMealPlanById(plan.id, {
+      ...body,
+      meals: updatedMeals,
+    });
+
+    return NextResponse.json(updatedPlan);
+  } catch (err) {
+    console.error("PATCH /api/meal-plans/week failed:", err);
+    return NextResponse.json(
+      { error: "Failed to update meal plan" },
       { status: 500 }
     );
   }

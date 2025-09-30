@@ -1,56 +1,76 @@
-// ===========================================
-// PATH: src/app/recipes/[id]/page.tsx
-// RecipeDetailPage — shows full recipe details
-// Now supports fallback fetch if recipe not in context
-// ===========================================
-
 "use client";
 
-import { useParams } from "next/navigation";
+import React from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useRecipes } from "@/context/RecipeContext";
-import RecipeDetail from "@/components/RecipeDetail";
-import React, { useEffect, useState } from "react";
-import { Recipe } from "@/types/recipe";
+import styles from "@/styles/recipeDetail.module.css";
 
 export default function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { recipes } = useRecipes();
+  const router = useRouter();
 
-  // First check in context
-  const contextRecipe = recipes.find((r) => r.id === id);
+  // Find recipe
+  const recipe = recipes.find((r) => r.id === id);
 
-  // Local state for fallback
-  const [fetchedRecipe, setFetchedRecipe] = useState<Recipe | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  if (!recipe) {
+    return (
+      <div className={styles.emptyState}>
+        <h1>Recipe Not Found</h1>
+        <p>
+          This recipe isn’t saved yet. Please search for it on the{" "}
+          <button
+            style={{
+              background: "none",
+              border: "none",
+              color: "#0070f3",
+              cursor: "pointer",
+              textDecoration: "underline",
+              fontWeight: 600,
+            }}
+            onClick={() => router.push("/recipes")}
+          >
+            Recipes page
+          </button>{" "}
+          and save it to view details here.
+        </p>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (contextRecipe || !id) return; // already have it
+  return (
+    <div className={styles.recipeDetail}>
+      {/* Title */}
+      <h1 className={styles.recipeTitle}>{recipe.title}</h1>
 
-    const fetchRecipe = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await fetch(`/api/recipes/${id}`);
-        if (!res.ok) throw new Error("Failed to load recipe");
-        const data = await res.json();
-        setFetchedRecipe(data);
-      } catch (err: any) {
-        console.error("Error fetching recipe:", err);
-        setError("Recipe not found.");
-      } finally {
-        setLoading(false);
-      }
-    };
+      {/* Image */}
+      {recipe.image && (
+        <img
+          src={recipe.image}
+          alt={recipe.title}
+          className={styles.recipeImage}
+        />
+      )}
 
-    fetchRecipe();
-  }, [id, contextRecipe]);
+      {/* Ingredients */}
+      {recipe.ingredients?.length > 0 && (
+        <div className={styles.ingredients}>
+          <h2 className={styles.sectionTitle}>Ingredients</h2>
+          <ul>
+            {recipe.ingredients.map((ing, idx) => (
+              <li key={idx}>{ing}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-  const recipe = contextRecipe || fetchedRecipe;
-
-  if (loading) return <p>Loading recipe...</p>;
-  if (error) return <p>{error}</p>;
-  if (!recipe) return <p>Recipe not found.</p>;
-
-  return <RecipeDetail recipe={recipe} />;
+      {/* Instructions */}
+      {recipe.instructions && (
+        <div className={styles.instructions}>
+          <h2 className={styles.sectionTitle}>Instructions</h2>
+          <p>{recipe.instructions}</p>
+        </div>
+      )}
+    </div>
+  );
 }

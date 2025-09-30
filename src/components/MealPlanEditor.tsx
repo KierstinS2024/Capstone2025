@@ -1,187 +1,137 @@
-// ===========================================
-// PATH: src/components/MealPlanEditor.tsx
-//
-// MealPlanEditor — week-based table for planning meals
-// - Drag-and-drop from RecipeSidebar
-// - Instant updates to backend/context
-// - Warns before overwriting slots
-// - Read-only recipe display (no modal)
-// - Fully TypeScript-safe
-// ===========================================
+/**
+ * MealPlanEditor
+ * - Displays a full meal plan (dates × meal types)
+ * - Each meal slot is droppable
+ * - Existing meals are draggable
+ * - Shows recipe titles instead of raw IDs
+ */
 
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { MealPlan, MealType } from "@/types/mealPlan";
-import { useMealPlans } from "@/context/MealPlanContext";
-import { useRecipes } from "@/context/RecipeContext";
-import RecipeSidebar from "./RecipeSidebar";
-import { formatDateRange, getWeekDates } from "@/lib/helpers";
-import { DragDropContext, Droppable } from "@hello-pangea/dnd";
-import styles from "@/styles/theme-mealplan.module.css";
+import React from "react";
+import { MealPlan, DayMeals, MealType } from "@/types/mealPlan";
+import { Droppable, Draggable } from "@hello-pangea/dnd";
+import { useRecipes } from "@/context/RecipeContext"; // to map recipe IDs → human-readable titles
+import styles from "@/styles/mealPlanEditor.module.css";
 
-// Props: single meal plan to edit
-interface Props {
-  plan: MealPlan;
+/**
+ * Props for the MealPlanEditor component
+ */
+interface MealPlanEditorProps {
+  plan: MealPlan; // Active meal plan must always be passed
 }
 
-export default function MealPlanEditor({ plan }: Props) {
-  const { updateMeal } = useMealPlans(); // update function
-  const { recipes } = useRecipes(); // all user recipes
+export default function MealPlanEditor({ plan }: MealPlanEditorProps) {
+  // -----------------------------
+  // Access saved recipes to convert IDs → titles
+  // -----------------------------
+  const { recipes } = useRecipes();
 
-  // Local copy of plan for UI updates
-  const [editingPlan, setEditingPlan] = useState<MealPlan>(plan);
+  /**
+   * Helper function to get recipe title from ID
+   * Falls back to ID if recipe not found
+   */
+  const getRecipeTitle = (id: string) => {
+    const recipe = recipes.find((r) => r.id === id);
+    return recipe ? recipe.title : id;
+  };
 
-  // Toast messages for feedback
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // -----------------------------
+  // Ensure meals object exists
+  // Each day should have breakfast, lunch, and dinner
+  // -----------------------------
+  const meals: Record<string, DayMeals> = plan.meals || {};
+  const mealTypes: MealType[] = ["breakfast", "lunch", "dinner"];
 
-  // Sync local state when prop changes
-  useEffect(() => {
-    setEditingPlan(plan);
-  }, [plan]);
-
-  // Compute week dates for table rows
-  const weekDays = getWeekDates(editingPlan.startDate, editingPlan.endDate);
-
-  // -------------------------------
-  // Helper: show temporary toast
-  // -------------------------------
-  function showToast(message: string, duration = 1500) {
-    setToastMessage(message);
-    setTimeout(() => setToastMessage(null), duration);
-  }
-
-  // -------------------------------
-  // Update a single meal slot
-  // -------------------------------
-  async function handleUpdateMeal(
-    day: string,
-    meal: MealType,
-    recipeId: string | null
-  ) {
-    const existingRecipe = editingPlan.meals[day]?.[meal];
-
-    // Confirm overwrite if replacing a different recipe
-    if (existingRecipe && recipeId && existingRecipe !== recipeId) {
-      const overwriteConfirmed = confirm(
-        "This slot already has a recipe. Replace it?"
-      );
-      if (!overwriteConfirmed) return;
-    }
-
-    try {
-      await updateMeal(editingPlan.id, day, meal, recipeId);
-      showToast(
-        recipeId
-          ? `Added ${recipes.find((r) => r.id === recipeId)?.title} to ${meal}`
-          : `Removed ${meal} for ${day}`
-      );
-    } catch (err) {
-      console.error("Failed to update meal:", err);
-      showToast("Failed to update meal");
-    }
-  }
-
-  // -------------------------------
-  // Render
-  // -------------------------------
   return (
-    <DragDropContext
-      onDragEnd={(result) => {
-        const { destination, draggableId } = result;
-        if (!destination) return;
+    <div className={styles.mealPlanEditor}>
+      {/* -----------------------------
+          Header showing date range of the plan
+      ----------------------------- */}
+      <h2>
+        Meal Plan ({plan.startDate || "N/A"} → {plan.endDate || "N/A"})
+      </h2>
 
-        // Prevent dropping back into sidebar
-        if (destination.droppableId.startsWith("recipes")) return;
+      {/* -----------------------------
+          Loop over each day in the plan
+      ----------------------------- */}
+      {Object.entries(meals).map(([date, dayMeals]) => {
+        // Provide safe defaults for meals
+        const safeDayMeals: DayMeals = {
+          breakfast: dayMeals.breakfast || "",
+          lunch: dayMeals.lunch || "",
+          dinner: dayMeals.dinner || "",
+        };
 
-        const [day, meal] = destination.droppableId.split("|");
-        handleUpdateMeal(day, meal as MealType, draggableId);
-      }}
-    >
-      <div className={styles.editorLayout}>
-        {/* Sidebar with draggable recipes */}
-        <RecipeSidebar />
+        return (
+          <div key={date} className={styles.dayContainer}>
+            <h3 className={styles.dayHeader}>{date}</h3>
 
-        {/* Main meal plan table */}
-        <div className={styles.detail}>
-          <h2 className={styles.heading2}>
-            Meal Plan:{" "}
-            {formatDateRange(editingPlan.startDate, editingPlan.endDate)}
-          </h2>
-
-          <table className={styles.planTable}>
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>Breakfast</th>
-                <th>Lunch</th>
-                <th>Dinner</th>
-              </tr>
-            </thead>
-            <tbody>
-              {weekDays.map((day) => {
-                const dayMeals = editingPlan.meals[day] || {};
+            <div className={styles.mealsRow}>
+              {/* -----------------------------
+                  Loop over each meal type for this day
+              ----------------------------- */}
+              {mealTypes.map((type) => {
+                const recipeId = safeDayMeals[type] || "";
 
                 return (
-                  <tr key={day}>
-                    <td>{day}</td>
-
-                    {/* Breakfast, Lunch, Dinner slots */}
-                    {(["breakfast", "lunch", "dinner"] as const).map((meal) => {
-                      const recipeId = dayMeals[meal] ?? null;
-                      const recipe = recipes.find((r) => r.id === recipeId);
-
-                      return (
-                        <Droppable droppableId={`${day}|${meal}`} key={meal}>
-                          {(provided, snapshot) => (
-                            <td>
+                  <Droppable droppableId={`${date}_${type}`} key={type}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={
+                          snapshot.isDraggingOver
+                            ? `${styles.mealSlot} ${styles.dragOver}`
+                            : styles.mealSlot
+                        }
+                      >
+                        {/* -----------------------------
+                            If a recipe exists for this slot:
+                            - Render a draggable card
+                            - Use a unique draggableId
+                              Why unique? Because the same recipe may appear
+                              in multiple slots. DnD needs globally unique IDs.
+                        ----------------------------- */}
+                        {recipeId ? (
+                          <Draggable
+                            draggableId={`${recipeId}_${date}_${type}`} // ✅ ensures uniqueness
+                            index={0} // only one item per slot
+                            key={`${recipeId}_${date}_${type}`} // match draggableId
+                          >
+                            {(prov, snap) => (
                               <div
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
+                                ref={prov.innerRef}
+                                {...prov.draggableProps}
+                                {...prov.dragHandleProps}
                                 className={
-                                  snapshot.isDraggingOver
-                                    ? styles.highlight
-                                    : styles.slot
+                                  snap.isDragging
+                                    ? `${styles.recipeCard} ${styles.dragging}`
+                                    : styles.recipeCard
                                 }
                               >
-                                {recipe ? (
-                                  <div className={styles.recipeSlot}>
-                                    {/* Recipe title (read-only) */}
-                                    <span>{recipe.title}</span>
-
-                                    {/* Remove button */}
-                                    <button
-                                      className={styles.removeBtn}
-                                      onClick={() =>
-                                        handleUpdateMeal(day, meal, null)
-                                      }
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <span className={styles.empty}>
-                                    Drop here
-                                  </span>
-                                )}
-
-                                {provided.placeholder}
+                                {getRecipeTitle(recipeId)}
                               </div>
-                            </td>
-                          )}
-                        </Droppable>
-                      );
-                    })}
-                  </tr>
+                            )}
+                          </Draggable>
+                        ) : (
+                          // -----------------------------
+                          // Empty slot: placeholder for dropping recipes
+                          // -----------------------------
+                          <p className={styles.emptySlot}>Drop recipe here</p>
+                        )}
+
+                        {/* Placeholder required by Droppable */}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
                 );
               })}
-            </tbody>
-          </table>
-
-          {/* Toast message */}
-          {toastMessage && <div className={styles.toast}>{toastMessage}</div>}
-        </div>
-      </div>
-    </DragDropContext>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }

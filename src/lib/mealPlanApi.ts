@@ -1,84 +1,108 @@
-// ===========================================
-// Client-side API helpers for Meal Plans
-// - Normalizes MongoDB docs into clean TS objects
-// - Guarantees all 3 meal slots per day
-// - Matches backend contract: only one plan per user
-// ===========================================
-
-import { apiFetch } from "./api";
 import { MealPlan, MealType } from "@/types/mealPlan";
 
 /**
- * normalizeMealPlan
- * Converts raw MongoDB plan into frontend-safe MealPlan
- * - Ensures breakfast/lunch/dinner always exist
- * - Maps `_id` → `id`
+ * Fetch the active meal plan for a user
  */
-function normalizeMealPlan(plan: any): MealPlan {
-  const normalizedMeals: Record<string, Record<MealType, string | null>> = {};
-
-  Object.entries(plan.meals || {}).forEach(([day, meals]) => {
-    const m = meals as Partial<Record<MealType, string | null>>;
-    normalizedMeals[day] = {
-      breakfast: m?.breakfast ?? null,
-      lunch: m?.lunch ?? null,
-      dinner: m?.dinner ?? null,
-    };
-  });
-
-  return {
-    ...plan,
-    id: plan._id || plan.id,
-    meals: normalizedMeals,
-    _id: undefined, // strip Mongo internal field
-  } as MealPlan;
-}
-
-// ----------------------------
-// API METHODS
-// ----------------------------
-
-export async function getMealPlanForUser(): Promise<MealPlan | null> {
-  const plan = await apiFetch<any>("/api/meal-plans");
-  return plan ? normalizeMealPlan(plan) : null;
-}
-
-export async function getMealPlan(id: string): Promise<MealPlan> {
-  const plan = await apiFetch<any>(`/api/meal-plans/${id}`);
-  return normalizeMealPlan(plan);
-}
-
-export async function getWeekMealPlan(date: string): Promise<MealPlan[]> {
-  const plans = await apiFetch<any[]>(`/api/meal-plans/week/${date}`);
-  return (plans || []).map(normalizeMealPlan);
+export async function getUserMealPlan(
+  userEmail: string
+): Promise<MealPlan | null> {
+  const res = await fetch(
+    `/api/meal-plans?userEmail=${encodeURIComponent(userEmail)}`
+  );
+  if (!res.ok) return null;
+  return res.json();
 }
 
 /**
- * createMealPlan
- * Sends POST request to backend
- * - Backend guarantees only one plan per user
+ * Create a new meal plan
+ * ✅ Now includes startDate and endDate to prevent duplicate week errors in Mongo
  */
 export async function createMealPlan(
-  data: Partial<MealPlan>
+  userEmail: string,
+  meals: Record<string, Record<MealType, string>>,
+  startDate: string,
+  endDate: string
 ): Promise<MealPlan> {
-  const plan = await apiFetch<any>("/api/meal-plans", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-  return normalizeMealPlan(plan);
+  const res = await fetch(
+    `/api/meal-plans?userEmail=${encodeURIComponent(userEmail)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ meals, startDate, endDate }), // include start/end dates
+    }
+  );
+  if (!res.ok) throw new Error("Failed to create meal plan");
+  return res.json();
 }
 
+/**
+ * Add a recipe to a specific day & meal type
+ */
+export async function addMealToPlan(
+  planId: string,
+  date: string,
+  mealType: MealType,
+  recipeId: string,
+  userEmail: string
+) {
+  const res = await fetch(
+    `/api/meal-plans/${planId}/addMeal?userEmail=${encodeURIComponent(
+      userEmail
+    )}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, mealType, recipeId }),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to add meal");
+}
+
+/**
+ * Move a recipe between meal slots
+ */
+export async function moveMeal(
+  planId: string,
+  sourceDate: string,
+  sourceMealType: MealType,
+  destDate: string,
+  destMealType: MealType,
+  userEmail: string
+) {
+  const res = await fetch(
+    `/api/meal-plans/${planId}/moveMeal?userEmail=${encodeURIComponent(
+      userEmail
+    )}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sourceDate,
+        sourceMealType,
+        destDate,
+        destMealType,
+      }),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to move meal");
+}
+
+/**
+ * Update the full meals object for a meal plan
+ */
 export async function updateMealPlan(
-  id: string,
-  data: Partial<MealPlan>
-): Promise<MealPlan> {
-  const plan = await apiFetch<any>(`/api/meal-plans/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
-  return normalizeMealPlan(plan);
-}
-
-export async function deleteMealPlan(id: string): Promise<void> {
-  await apiFetch(`/api/meal-plans/${id}`, { method: "DELETE" });
+  planId: string,
+  meals: Record<string, Record<MealType, string>>,
+  userEmail: string
+) {
+  const res = await fetch(
+    `/api/meal-plans/${planId}?userEmail=${encodeURIComponent(userEmail)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ meals }),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to update meal plan");
+  return res.json();
 }

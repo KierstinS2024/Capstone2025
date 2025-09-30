@@ -1,105 +1,75 @@
-// ===========================================
 // PATH: src/lib/shoppingListApi.ts
-// Client-side API helpers for Shopping Lists
-// - Calls unified /api/shopping-lists route
-// - Normalizes MongoDB `_id` → `id`
-// ===========================================
-
-import { apiFetch } from "./api";
-import { ShoppingList, ShoppingListItem } from "@/types/shoppingList";
-
 // -----------------------------
-// Normalizers
+// Simplified version for App Router backend
 // -----------------------------
 
-/**
- * Normalize a single shopping list item
- * Converts raw MongoDB object into a clean ShoppingListItem
- */
-function normalizeItem(raw: any): ShoppingListItem {
-  return {
-    id: raw._id?.toString() || raw.id, // always convert ObjectId to string
-    name: raw.name,
-    checked: raw.checked,
-  };
+import { ShoppingList } from "@/types/shoppingList";
+
+// Get shopping list for user
+export async function getShoppingList(
+  userEmail: string
+): Promise<ShoppingList | null> {
+  const res = await fetch(
+    `/api/shopping-lists?user=${encodeURIComponent(userEmail)}`
+  );
+  if (!res.ok) return null;
+  return res.json();
 }
 
-/**
- * Normalize a full shopping list
- * Ensures consistent shape for frontend
- */
-function normalizeShoppingList(raw: any): ShoppingList {
-  return {
-    id: raw._id?.toString() || raw.id || "",
-    user: raw.user?.toString() || "", // always include user ID
-    items: Array.isArray(raw.items) ? raw.items.map(normalizeItem) : [],
-    createdAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : "",
-    updatedAt: raw.updatedAt ? new Date(raw.updatedAt).toISOString() : "",
-  };
+// Add new item
+export async function addItem(name: string, userEmail: string): Promise<void> {
+  const res = await fetch(
+    `/api/shopping-lists?user=${encodeURIComponent(userEmail)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to add item");
 }
 
-// -----------------------------
-// API Calls
-// -----------------------------
-
-/**
- * Get the current user's shopping list
- */
-export async function getShoppingList(): Promise<ShoppingList> {
-  const res = await apiFetch<any>("/api/shopping-lists", { method: "GET" });
-  return normalizeShoppingList(res);
+// Toggle checked
+export async function toggleItem(
+  itemId: string,
+  userEmail: string
+): Promise<void> {
+  const res = await fetch(
+    `/api/shopping-lists?user=${encodeURIComponent(userEmail)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: itemId }),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to toggle item");
 }
 
-/**
- * Add a single item by name
- */
-export async function addItem(name: string): Promise<ShoppingList> {
-  const res = await apiFetch<any>("/api/shopping-lists", {
-    method: "POST",
-    body: JSON.stringify({ name }),
-  });
-  return normalizeShoppingList(res);
+// Remove item
+export async function removeItem(
+  itemId: string,
+  userEmail: string
+): Promise<void> {
+  const res = await fetch(
+    `/api/shopping-lists?user=${encodeURIComponent(userEmail)}`,
+    {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: itemId }),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to remove item");
 }
 
-/**
- * Add all ingredients from a meal plan
- */
-export async function addFromMealPlan(
-  mealPlanId: string
-): Promise<ShoppingList> {
-  const res = await apiFetch<any>("/api/shopping-lists", {
-    method: "POST",
-    body: JSON.stringify({ mealPlanId }),
-  });
-  return normalizeShoppingList(res);
-}
-
-/**
- * Toggle an item's checked state
- */
-export async function toggleItem(itemId: string): Promise<ShoppingList> {
-  const res = await apiFetch<any>(`/api/shopping-lists?id=${itemId}`, {
-    method: "PATCH",
-  });
-  return normalizeShoppingList(res);
-}
-
-/**
- * Delete a single item
- */
-export async function deleteItem(itemId: string): Promise<ShoppingList> {
-  const res = await apiFetch<any>(`/api/shopping-lists?id=${itemId}`, {
-    method: "DELETE",
-  });
-  return normalizeShoppingList(res);
-}
-
-/**
- * Clear the entire shopping list
- */
-export async function clearList(): Promise<ShoppingList> {
-  const res = await apiFetch<any>("/api/shopping-lists", {
-    method: "DELETE",
-  });
-  return normalizeShoppingList(res);
+// Clear all items
+export async function clearList(userEmail: string): Promise<void> {
+  const res = await fetch(
+    `/api/shopping-lists?user=${encodeURIComponent(userEmail)}`,
+    {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clearAll: true }),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to clear list");
 }

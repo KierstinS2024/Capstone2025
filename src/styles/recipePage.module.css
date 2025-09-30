@@ -1,0 +1,204 @@
+/* ===========================================
+   PATH: src/styles/recipePage.module.css
+   Recipes Page Styling — mobile-first, polished
+   =========================================== */
+
+/* ---------- Page Wrapper ---------- */
+.recipesPage {
+  padding: 1rem;
+  font-family: "Inter", sans-serif;
+}
+
+/* ---------- Page Title ---------- */
+.recipesTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #222;
+  text-align: center;
+}
+
+/* ---------- Search Form ---------- */
+.recipesSearchForm {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.recipesSearchInput {
+  flex: 1 1 250px;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+.recipesSearchButton {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #4caf50;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.recipesSearchButton:hover {
+  background-color: #45a049;
+}
+
+/* ---------- Main Layout ---------- */
+.recipesLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ---------- Columns ---------- */
+.recipesSaved,
+.recipesSearchResults {
+  flex: 1;
+}
+
+/* Column headers */
+.recipesSavedHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.recipesSubtitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.addButton {
+  padding: 0.5rem 1rem;
+  background-color: #2ecc71;
+  color: #fff;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.addButton:hover {
+  background-color: #27ae60;
+}
+
+/* Empty / Loading states */
+.recipesEmpty,
+.recipesLoading {
+  color: #777;
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
+/* Recipes lists */
+.recipesSavedList,
+.recipesResultsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ---------- Add Recipe Modal ---------- */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modalContent {
+  background: #fff;
+  border-radius: 16px;
+  width: 95%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 2rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.modalHeader h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.closeButton:hover {
+  color: #000;
+  outline: none;
+}
+
+/* ---------- Responsive: Two-column layout on desktop ---------- */
+@media (min-width: 768px) {
+  .recipesLayout {
+    flex-direction: row;
+    gap: 2rem;
+  }
+
+  .recipesSaved,
+  .recipesSearchResults {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .recipesTitle {
+    font-size: 1.5rem;
+  }
+
+  .recipesSearchInput {
+    flex: 1 1 150px;
+  }
+
+  .recipesSearchButton {
+    width: 100%;
+  }
+
+  .addButton {
+    padding: 0.4rem 0.8rem;
+  }
+}

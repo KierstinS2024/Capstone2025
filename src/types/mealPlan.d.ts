@@ -1,49 +1,22 @@
-// ===========================================
-// PATH: src/types/mealPlan.d.ts
-//
-// TypeScript types for MealPlan
-// Best practice: frontend always uses ISO strings
-// Backend stores real Date objects, but API normalizes
-// ===========================================
+// PATH: src/types/mealPlan.ts
+// -----------------------------
+// Types for Meal Planning
+// -----------------------------
 
-/**
- * Meal types for each slot in a day
- */
 export type MealType = "breakfast" | "lunch" | "dinner";
 
-/**
- * Frontend-facing MealPlan interface
- * - Dates are always ISO strings (YYYY-MM-DD)
- * - Meals object maps date → meal slots
- * - Optional metadata handled safely
- */
-export interface MealPlan {
-  id: string; // normalized from MongoDB _id
-  title: string; // plan title
-  startDate: string; // ISO string (YYYY-MM-DD)
-  endDate: string; // ISO string (YYYY-MM-DD)
-  meals: {
-    [date: string]: {
-      breakfast?: string | null; // recipe ID or null
-      lunch?: string | null;
-      dinner?: string | null;
-    };
-  };
-  user?: string; // owner ID, optional
-  createdAt?: string; // ISO string timestamp
-  updatedAt?: string; // ISO string timestamp
+// Represents a day's meals
+export interface DayMeals {
+  breakfast: string; // recipeId or empty string
+  lunch: string;
+  dinner: string;
 }
 
-/**
- * Default empty plan for new users (no plan yet)
- * - Ensures startDate/endDate are always valid strings
- */
-export const EMPTY_PLAN: MealPlan = {
-  id: "empty",
-  title: "New Meal Plan",
-  startDate: new Date().toISOString().split("T")[0],
-  endDate: new Date(new Date().setDate(new Date().getDate() + 6))
-    .toISOString()
-    .split("T")[0],
-  meals: {},
-};
+// Full meal plan object
+export interface MealPlan {
+  id: string;
+  ownerEmail: string;
+  meals: Record<string, DayMeals>; // keyed by YYYY-MM-DD
+  startDate?: string; // optional start date for display
+  endDate?: string; // optional end date for display
+}

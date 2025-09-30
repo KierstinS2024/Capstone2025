@@ -1,37 +1,32 @@
-// ===========================================
-// PATH: src/components/RecipeCard.tsx
-// RecipeCard — displays a single recipe preview
-// - Supports user-owned recipes (delete)
-// - Supports Spoonacular recipes (read-only)
-// - Clickable card; buttons stop propagation to prevent opening modal
-// ===========================================
-
 "use client";
 
-import React, { ReactNode } from "react";
+import React, { ReactNode, useState } from "react";
 import { Recipe } from "@/types/recipe";
-import styles from "@/styles/theme-mealplan.module.css";
+import { useAuth } from "@/context/AuthContext";
+import { useRecipes } from "@/context/RecipeContext";
+import RecipeModal from "./RecipeModal";
+import styles from "@/styles/recipeCard.module.css";
 
 interface RecipeCardProps {
   recipe: Recipe;
-  onClick?: () => void; // Opens modal or detailed view
-  onDelete?: (id: string) => Promise<void>; // Delete handler
+  onDelete?: (id: string) => Promise<void>; // Optional delete handler
   children?: ReactNode; // Optional extra buttons
 }
 
-export default function RecipeCard({
-  recipe,
-  onClick,
-  onDelete,
-  children,
-}: RecipeCardProps) {
-  // Check if recipe belongs to current user
-  const currentUserEmail =
-    typeof window !== "undefined" ? localStorage.getItem("userEmail") : null;
-  const isUserOwned = recipe.author === currentUserEmail;
+export default function RecipeCard({ recipe, onDelete, children }: RecipeCardProps) {
+  const { user } = useAuth();
+  const { saveRecipeFromSearch } = useRecipes();
 
+  const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const isUserOwned = user?.email && recipe.author === user.email;
+
+  // -----------------------------
   // Delete handler
-  const handleDelete = async () => {
+  // -----------------------------
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent modal from opening
     if (!onDelete) return;
     if (!confirm("Are you sure you want to delete this recipe?")) return;
     try {
@@ -41,57 +36,79 @@ export default function RecipeCard({
     }
   };
 
+  // -----------------------------
+  // Save search result to DB
+  // -----------------------------
+  const handleSave = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent modal from opening
+    if (!user?.email) {
+      alert("You must be logged in to save recipes.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveRecipeFromSearch(recipe);
+      alert("Saved to your recipes!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save recipe");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // -----------------------------
+  // Render
+  // -----------------------------
   return (
-    <div className={styles.recipeCard} onClick={onClick}>
-      {recipe.image && (
-        <img
-          src={recipe.image}
-          alt={recipe.title}
-          className={styles.cardImage || ""}
-        />
-      )}
+    <>
+      <div className={styles.recipeCard} onClick={() => setShowModal(true)}>
+        {/* Recipe image */}
+        {recipe.image && (
+          <img
+            src={recipe.image}
+            alt={recipe.title}
+            className={styles.cardImage}
+          />
+        )}
 
-      <div className={styles.cardContent}>
-        <h3 className={styles.cardTitle}>{recipe.title}</h3>
+        <div className={styles.cardContent}>
+          {/* Recipe title */}
+          <h3 className={styles.cardTitle}>{recipe.title}</h3>
 
-        {/* User-owned recipes: delete button */}
-        {isUserOwned && (
+          {/* Actions */}
           <div className={styles.actions}>
-            <button
-              className={`${styles.button} ${styles.buttonDanger}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete();
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        )}
+            {isUserOwned && (
+              <button
+                className={`${styles.button} ${styles.buttonDanger}`}
+                onClick={handleDelete}
+              >
+                Delete
+              </button>
+            )}
 
-        {/* Spoonacular recipes: read-only */}
-        {!isUserOwned && (
-          <>
-            <small className={styles.spoonacularLabel}>
-              Spoonacular Recipe (read-only)
-            </small>
-            <div className={styles.actions}>
-              {children}
-              {onClick && (
-                <button
-                  className={`${styles.button} ${styles.buttonPrimary}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClick();
-                  }}
-                >
-                  View Full Recipe
-                </button>
-              )}
-            </div>
-          </>
-        )}
+            {!isUserOwned && recipe.source === "spoonacular" && (
+              <>
+                <small className={styles.spoonacularLabel}>Spoonacular</small>
+                {children || (
+                  <button
+                    className={`${styles.button} ${styles.buttonPrimary}`}
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* Modal for full recipe details */}
+      {showModal && (
+        <RecipeModal recipe={recipe} onClose={() => setShowModal(false)} />
+      )}
+    </>
   );
 }

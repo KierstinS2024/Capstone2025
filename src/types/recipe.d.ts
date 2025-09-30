@@ -1,14 +1,12 @@
-// src/types/recipe.d.ts
+//src/types/recipe.d.ts
 export interface Recipe {
-  id: string; // use 'id' instead of '_id' for frontend
+  id: string; // mapped from Mongo _id
+  author: string; // email of user who created it
   title: string;
+  image?: string;
   ingredients: string[];
   instructions: string;
-  image?: string;
-  source?: "user" | "spoonacular";
+  source: "user" | "spoonacular";
   createdAt?: string;
   updatedAt?: string;
-  temporary?: boolean; // for temporary Spoonacular recipes
-  linkedMealPlanIds?: string[]; // tracks meal plans using this recipe
-  author?: string;
 }

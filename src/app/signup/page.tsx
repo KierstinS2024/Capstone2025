@@ -1,34 +1,30 @@
 // ===========================================
 // PATH: src/app/signup/page.tsx
-// Full Signup Page with Animated, Color-Coded Password Strength Meter
-// Auto-login after successful signup and redirect to /dashboard
+// Styled Signup Page with Password Strength Meter
 // ===========================================
+
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import "@/styles/auth.css";
+import Link from "next/link";
+import "@/styles/auth.css"; // custom styles for form & strength meter
 
-// Regex patterns for validation
-const passwordRegex =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+// Regex patterns for password validation
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignupPage() {
-  // --- AuthContext provides signup, login, and current user ---
-  const { signup, login, user } = useAuth();
+  const { signup, user } = useAuth();
   const router = useRouter();
 
-  // --- Form state ---
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [validEmail, setValidEmail] = useState(false);
-  const [validPassword, setValidPassword] = useState(false);
 
-  // --- Track individual password criteria ---
+  // Track individual password criteria
   const [criteria, setCriteria] = useState({
     length: false,
     uppercase: false,
@@ -37,19 +33,20 @@ export default function SignupPage() {
     specialChar: false,
   });
 
-  // --- Redirect to dashboard if already logged in ---
+  const [validEmail, setValidEmail] = useState(false);
+  const [validPassword, setValidPassword] = useState(false);
+
+  // Redirect if user already logged in
   useEffect(() => {
     if (user) {
-      router.replace("/dashboard"); // Skip signup page if logged in
+      router.replace("/dashboard");
     }
   }, [user, router]);
 
-  // --- Validate email and password on input change ---
+  // Validate email & password as user types
   useEffect(() => {
-    // Email format check
     setValidEmail(emailRegex.test(email));
 
-    // Password criteria
     const length = password.length >= 8;
     const uppercase = /[A-Z]/.test(password);
     const lowercase = /[a-z]/.test(password);
@@ -60,18 +57,15 @@ export default function SignupPage() {
     setValidPassword(length && uppercase && lowercase && number && specialChar);
   }, [email, password]);
 
-  // --- Handle form submit ---
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // --- Validate email ---
     if (!validEmail) {
       setError("Please enter a valid email address.");
       return;
     }
 
-    // --- Validate password ---
     if (!validPassword) {
       setError(
         "Password must be at least 8 characters, include uppercase, lowercase, number, and special character."
@@ -80,50 +74,26 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-
-    // --- Signup user in backend ---
-    const signupSuccess = await signup(email, password);
-
-    if (signupSuccess) {
-      // --- Auto-login after successful signup ---
-      const loginSuccess = await login(email, password);
-
-      if (loginSuccess) {
-        // Redirect to dashboard after login
-        router.replace("/dashboard");
-      } else {
-        setError(
-          "Signup succeeded, but auto-login failed. Please try logging in manually."
-        );
-      }
-    } else {
-      setError("Signup failed. Email may already be in use.");
+    try {
+      await signup(email.trim().toLowerCase(), password);
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Signup failed");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  // --- Password strength criteria list for UI ---
-  const criteriaList = [
-    { label: "8+ characters", met: criteria.length },
-    { label: "Uppercase letter", met: criteria.uppercase },
-    { label: "Lowercase letter", met: criteria.lowercase },
-    { label: "Number", met: criteria.number },
-    { label: "Special character", met: criteria.specialChar },
-  ];
-
-  // Count number of criteria met for coloring strength bars
-  const metCount = criteriaList.filter((c) => c.met).length;
+  // Count how many password criteria are met (for strength bar)
+  const metCount = Object.values(criteria).filter(Boolean).length;
 
   return (
     <main className="auth-page">
-      <form className="auth-form" onSubmit={handleSignup}>
+      <form className="auth-form" onSubmit={handleSubmit}>
         <h1>Sign Up</h1>
 
-        {/* Inline error message */}
         {error && <p className="error">{error}</p>}
 
-        {/* Email input */}
         <input
           type="email"
           placeholder="Email"
@@ -136,7 +106,6 @@ export default function SignupPage() {
           <p className="error-small">Invalid email format</p>
         )}
 
-        {/* Password input */}
         <input
           type="password"
           placeholder="Password"
@@ -149,34 +118,35 @@ export default function SignupPage() {
           <p className="error-small">Password must meet all criteria below</p>
         )}
 
-        {/* Animated, color-coded strength meter */}
+        {/* Strength meter */}
         {password && (
           <div className="strength-meter">
-            {criteriaList.map((c, i) => {
+            {Object.entries(criteria).map(([key, met], i) => {
               let colorClass = "weak";
               if (metCount >= 4) colorClass = "strong";
               else if (metCount >= 2) colorClass = "medium";
               return (
                 <div
                   key={i}
-                  className={`strength-bar ${c.met ? colorClass : ""}`}
-                  title={c.label}
+                  className={`strength-bar ${met ? colorClass : ""}`}
+                  title={key}
                 />
               );
             })}
           </div>
         )}
 
-        {/* Strength labels */}
+        {/* Criteria labels */}
         {password && (
           <div className="strength-labels">
-            {criteriaList.map((c, i) => (
-              <span key={i}>{c.label}</span>
-            ))}
+            <span>8+ characters</span>
+            <span>Uppercase letter</span>
+            <span>Lowercase letter</span>
+            <span>Number</span>
+            <span>Special character</span>
           </div>
         )}
 
-        {/* Submit button */}
         <button
           type="submit"
           disabled={loading || !validEmail || !validPassword}
@@ -184,9 +154,8 @@ export default function SignupPage() {
           {loading ? "Creating account..." : "Create Account"}
         </button>
 
-        {/* Switch to login */}
         <p className="switch-auth">
-          Already have an account? <a href="/login">Login</a>
+          Already have an account? <Link href="/login">Login</Link>
         </p>
       </form>
     </main>

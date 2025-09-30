@@ -1,88 +1,101 @@
 // ===========================================
 // PATH: src/app/api/recipes/[id]/route.ts
-// Dynamic API route for GET, PUT, DELETE a single user recipe
-// Temporary recipes removed
+// Entity-level API routes for Recipes
+// - GET a single recipe
+// - PATCH (update) a recipe
+// - DELETE a recipe
+// Scoped to userEmail to prevent access to other users' data
+// Fully compatible with Next.js App Router dynamic params
 // ===========================================
-import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import Recipe from "@/models/Recipe";
 
-/**
- * GET /api/recipes/[id]
- * Fetch a single recipe by ID
- */
-export async function GET(
-  _: Request,
-  context: { params: Promise<{ id: string }> } // params is a Promise
-) {
-  await connectDB();
+import { NextRequest, NextResponse } from "next/server";
+import { getRecipeById, updateRecipeById, deleteRecipeById } from "@/lib/db";
 
-  try {
-    const { id } = await context.params; // wait for params
-    const recipe = await Recipe.findById(id);
+// -----------------------------
+// GET → Fetch a single recipe by ID
+// Example: GET /api/recipes/:id?userEmail=foo@bar.com
+// -----------------------------
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
+  // Await params in App Router
+  const { params } = context;
+  const id = params.id;
 
-    if (!recipe) {
-      return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
-    }
+  // Extract userEmail from query string
+  const { searchParams } = new URL(req.url);
+  const userEmail = searchParams.get("userEmail");
 
-    return NextResponse.json(recipe);
-  } catch (err: any) {
-    console.error("GET /api/recipes/[id] error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  if (!userEmail) {
+    return NextResponse.json({ error: "Missing userEmail" }, { status: 400 });
   }
+
+  // Fetch recipe from DB
+  const recipe = await getRecipeById(id);
+
+  // Validate recipe ownership
+  if (!recipe || recipe.author !== userEmail) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(recipe);
 }
 
-/**
- * PUT /api/recipes/[id]
- * Update a recipe by ID
- * Body should include only the fields to update
- */
-export async function PUT(
-  req: Request,
-  context: { params: Promise<{ id: string }> }
+// -----------------------------
+// PATCH → Update a recipe by ID
+// Example: PATCH /api/recipes/:id?userEmail=foo@bar.com
+// Body: { title?, ingredients?, instructions?, ... }
+// -----------------------------
+export async function PATCH(
+  req: NextRequest,
+  context: { params: { id: string } }
 ) {
-  await connectDB();
+  const { params } = context;
+  const id = params.id;
 
-  try {
-    const { id } = await context.params; // wait for params
-    const updates = await req.json();
+  const { searchParams } = new URL(req.url);
+  const userEmail = searchParams.get("userEmail");
 
-    updates.updatedAt = new Date(); // always update timestamp
-
-    const recipe = await Recipe.findByIdAndUpdate(id, updates, { new: true });
-
-    if (!recipe) {
-      return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(recipe);
-  } catch (err: any) {
-    console.error("PUT /api/recipes/[id] error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  if (!userEmail) {
+    return NextResponse.json({ error: "Missing userEmail" }, { status: 400 });
   }
+
+  // Fetch and validate recipe ownership
+  const recipe = await getRecipeById(id);
+  if (!recipe || recipe.author !== userEmail) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Parse updates from request body
+  const updates = await req.json();
+
+  // Update recipe in DB
+  const updatedRecipe = await updateRecipeById(id, updates);
+
+  return NextResponse.json(updatedRecipe);
 }
 
-/**
- * DELETE /api/recipes/[id]
- * Permanently delete a recipe by ID
- */
-export async function DELETE(
-  _: Request,
-  context: { params: Promise<{ id: string }> }
-) {
-  await connectDB();
+// -----------------------------
+// DELETE → Delete a recipe by ID
+// Example: DELETE /api/recipes/:id?userEmail=foo@bar.com
+// -----------------------------
+export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
+  const { params } = context;
+  const id = params.id;
 
-  try {
-    const { id } = await context.params; // wait for params
-    const recipe = await Recipe.findByIdAndDelete(id);
+  const { searchParams } = new URL(req.url);
+  const userEmail = searchParams.get("userEmail");
 
-    if (!recipe) {
-      return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error("DELETE /api/recipes/[id] error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  if (!userEmail) {
+    return NextResponse.json({ error: "Missing userEmail" }, { status: 400 });
   }
+
+  // Fetch recipe and validate ownership
+  const recipe = await getRecipeById(id);
+  if (!recipe || recipe.author !== userEmail) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Delete recipe
+  await deleteRecipeById(id);
+
+  return NextResponse.json({ success: true });
 }

@@ -1,20 +1,20 @@
 // ===========================================
 // PATH: src/components/RecipeSidebar.tsx
-// RecipeSidebar — lists all recipes for drag-and-drop
-// - Fully read-only (cannot drop back into sidebar)
-// - Styled with theme-mealplan.module.css
-// - Provides visual feedback when dragging
 // ===========================================
-
 "use client";
 
 import React from "react";
 import { useRecipes } from "@/context/RecipeContext";
 import { Draggable, Droppable } from "@hello-pangea/dnd";
-import styles from "@/styles/theme-mealplan.module.css";
+import styles from "@/styles/recipeSidebar.module.css";
 
+/**
+ * RecipeSidebar
+ * - Displays all saved recipes for the user
+ * - Recipes are draggable into MealPlanEditor
+ * - Droppable is disabled (cannot drop back into sidebar)
+ */
 export default function RecipeSidebar() {
-  // Grab all recipes from context
   const { recipes } = useRecipes();
 
   return (
@@ -27,7 +27,6 @@ export default function RecipeSidebar() {
         >
           <h3 className={styles.heading3}>Recipes</h3>
 
-          {/* Map each recipe → draggable item */}
           {recipes.map((recipe, index) => (
             <Draggable key={recipe.id} draggableId={recipe.id} index={index}>
               {(provided, snapshot) => (
@@ -47,7 +46,6 @@ export default function RecipeSidebar() {
             </Draggable>
           ))}
 
-          {/* Placeholder ensures proper spacing during drag */}
           {provided.placeholder}
         </div>
       )}

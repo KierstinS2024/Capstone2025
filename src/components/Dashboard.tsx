@@ -1,81 +1,89 @@
 // ===========================================
 // PATH: src/components/Dashboard.tsx
-// Main dashboard layout: shows active meal plan and shopping list
-// Reactively waits for MealPlanContext to fetch data
+// Reusable Dashboard Component
 // ===========================================
-
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
 import { useMealPlans } from "@/context/MealPlanContext";
-import MealPlanCard from "@/components/MealPlanCard";
+import { useRecipes } from "@/context/RecipeContext";
+import { useRouter } from "next/navigation";
+import WeeklyMealPlan from "@/components/WeeklyMealPlan";
 import ShoppingListPanel from "@/components/ShoppingListPanel";
 import styles from "@/styles/dashboard.module.css";
 
 export default function Dashboard() {
-  // -------------------------------
-  // Get current user info from AuthContext
-  // -------------------------------
-  const { user } = useAuth();
-
-  // -------------------------------
-  // Destructure meal plan context
-  // - loading: fetch status
-  // - activePlan: current user’s single plan (or null)
-  // -------------------------------
-  const { loading, activePlan } = useMealPlans();
-
+  const { activePlan, loading } = useMealPlans();
+  const { recipes } = useRecipes();
   const router = useRouter();
 
+  // -----------------------------
+  // Loading fallback
+  // -----------------------------
+  if (loading || !recipes)
+    return <p className={styles.loading}>Loading dashboard...</p>;
+
+  const hasPlan = !!activePlan;
+
+  // -----------------------------
+  // Today's meals
+  // -----------------------------
+  const today = new Date().toISOString().split("T")[0];
+  const todayMeals = activePlan?.meals?.[today] || {
+    breakfast: "",
+    lunch: "",
+    dinner: "",
+  };
+  const hasMeals = Object.values(todayMeals).some(Boolean);
+
+  // -----------------------------
+  // Render dashboard
+  // -----------------------------
   return (
-    <div className={styles.dashboard}>
-      {/* -------------------------------
-          Header
-          Displays welcome message with user's email
-      ------------------------------- */}
-      <header className={styles.header}>
-        <h1>Welcome {user?.email}</h1>
-      </header>
-
-      {/* -------------------------------
-          Main layout
-          Left: meal plan card / empty state
-          Right: shopping list panel
-      ------------------------------- */}
-      <main className={styles.main}>
-        {/* -------------------------------
-            Meal plan section
-        ------------------------------- */}
-        <div className={styles.mealPlanSection}>
-          {loading ? (
-            // Show loading indicator while meal plan is fetched
-            <p>Loading meal plan...</p>
-          ) : activePlan ? (
-            // Render the active meal plan
-            <MealPlanCard plan={activePlan} />
-          ) : (
-            // Empty state if no meal plan exists
-            <div className={styles.emptyState}>
-              <p>No active meal plan yet.</p>
-              <button
-                className={styles.createPlanButton}
-                onClick={() => router.push("/meal-plans")}
-              >
-                + Create Meal Plan
-              </button>
+    <div className={styles.dashboardContainer}>
+      {/* Left Column: Meal Plan */}
+      <div className={styles.leftColumn}>
+        {hasPlan ? (
+          <>
+            <div className={styles.panelHeader}>
+              <h2>Your Meal Plan</h2>
+              <p>
+                {activePlan.startDate || "Start"} →{" "}
+                {activePlan.endDate || "End"}
+              </p>
             </div>
-          )}
-        </div>
 
-        {/* -------------------------------
-            Shopping list sidebar
-        ------------------------------- */}
-        <aside className={styles.shoppingListSection}>
-          <ShoppingListPanel />
-        </aside>
-      </main>
+            {hasMeals ? (
+              <WeeklyMealPlan plan={activePlan} showTodayOnly />
+            ) : (
+              <div className={styles.panel}>
+                <p>No meals added for today.</p>
+                <button
+                  className={styles.btnPrimary}
+                  onClick={() => router.push("/meal-plans")}
+                >
+                  Edit Meal Plan
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className={styles.panel}>
+            <p>No meal plan yet. Create one to get started.</p>
+            <button
+              className={styles.btnPrimary}
+              onClick={() => router.push("/meal-plans")}
+            >
+              Create Meal Plan
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Right Column: Shopping List */}
+      <div className={styles.rightColumn}>
+        <ShoppingListPanel hasPlan={hasPlan} />
+      </div>
     </div>
   );
 }

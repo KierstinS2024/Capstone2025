@@ -1,26 +1,78 @@
-/* ===========================================
-   PATH: src/styles/mealCard.module.css
-   Individual meal cards inside MealPlan
-   =========================================== */
+/* =========================================== */
+/* PATH: src/styles/mealCard.module.css */
+/* =========================================== */
 
+/* Main container for each meal card */
 .mealCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
-  padding: 1rem;
-  text-align: center;
+  flex: 1 1 30%; /* Grow to fit, minimum 30% width */
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background-color: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
+/* Hover effect */
 .mealCard:hover {
-  background: rgba(138, 161, 125, 0.08); /* subtle primary tint */
   transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
 }
 
-.addPrompt {
-  color: var(--color-accent);
-  font-weight: 500;
+/* Header: meal type and optional remove button */
+.header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.mealType {
+  font-weight: bold;
   font-size: 0.9rem;
+  color: #333;
+}
+
+/* Remove button (cross) */
+.removeButton {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #e74c3c;
+  cursor: pointer;
+}
+
+.removeButton:hover {
+  color: #c0392b;
+}
+
+/* Recipe image */
+.mealImage {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Recipe title */
+.recipeTitle {
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+/* Empty slot prompt */
+.addPrompt {
+  font-size: 0.85rem;
+  color: #777;
+  text-align: center;
+  margin-top: 1rem;
 }

@@ -1,0 +1,114 @@
+/* PATH: src/styles/shoppingListPanel.module.css */
+
+/* Main panel */
+.panel {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* Header */
+.header {
+  margin: 0 0 12px 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Empty state text */
+.emptyState {
+  color: #777;
+  font-size: 0.95rem;
+  padding: 8px 0;
+}
+
+/* List of items */
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.listItem:last-child {
+  border-bottom: none;
+}
+
+/* Checked item label */
+.checked {
+  text-decoration: line-through;
+  color: #999;
+}
+
+/* Remove button */
+.removeBtn {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.removeBtn:hover {
+  color: #c0392b;
+}
+
+/* Add item form */
+.addForm {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Input field */
+.input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+/* Buttons for add/clear */
+.addBtn,
+.clearBtn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.addBtn:hover,
+.clearBtn:hover {
+  background-color: #45a049;
+}
+
+.clearBtn {
+  background-color: #e74c3c;
+}
+
+.clearBtn:hover {
+  background-color: #c0392b;
+}
+
+/* Disable buttons when not allowed */
+.addBtn:disabled,
+.clearBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

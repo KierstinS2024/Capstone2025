@@ -1,0 +1,110 @@
+/* ===========================================
+   PATH: src/styles/mealPlansPage.module.css
+   MealPlansPage layout styling — mobile-first
+   Responsive sidebar + editor dashboard
+   =========================================== */
+
+/* ---------- Page container ---------- */
+.mealPlansPage {
+  display: flex;
+  flex-direction: column; /* Mobile-first: stack vertically */
+  gap: 1rem;
+  padding: 1rem;
+  font-family: sans-serif;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* ---------- Sidebar column ---------- */
+.sidebarColumn {
+  width: 100%;
+  max-width: 250px;
+  margin: 0 auto;
+}
+
+/* ---------- Editor column ---------- */
+.editorColumn {
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ---------- No plan placeholder ---------- */
+.noPlan {
+  text-align: center;
+  padding: 2rem;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background-color: #fafafa;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.noPlan h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #222;
+}
+
+.noPlan p {
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  color: #555;
+}
+
+.noPlan button {
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  background-color: #ffd54f;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #222;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.noPlan button:hover {
+  background-color: #ffa726;
+  transform: translateY(-1px);
+}
+
+.noPlan button:disabled {
+  background-color: #ffe082;
+  cursor: not-allowed;
+}
+
+/* ---------- Loading text ---------- */
+.loading {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #666;
+  margin-top: 2rem;
+}
+
+/* ---------- Responsive: Tablets ---------- */
+@media (min-width: 768px) {
+  .mealPlansPage {
+    flex-direction: row; /* Sidebar + editor side by side */
+    align-items: flex-start;
+  }
+
+  .sidebarColumn {
+    flex: 0 0 250px;
+    margin: 0;
+  }
+
+  .editorColumn {
+    flex: 1;
+    margin-left: 1rem;
+  }
+}
+
+/* ---------- Responsive: Desktop ---------- */
+@media (min-width: 1024px) {
+  .sidebarColumn {
+    flex: 0 0 280px;
+  }
+
+  .editorColumn {
+    margin-left: 1.5rem;
+  }
+}

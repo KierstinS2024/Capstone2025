@@ -1,10 +1,10 @@
 // src/app/layout.tsx
-import React from "react";
-import { AuthProvider } from "@/context/AuthContext";
-import { RecipeProvider } from "@/context/RecipeContext";
-import { ShoppingListProvider } from "@/context/ShoppingListContext";
-import { MealPlanProvider } from "@/context/MealPlanContext";
-import "@/app/global.css";
+"use client";
+
+import "./global.css";
+import { AppProviders } from "@/context/AppProviders";
+import Navbar from "@/components/Navbar";
+import { useAuth } from "@/context/AuthContext";
 
 export default function RootLayout({
   children,
@@ -14,14 +14,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          <RecipeProvider>
-            <ShoppingListProvider>
-              <MealPlanProvider>{children}</MealPlanProvider>
-            </ShoppingListProvider>
-          </RecipeProvider>
-        </AuthProvider>
+        <AppProviders>
+          <NavbarWrapper />
+          {children}
+        </AppProviders>
       </body>
     </html>
   );
+}
+
+function NavbarWrapper() {
+  const { user } = useAuth();
+
+  // Show navbar only when user is logged in
+  if (!user) return null;
+  return <Navbar />;
 }

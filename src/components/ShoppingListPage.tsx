@@ -1,15 +1,22 @@
+// ===========================================
 // PATH: src/components/ShoppingListPage.tsx
+// ===========================================
 "use client";
 
 import React, { useState } from "react";
 import { useShoppingList } from "@/context/ShoppingListContext";
+import { useAuth } from "@/context/AuthContext";
+import ShoppingListComponent from "./ShoppingListComponent";
 import styles from "@/styles/shoppinglist-detail.module.css";
 
 export default function ShoppingListPage() {
+  const { user } = useAuth();
   const { list, loading, add, toggle, remove, clear } = useShoppingList();
   const [newItem, setNewItem] = useState("");
 
   if (loading) return <p>Loading shopping list...</p>;
+  if (list && list.ownerEmail !== user?.email)
+    return <p>No shopping list found.</p>;
 
   return (
     <div className={styles.page}>
@@ -18,43 +25,31 @@ export default function ShoppingListPage() {
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          if (newItem.trim()) {
-            await add(newItem);
-            setNewItem("");
-          }
+          if (!newItem.trim()) return;
+          await add(newItem.trim());
+          setNewItem("");
         }}
         className={styles.addForm}
       >
         <input
           type="text"
-          value={newItem}
           placeholder="Add item..."
+          value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
         />
         <button type="submit">Add</button>
       </form>
 
-      <ul className={styles.list}>
-        {list?.items.map((item) => (
-          <li key={item.id} className={styles.item}>
-            <label>
-              <input
-                type="checkbox"
-                checked={item.checked}
-                onChange={() => toggle(item.id)}
-              />
-              {item.name}
-            </label>
-            <button onClick={() => remove(item.id)}>x</button>
-          </li>
-        ))}
-      </ul>
-
-      {list?.items.length ? (
-        <button onClick={clear} className={styles.clearAll}>
-          Clear All
-        </button>
-      ) : null}
+      {list ? (
+        <ShoppingListComponent
+          list={list}
+          onToggle={toggle}
+          onRemove={remove}
+          onClear={clear}
+        />
+      ) : (
+        <p>No items yet. Add something to your shopping list!</p>
+      )}
     </div>
   );
 }

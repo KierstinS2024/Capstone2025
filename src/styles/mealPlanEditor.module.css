@@ -1,0 +1,127 @@
+/* ===========================================
+   PATH: src/styles/mealPlanEditor.module.css
+   MealPlanEditor & Meal slots styling
+   Fully responsive, mobile-first, drag & drop ready
+   =========================================== */
+
+/* ---------- Editor container ---------- */
+.mealPlanEditor {
+  width: 100%;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+/* Header */
+.mealPlanEditor h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #222;
+}
+
+/* Each day container */
+.dayContainer {
+  margin-bottom: 1.5rem;
+}
+
+.dayHeader {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #333;
+}
+
+/* Row of meals for each day */
+.mealsRow {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Individual meal slot */
+.mealSlot {
+  flex: 1;
+  min-width: 90px;
+  padding: 0.5rem;
+  background-color: #f9f9f9;
+  border: 1px dashed #ddd;
+  border-radius: 10px;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+/* Highlight when dragging over */
+.dragOver {
+  background-color: #fff8e1;
+  border-color: #ffd54f;
+}
+
+/* Recipe card inside slot */
+.recipeCard {
+  width: 100%;
+  padding: 0.5rem;
+  background-color: #fff8e1;
+  border: 1px solid #ffd54f;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 500;
+  cursor: grab;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.recipeCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.dragging {
+  background-color: #fff3e0;
+  border-color: #ffa726;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  cursor: grabbing;
+}
+
+/* Empty slot placeholder */
+.emptySlot {
+  font-size: 0.85rem;
+  color: #999;
+  text-align: center;
+}
+
+/* ---------- Responsive: Tablets ---------- */
+@media (max-width: 768px) {
+  .mealsRow {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .mealSlot {
+    min-width: 80px;
+    min-height: 50px;
+  }
+
+  .recipeCard {
+    font-size: 0.85rem;
+    padding: 0.4rem;
+  }
+}
+
+/* ---------- Responsive: Mobile ---------- */
+@media (max-width: 480px) {
+  .mealsRow {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .mealSlot {
+    width: 100%;
+    min-height: 50px;
+  }
+}
