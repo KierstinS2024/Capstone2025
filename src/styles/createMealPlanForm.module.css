@@ -1,0 +1,39 @@
+/* src/styles/createMealPlanForm.module.css */
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.formLabel {
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+}
+
+.formInput {
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.formButton {
+  padding: 0.5rem 1rem;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.formButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: red;
+  font-size: 0.875rem;
+}

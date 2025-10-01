@@ -1,201 +1,67 @@
 // ===========================================
 // PATH: src/app/meal-plans/page.tsx
-// Meal Plans Page — create meal plan with flexible
-// start/end dates, drag/drop meals, and show active plan date
+// MealPlans page: shows create form or editor
 // ===========================================
-
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import { useMealPlans } from "@/context/MealPlanContext";
+import CreateMealPlanForm from "@/components/CreateMealPlanForm";
 import MealPlanEditor from "@/components/MealPlanEditor";
 import RecipeSidebar from "@/components/RecipeSidebar";
-import styles from "@/styles/mealPlansPage.module.css";
 import { MealType } from "@/types/mealPlan";
+import styles from "@/styles/mealPlansPage.module.css";
 
 export default function MealPlansPage() {
-  const {
-    activePlan,
-    loading,
-    createMealPlan,
-    addMealToPlan,
-    moveMeal,
-    updateMealPlan,
-    fetchActivePlan,
-  } = useMealPlans();
+  const { activePlan, loading, addMealToPlan, moveMeal } = useMealPlans();
 
-  // -----------------------------
-  // Local UI state
-  // -----------------------------
-  const [error, setError] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  // Guard for valid meal types
+  const isMealType = (value: string): value is MealType =>
+    ["breakfast", "lunch", "dinner"].includes(value);
 
-  const noPlanExists =
-    !activePlan || !activePlan.startDate || !activePlan.endDate;
-
-  // -----------------------------
-  // Create a new meal plan with flexible date range
-  // -----------------------------
-  const handleCreateMealPlan = async () => {
-    setError(null);
-
-    // Validate input dates
-    if (!startDate || !endDate) {
-      setError("Please select both start and end dates.");
-      return;
-    }
-
-    if (new Date(endDate) < new Date(startDate)) {
-      setError("End date cannot be before start date.");
-      return;
-    }
-
-    try {
-      // Create meal plan via context
-      await createMealPlan(startDate, endDate);
-
-      // Clear input fields
-      setStartDate("");
-      setEndDate("");
-
-      // Refresh the active plan so the UI updates immediately
-      await fetchActivePlan();
-    } catch (err: any) {
-      if (err?.message?.includes("already")) {
-        setError(
-          "You already have a meal plan. Delete it before creating a new one."
-        );
-      } else {
-        setError("Something went wrong creating the meal plan.");
-      }
-      console.error("Failed to create meal plan:", err);
-    }
-  };
-
-  // -----------------------------
-  // Drag & drop handling
-  // -----------------------------
+  // Handle drag-and-drop logic
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
     if (!destination) return;
 
-    const isFromSidebar = source.droppableId === "recipes";
-    const isToSidebar = destination.droppableId === "recipes";
+    const [sourceDay, sourceMealTypeStr] = source.droppableId.split("_");
+    const [destDay, destMealTypeStr] = destination.droppableId.split("_");
 
-    try {
-      // 1️⃣ Drag from sidebar to plan
-      if (isFromSidebar && !isToSidebar) {
-        const [destDay, destMealType] = destination.droppableId.split("_") as [
-          string,
-          MealType
-        ];
-        await addMealToPlan(destDay, destMealType, draggableId);
-        return;
-      }
+    if (!isMealType(destMealTypeStr)) return;
 
-      // 2️⃣ Move within plan
-      if (!isFromSidebar && !isToSidebar) {
-        const [sourceDay, sourceMealType] = source.droppableId.split("_") as [
-          string,
-          MealType
-        ];
-        const [destDay, destMealType] = destination.droppableId.split("_") as [
-          string,
-          MealType
-        ];
-
-        if (sourceDay === destDay && sourceMealType === destMealType) return;
-
-        await moveMeal(sourceDay, sourceMealType, destDay, destMealType);
-        return;
-      }
-
-      // 3️⃣ Remove meal by dragging back to sidebar
-      if (!isFromSidebar && isToSidebar && activePlan) {
-        const [sourceDay, sourceMealType] = source.droppableId.split("_") as [
-          string,
-          MealType
-        ];
-        const updatedMeals = { ...activePlan.meals };
-        updatedMeals[sourceDay][sourceMealType] = "";
-        await updateMealPlan(activePlan.id, updatedMeals);
-      }
-    } catch (err) {
-      console.error("Drag & drop update failed:", err);
+    // Dragging from sidebar to plan
+    if (source.droppableId === "recipes") {
+      await addMealToPlan(destDay, destMealTypeStr as MealType, draggableId);
+      return;
     }
+
+    // Move within plan
+    if (!isMealType(sourceMealTypeStr)) return;
+    await moveMeal(
+      sourceDay,
+      sourceMealTypeStr as MealType,
+      destDay,
+      destMealTypeStr as MealType
+    );
   };
 
-  // -----------------------------
-  // Loading state
-  // -----------------------------
-  if (loading) return <p className={styles.loading}>Loading meal plans...</p>;
+  // Show loading while fetching
+  if (loading) return <p className={styles.loading}>Loading...</p>;
 
-  // -----------------------------
-  // Render
-  // -----------------------------
+  // Show create form if no plan exists
+  if (!activePlan) return <CreateMealPlanForm />;
+
+  // Render editor + sidebar
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className={styles.mealPlansPage}>
-        {/* Sidebar */}
-        <aside className={styles.sidebarColumn}>
+      <div className={styles.grid}>
+        <div className={styles.editorWrapper}>
+          <MealPlanEditor plan={activePlan} />
+        </div>
+        <div className={styles.sidebarWrapper}>
           <RecipeSidebar />
-        </aside>
-
-        {/* Main content */}
-        <main className={styles.editorColumn}>
-          {noPlanExists ? (
-            <div className={styles.noPlan}>
-              <h2>No meal plan yet</h2>
-              <p>Select a start and end date to create a meal plan.</p>
-
-              <label>
-                Start Date:
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                />
-              </label>
-
-              <label>
-                End Date:
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  min={startDate || new Date().toISOString().split("T")[0]}
-                />
-              </label>
-
-              {error && <p className={styles.error}>{error}</p>}
-
-              <button
-                onClick={handleCreateMealPlan}
-                disabled={loading || !startDate || !endDate}
-                className={styles.createButton}
-              >
-                {loading ? "Creating..." : "Create Meal Plan"}
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* Active plan header with date range */}
-              <div className={styles.planHeader}>
-                <h2>Active Meal Plan</h2>
-                <p>
-                  From <strong>{activePlan.startDate}</strong> to{" "}
-                  <strong>{activePlan.endDate}</strong>
-                </p>
-              </div>
-
-              {/* Meal plan editor */}
-              <MealPlanEditor plan={activePlan} />
-            </>
-          )}
-        </main>
+        </div>
       </div>
     </DragDropContext>
   );

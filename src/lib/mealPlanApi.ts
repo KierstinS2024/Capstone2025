@@ -1,3 +1,9 @@
+// ===========================================
+// PATH: src/lib/mealPlanApi.ts
+// API helper functions for MealPlans
+// Fully typed, supports dynamic plans
+// ===========================================
+
 import { MealPlan, MealType } from "@/types/mealPlan";
 
 /**
@@ -15,7 +21,6 @@ export async function getUserMealPlan(
 
 /**
  * Create a new meal plan
- * ✅ Now includes startDate and endDate to prevent duplicate week errors in Mongo
  */
 export async function createMealPlan(
   userEmail: string,
@@ -28,7 +33,7 @@ export async function createMealPlan(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ meals, startDate, endDate }), // include start/end dates
+      body: JSON.stringify({ meals, startDate, endDate }),
     }
   );
   if (!res.ok) throw new Error("Failed to create meal plan");
@@ -59,36 +64,7 @@ export async function addMealToPlan(
 }
 
 /**
- * Move a recipe between meal slots
- */
-export async function moveMeal(
-  planId: string,
-  sourceDate: string,
-  sourceMealType: MealType,
-  destDate: string,
-  destMealType: MealType,
-  userEmail: string
-) {
-  const res = await fetch(
-    `/api/meal-plans/${planId}/moveMeal?userEmail=${encodeURIComponent(
-      userEmail
-    )}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sourceDate,
-        sourceMealType,
-        destDate,
-        destMealType,
-      }),
-    }
-  );
-  if (!res.ok) throw new Error("Failed to move meal");
-}
-
-/**
- * Update the full meals object for a meal plan
+ * Update the full meal plan
  */
 export async function updateMealPlan(
   planId: string,

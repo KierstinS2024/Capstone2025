@@ -1,4 +1,7 @@
-//src/context/MealPlanContext.tsx
+// ===========================================
+// PATH: src/context/MealPlanContext.tsx
+// MealPlanContext: handles fetching, creating, updating, and moving meals
+// ===========================================
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -7,47 +10,53 @@ import { useAuth } from "./AuthContext";
 import * as api from "@/lib/mealPlanApi";
 
 // -----------------------------
-// Context Props — defines what the context exposes
+// Context Props: what the context exposes
 // -----------------------------
 interface MealPlanContextProps {
-  activePlan: MealPlan | null; // current user's active meal plan
-  loading: boolean; // indicates loading state
-  fetchActivePlan: () => Promise<void>; // reload the user's meal plan
-  createMealPlan: (startDate: string, endDate: string) => Promise<void>; // create a new meal plan
+  activePlan: MealPlan | null; // currently active meal plan
+  loading: boolean; // fetching active plan
+  saving: boolean; // creating/updating/moving meals
+  fetchActivePlan: () => Promise<void>;
+  createMealPlan: (startDate: string, endDate: string) => Promise<void>;
   addMealToPlan: (
     date: string,
     mealType: MealType,
     recipeId: string
-  ) => Promise<void>; // add a recipe to a slot
-  removeMealFromPlan: (date: string, mealType: MealType) => Promise<void>; // remove a recipe from a slot
+  ) => Promise<void>;
+  removeMealFromPlan: (date: string, mealType: MealType) => Promise<void>;
   updateMealPlan: (
     id: string,
     meals: Record<string, DayMeals>
-  ) => Promise<void>; // update the full plan
+  ) => Promise<void>;
   moveMeal: (
     sourceDay: string,
     sourceMealType: MealType,
     destDay: string,
     destMealType: MealType
-  ) => Promise<void>; // move a meal between slots
+  ) => Promise<void>;
 }
 
 // -----------------------------
-// Create the context
+// Create context
 // -----------------------------
 const MealPlanContext = createContext<MealPlanContextProps | undefined>(
   undefined
 );
 
+// -----------------------------
+// Provider component
+// -----------------------------
 export const MealPlanProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { user } = useAuth();
+
   const [activePlan, setActivePlan] = useState<MealPlan | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // true to prevent flash
+  const [saving, setSaving] = useState(false);
 
   // -----------------------------
-  // Generate empty meals object for any date range
+  // Generate empty meals for a date range
   // -----------------------------
   const generateEmptyMeals = (
     start: string,
@@ -67,16 +76,19 @@ export const MealPlanProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // -----------------------------
-  // Fetch the active meal plan for the user
+  // Fetch active plan for user
+  // Normalize empty objects to null
   // -----------------------------
   const fetchActivePlan = async () => {
     if (!user?.email) return;
     setLoading(true);
+
     try {
       const plan = await api.getUserMealPlan(user.email);
-      setActivePlan(plan || null); // explicitly null if no plan exists
+      // Only consider plan valid if it has an ID
+      setActivePlan(plan && plan.id ? plan : null);
     } catch (err) {
-      console.error("Failed to fetch active meal plan:", err);
+      console.error("Failed to fetch active plan:", err);
       setActivePlan(null);
     } finally {
       setLoading(false);
@@ -85,49 +97,37 @@ export const MealPlanProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // -----------------------------
   // Create a new meal plan
-  // Only one plan per user is allowed
   // -----------------------------
   const createMealPlan = async (startDate: string, endDate: string) => {
     if (!user?.email) return;
-    setLoading(true);
+    setSaving(true);
 
     try {
-      // ✅ 0: Check database for existing plan
       const existingPlan = await api.getUserMealPlan(user.email);
-      if (existingPlan && existingPlan.id) {
+      if (existingPlan?.id) {
         throw new Error(
           "You already have a meal plan. Delete it before creating a new one."
         );
       }
 
-      // ✅ 1: Validate dates
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      if (end < start) throw new Error("End date cannot be before start date.");
-
-      // ✅ 2: Generate empty meals object
       const meals = generateEmptyMeals(startDate, endDate);
-
-      // ✅ 3: Call API to create the plan
       const newPlan = await api.createMealPlan(
         user.email,
         meals,
         startDate,
         endDate
       );
-
-      // ✅ 4: Update state
       setActivePlan(newPlan);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to create meal plan:", err);
       throw err;
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   // -----------------------------
-  // Add a meal to a slot
+  // Add a recipe to a slot
   // -----------------------------
   const addMealToPlan = async (
     date: string,
@@ -135,6 +135,7 @@ export const MealPlanProvider: React.FC<{ children: React.ReactNode }> = ({
     recipeId: string
   ) => {
     if (!activePlan || !user?.email) return;
+    setSaving(true);
 
     try {
       await api.addMealToPlan(
@@ -149,40 +150,48 @@ export const MealPlanProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!updatedMeals[date])
         updatedMeals[date] = { breakfast: "", lunch: "", dinner: "" };
       updatedMeals[date][mealType] = recipeId;
-
       setActivePlan({ ...activePlan, meals: updatedMeals });
     } catch (err) {
       console.error("Failed to add meal:", err);
+    } finally {
+      setSaving(false);
     }
   };
 
   // -----------------------------
-  // Remove a meal from a slot
+  // Remove a recipe from a slot
   // -----------------------------
   const removeMealFromPlan = async (date: string, mealType: MealType) => {
     if (!activePlan) return;
-    const updatedMeals = { ...activePlan.meals };
-    if (!updatedMeals[date]) return;
-    updatedMeals[date][mealType] = "";
-    await updateMealPlan(activePlan.id, updatedMeals);
+    setSaving(true);
+
+    try {
+      const updatedMeals = { ...activePlan.meals };
+      if (!updatedMeals[date]) return;
+      updatedMeals[date][mealType] = "";
+      await updateMealPlan(activePlan.id, updatedMeals);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // -----------------------------
-  // Update the full meal plan
+  // Update full meal plan
   // -----------------------------
   const updateMealPlan = async (
     id: string,
     meals: Record<string, DayMeals>
   ) => {
     if (!user?.email) return;
-    setLoading(true);
+    setSaving(true);
+
     try {
       const updated = await api.updateMealPlan(id, meals, user.email);
       setActivePlan(updated);
     } catch (err) {
       console.error("Failed to update meal plan:", err);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -208,20 +217,18 @@ export const MealPlanProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // -----------------------------
-  // Fetch active plan on mount or when user changes
+  // Fetch active plan when user changes
   // -----------------------------
   useEffect(() => {
     if (user?.email) fetchActivePlan();
   }, [user?.email]);
 
-  // -----------------------------
-  // Provide context to children
-  // -----------------------------
   return (
     <MealPlanContext.Provider
       value={{
         activePlan,
         loading,
+        saving,
         fetchActivePlan,
         createMealPlan,
         addMealToPlan,
@@ -236,7 +243,7 @@ export const MealPlanProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 // -----------------------------
-// Custom hook to consume context
+// Custom hook to access context
 // -----------------------------
 export const useMealPlans = () => {
   const context = useContext(MealPlanContext);
