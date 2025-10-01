@@ -1,10 +1,10 @@
 // ===========================================
 // PATH: src/models/ShoppingList.ts
 // MongoDB Shopping List Model (Mongoose)
-// Each user has exactly one list, scoped by user ID
+// Each user has exactly one list, scoped by email
 // ===========================================
 
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
 // -------------------------------------------
 // Interfaces
@@ -12,17 +12,17 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 
 // Single item inside the shopping list
 export interface IShoppingListItem {
-  _id?: Types.ObjectId;
+  _id?: mongoose.Types.ObjectId;
   name: string;
   checked: boolean;
 }
 
 // Full shopping list document
 export interface IShoppingList extends Document {
-  user: Types.ObjectId; // reference to User who owns this list
-  items: IShoppingListItem[]; // array of shopping list items
-  createdAt: Date; // auto from timestamps
-  updatedAt: Date; // auto from timestamps
+  ownerEmail: string; // user's email
+  items: IShoppingListItem[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // -------------------------------------------
@@ -34,20 +34,15 @@ const ShoppingListItemSchema = new Schema<IShoppingListItem>(
     name: { type: String, required: true, trim: true },
     checked: { type: Boolean, default: false },
   },
-  { _id: true } // each item gets its own ObjectId (so toggle/remove work)
+  { _id: true } // each item gets its own ObjectId
 );
 
 const ShoppingListSchema = new Schema<IShoppingList>(
   {
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      unique: true, // one list per user
-    },
+    ownerEmail: { type: String, required: true, unique: true },
     items: [ShoppingListItemSchema],
   },
-  { timestamps: true } // adds createdAt + updatedAt
+  { timestamps: true }
 );
 
 // -------------------------------------------

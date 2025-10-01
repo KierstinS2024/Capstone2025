@@ -1,34 +1,52 @@
+/* =========================================== */
 /* PATH: src/styles/shoppingListPanel.module.css */
+/* =========================================== */
 
-/* Main panel */
+/* ----------------------------- */
+/* Main panel container */
+/* ----------------------------- */
 .panel {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 16px;
   background-color: #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
 }
 
-/* Header */
+/* Header title */
 .header {
-  margin: 0 0 12px 0;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #333;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 12px;
 }
 
-/* Empty state text */
+/* ----------------------------- */
+/* Empty state message */
+/* ----------------------------- */
 .emptyState {
-  color: #777;
   font-size: 0.95rem;
-  padding: 8px 0;
+  color: #777;
+  padding: 12px 0;
 }
 
-/* List of items */
+/* ----------------------------- */
+/* Error messages */
+/* ----------------------------- */
+.error {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+/* ----------------------------- */
+/* Shopping list items */
+/* ----------------------------- */
 .list {
   list-style: none;
   padding: 0;
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
 }
 
 .listItem {
@@ -37,78 +55,150 @@
   justify-content: space-between;
   padding: 6px 0;
   border-bottom: 1px solid #eee;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  transition: background 0.3s ease, color 0.3s ease; /* smooth transition */
 }
 
-.listItem:last-child {
-  border-bottom: none;
+/* Hover highlight for list item */
+.listItem:hover {
+  background-color: #f9f9f9;
 }
 
-/* Checked item label */
+/* Checked state background */
+.listItem.checked {
+  background-color: #f0f0f0;
+}
+
+/* Label containing checkbox and item name */
+.listItem label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+/* Checked state for item */
 .checked {
   text-decoration: line-through;
-  color: #999;
+  color: #aaa;
+  background-color: #f0f0f0; /* optional subtle background for checked items */
 }
 
-/* Remove button */
+/* ----------------------------- */
+/* Scoped checkbox styles */
+/* ----------------------------- */
+.listItem input[type="checkbox"] {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #4caf50; /* Green checkmark */
+  transition: transform 0.2s ease;
+}
+
+/* Bump animation on check */
+.listItem input[type="checkbox"]:checked {
+  animation: checkboxBump 0.2s ease forwards;
+}
+
+/* Smooth hover effect */
+.listItem input[type="checkbox"]:hover {
+  transform: scale(1.2);
+}
+
+/* ----------------------------- */
+/* Remove button (✕) */
+/* ----------------------------- */
 .removeBtn {
   background: none;
   border: none;
-  color: #e74c3c;
   cursor: pointer;
+  color: #ff4d4f;
   font-size: 1rem;
   padding: 0 4px;
-  transition: color 0.2s;
+  transition: color 0.2s, transform 0.2s;
 }
 
 .removeBtn:hover {
-  color: #c0392b;
+  color: #d9363e;
+  transform: scale(1.2);
 }
 
-/* Add item form */
+/* ----------------------------- */
+/* Add new item form */
+/* ----------------------------- */
 .addForm {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
-/* Input field */
 .input {
   flex: 1;
-  padding: 6px 8px;
-  border: 1px solid #ccc;
+  padding: 8px 12px;
   border-radius: 6px;
+  border: 1px solid #ccc;
   font-size: 0.95rem;
+  transition: border-color 0.2s;
 }
 
-/* Buttons for add/clear */
+.input:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+/* Add & Clear buttons */
 .addBtn,
 .clearBtn {
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  padding: 6px 12px;
+  padding: 8px 12px;
   border-radius: 6px;
-  font-size: 0.9rem;
+  border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
+  font-size: 0.9rem;
+  transition: background 0.2s, transform 0.2s;
 }
 
-.addBtn:hover,
-.clearBtn:hover {
-  background-color: #45a049;
+/* Add button styling */
+.addBtn {
+  background-color: #4caf50;
+  color: #fff;
 }
 
+.addBtn:hover:enabled {
+  background-color: #43a047;
+  transform: scale(1.05);
+}
+
+/* Clear all button styling */
 .clearBtn {
-  background-color: #e74c3c;
+  background-color: #f44336;
+  color: #fff;
 }
 
-.clearBtn:hover {
-  background-color: #c0392b;
+.clearBtn:hover:enabled {
+  background-color: #d32f2f;
+  transform: scale(1.05);
 }
 
-/* Disable buttons when not allowed */
+/* Disabled state */
 .addBtn:disabled,
 .clearBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* ----------------------------- */
+/* Checkbox bump animation */
+/* ----------------------------- */
+@keyframes checkboxBump {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
 }

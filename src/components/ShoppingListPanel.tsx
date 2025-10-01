@@ -1,79 +1,97 @@
 // ===========================================
 // PATH: src/components/ShoppingListPanel.tsx
 // ===========================================
-// Shopping List Panel Component
-// -----------------------------
-// - Shows user's shopping list items
-// - Can add, toggle, remove, or clear items
-// - Works with ShoppingListContext
+// - Editable shopping list for the current user
+// - Add, toggle, remove, or clear items
+// - Uses ShoppingListContext
+// - Optimistic UI updates for fast feedback
+// - Displays error messages for failed operations
 // ===========================================
 
 "use client";
 
 import React, { useState } from "react";
 import { useShoppingList } from "@/context/ShoppingListContext";
-import styles from "@/styles/shoppingListPanel.module.css";
+import styles from "@/styles/shoppingListPanel.module.css"; // CSS module
 
-interface Props {
-  hasPlan: boolean; // Controls UI when no meal plan exists
-}
-
-export default function ShoppingListPanel({ hasPlan }: Props) {
+export default function ShoppingListPanel() {
   const { list, loading, add, toggle, remove, clear } = useShoppingList();
-  const [newItem, setNewItem] = useState("");
+  const [newItemName, setNewItemName] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   // -----------------------------
   // Handle form submit to add item
   // -----------------------------
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newItem.trim()) return;
-    await add(newItem.trim());
-    setNewItem(""); // Clear input
+  const handleAddItem = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmedName = newItemName.trim();
+    if (!trimmedName) return;
+
+    try {
+      await add(trimmedName);
+      setNewItemName("");
+      setError(null);
+    } catch (err: any) {
+      console.error("Failed to add item:", err);
+      setError("Failed to add item. Please try again.");
+    }
   };
 
   // -----------------------------
-  // Show loading state
+  // Loading fallback
   // -----------------------------
   if (loading) return <p>Loading shopping list...</p>;
 
-  // -----------------------------
-  // If no meal plan
-  // -----------------------------
-  if (!hasPlan) {
-    return (
-      <div className={styles.emptyState}>
-        <p>Create a meal plan to generate your shopping list.</p>
-      </div>
-    );
-  }
-
-  // -----------------------------
-  // Empty list
-  // -----------------------------
   const isEmpty = !list || list.items.length === 0;
 
   return (
     <div className={styles.panel}>
-      <h3 className={styles.header}>Shopping List</h3>
+      <h1 className={styles.header}>My Shopping List</h1>
+
+      {error && <p className={styles.error}>{error}</p>}
 
       {isEmpty ? (
         <p className={styles.emptyState}>Your shopping list is empty.</p>
       ) : (
         <ul className={styles.list}>
           {list.items.map((item) => (
-            <li key={item.id} className={styles.listItem}>
-              <label className={item.checked ? styles.checked : ""}>
+            <li
+              key={item.id || Math.random().toString()}
+              className={`${styles.listItem} ${
+                item.checked ? styles.checked : ""
+              }`}
+            >
+              <label>
                 <input
                   type="checkbox"
                   checked={item.checked}
-                  onChange={() => toggle(item.id)}
+                  onChange={async () => {
+                    if (!item.id) return;
+                    setError(null);
+                    try {
+                      await toggle(item.id);
+                    } catch (err: any) {
+                      console.error("Failed to toggle item:", err);
+                      setError("Failed to toggle item. Please try again.");
+                    }
+                  }}
                 />
                 {item.name}
               </label>
+
               <button
                 className={styles.removeBtn}
-                onClick={() => remove(item.id)}
+                onClick={async () => {
+                  if (!item.id) return;
+                  setError(null);
+                  try {
+                    await remove(item.id);
+                  } catch (err: any) {
+                    console.error("Failed to remove item:", err);
+                    setError("Failed to remove item. Please try again.");
+                  }
+                }}
+                title="Remove item"
               >
                 ✕
               </button>
@@ -82,25 +100,34 @@ export default function ShoppingListPanel({ hasPlan }: Props) {
         </ul>
       )}
 
-      {/* -----------------------------
-          Add new item form
-      ----------------------------- */}
-      <form onSubmit={handleAdd} className={styles.addForm}>
+      <form onSubmit={handleAddItem} className={styles.addForm}>
         <input
           type="text"
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
+          value={newItemName}
+          onChange={(e) => setNewItemName(e.target.value)}
           placeholder="Add new item"
           className={styles.input}
         />
-        <button type="submit" className={styles.addBtn} disabled={!hasPlan}>
+        <button
+          type="submit"
+          className={styles.addBtn}
+          disabled={!newItemName.trim()}
+        >
           Add
         </button>
         <button
           type="button"
           className={styles.clearBtn}
-          onClick={clear}
-          disabled={isEmpty || !hasPlan}
+          onClick={async () => {
+            setError(null);
+            try {
+              await clear();
+            } catch (err: any) {
+              console.error("Failed to clear list:", err);
+              setError("Failed to clear list. Please try again.");
+            }
+          }}
+          disabled={isEmpty}
         >
           Clear All
         </button>

@@ -1,71 +1,95 @@
+// ===========================================
+// PATH: src/app/api/shopping-lists/route.ts
+// ===========================================
+// Collection-level Shopping List API
+// -------------------------------------------
+// - GET: fetch the authenticated user's shopping list
+// - POST: add a single item OR multiple items
+// - DELETE: clear all items in the shopping list
+// - Requires authenticated user (via getUserFromRequest)
+// - One shopping list per user (created if missing)
+// ===========================================
+
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import ShoppingListModel, { IShoppingList } from "@/models/ShoppingList";
-import UserModel from "@/models/User";
+import {
+  getShoppingList,
+  addShoppingListItem,
+  addBulkShoppingListItems,
+  clearShoppingList,
+} from "@/lib/db";
+import { getUserFromRequest } from "@/lib/serverAuth";
 
-// Helper: normalize list and items
-function normalizeList(list: IShoppingList) {
-  return {
-    id: list.id.toString(),
-    user: list.user.toString(),
-    items: list.items.map((item) => ({
-      id: item._id?.toString(),
-      name: item.name,
-      checked: item.checked,
-    })),
-    createdAt: list.createdAt,
-    updatedAt: list.updatedAt,
-  };
-}
-
-// GET /api/shopping-lists?user=<email>
+// -----------------------------
+// GET /api/shopping-lists
+// -----------------------------
+// Returns the user's shopping list (creates one if it doesn’t exist)
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const userEmail = url.searchParams.get("user");
-  if (!userEmail)
-    return NextResponse.json({ error: "User email required" }, { status: 400 });
+  const user = getUserFromRequest(req as any);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  await connectDB();
-
-  const user = await UserModel.findOne({ email: userEmail });
-  if (!user)
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-  const list = await ShoppingListModel.findOne({ user: user._id });
-  if (!list)
-    return NextResponse.json(
-      { error: "Shopping list not found" },
-      { status: 404 }
-    );
-
-  return NextResponse.json(normalizeList(list));
+  try {
+    const list = await getShoppingList(user.email);
+    return NextResponse.json(list);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
 
-// POST /api/shopping-lists?user=<email>
-// Creates a shopping list if it doesn't exist
+// -----------------------------
+// POST /api/shopping-lists
+// -----------------------------
+// Accepts body: { name: string } OR { items: string[] }
+// - If "name" is provided → add a single item
+// - If "items" is provided → add multiple items
 export async function POST(req: NextRequest) {
-  const url = new URL(req.url);
-  const userEmail = url.searchParams.get("user");
-  if (!userEmail)
-    return NextResponse.json({ error: "User email required" }, { status: 400 });
+  const user = getUserFromRequest(req as any);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  await connectDB();
+  try {
+    const body = await req.json();
 
-  const user = await UserModel.findOne({ email: userEmail });
-  if (!user)
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (body.name) {
+      // Add a single item
+      const updatedList = await addShoppingListItem(user.email, body.name);
+      return NextResponse.json(updatedList);
+    }
 
-  let existing = await ShoppingListModel.findOne({ user: user._id });
-  if (existing)
+    if (Array.isArray(body.items) && body.items.length > 0) {
+      // Add multiple items at once
+      const updatedList = await addBulkShoppingListItems(
+        user.email,
+        body.items
+      );
+      return NextResponse.json(updatedList);
+    }
+
     return NextResponse.json(
-      { error: "Shopping list already exists" },
-      { status: 409 }
+      { error: "Missing name or items in request body" },
+      { status: 400 }
     );
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
 
-  const created = await ShoppingListModel.create({
-    user: user._id,
-    items: [],
-  });
+// -----------------------------
+// DELETE /api/shopping-lists
+// -----------------------------
+// Clears the user's shopping list (all items removed)
+export async function DELETE(req: NextRequest) {
+  const user = getUserFromRequest(req as any);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  return NextResponse.json(normalizeList(created), { status: 201 });
+  try {
+    const updatedList = await clearShoppingList(user.email);
+    return NextResponse.json(updatedList);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

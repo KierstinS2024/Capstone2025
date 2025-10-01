@@ -3,15 +3,15 @@
 // Centralized MongoDB connection + models
 // -------------------------------------------
 // - Ensures a single cached MongoDB connection
-// - Defines Mongoose models for MealPlans & Recipes
+// - Defines Mongoose models for MealPlans, Recipes, ShoppingList
 // - Exports helper functions for CRUD operations
-// - Recipes untouched (your current flow works)
-// - MealPlans updated to:
-//   • Include weekStartDate / weekEndDate
-//   • Enforce "one meal plan per user"
 // ===========================================
 
 import mongoose from "mongoose";
+import ShoppingList, {
+  IShoppingList,
+  IShoppingListItem,
+} from "@/models/ShoppingList";
 
 // ====================================================
 // Connection Management (Singleton Pattern)
@@ -19,7 +19,6 @@ import mongoose from "mongoose";
 const MONGODB_URI = process.env.MONGODB_URI || "";
 if (!MONGODB_URI) throw new Error("Please set MONGODB_URI in .env.local");
 
-// Cache connection across hot reloads in dev
 let cached = (global as any).mongoose as {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -38,22 +37,16 @@ export async function connectDB() {
 // ====================================================
 // MealPlan Schema & Model
 // ====================================================
-// Each user can have *at most one* meal plan.
-// If they want a new one, they must delete the old one.
-// Each plan covers exactly one week (start → end).
 const mealPlanSchema = new mongoose.Schema(
   {
     author: { type: String, required: true }, // user email
     meals: { type: mongoose.Schema.Types.Mixed, default: {} },
-
-    // Required fields for weekly context
-    weekStartDate: { type: String, required: true }, // e.g. "2025-09-29"
-    weekEndDate: { type: String, required: true }, // e.g. "2025-10-05"
+    weekStartDate: { type: String, required: true },
+    weekEndDate: { type: String, required: true },
   },
-  { timestamps: true } // adds createdAt / updatedAt
+  { timestamps: true }
 );
 
-// ✅ Enforce "one meal plan per user"
 mealPlanSchema.index({ author: 1 }, { unique: true });
 
 const MealPlanModel =
@@ -62,7 +55,6 @@ const MealPlanModel =
 // ====================================================
 // Recipe Schema & Model
 // ====================================================
-// (unchanged from your working version)
 const recipeSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
@@ -70,7 +62,7 @@ const recipeSchema = new mongoose.Schema(
     instructions: { type: String, default: "" },
     image: { type: String },
     source: { type: String, enum: ["user", "spoonacular"], default: "user" },
-    author: { type: String, required: true }, // user email
+    author: { type: String, required: true },
   },
   { timestamps: true }
 );
@@ -102,13 +94,10 @@ export async function getAllMealPlans(author: string) {
 
 export async function createMealPlan(data: any) {
   await connectDB();
-
-  // Prevent duplicate plan (one per user)
   const existing = await MealPlanModel.findOne({ author: data.author });
   if (existing) {
     throw new Error("User already has an active meal plan");
   }
-
   const plan = new MealPlanModel(data);
   const saved = await plan.save();
   return normalize(saved);
@@ -167,3 +156,127 @@ export async function deleteRecipeById(id: string) {
   await connectDB();
   return RecipeModel.findByIdAndDelete(id);
 }
+
+// ====================================================
+// Shopping List Helpers (by ownerEmail)
+// ====================================================
+
+// Normalizer: Mongo _id → id (for both list + subdocs)
+function normalizeShoppingList(list: any) {
+  if (!list) return null;
+
+  const obj = list.toObject ? list.toObject() : list;
+
+  return {
+    id: obj._id.toString(),
+    ownerEmail: obj.ownerEmail,
+    items: obj.items.map((i: any) => ({
+      id: i._id.toString(),
+      name: i.name,
+      checked: i.checked,
+    })),
+    createdAt: obj.createdAt,
+    updatedAt: obj.updatedAt,
+  };
+}
+
+// -----------------------------
+// Fetch user's shopping list (creates one if missing)
+// -----------------------------
+export async function getShoppingList(ownerEmail: string) {
+  await connectDB();
+  let list = await ShoppingList.findOne({ ownerEmail });
+  if (!list) {
+    list = await ShoppingList.create({ ownerEmail, items: [] });
+  }
+  return normalizeShoppingList(list);
+}
+
+// -----------------------------
+// Add a single item
+// -----------------------------
+export async function addShoppingListItem(ownerEmail: string, name: string) {
+  await connectDB();
+  let list = await ShoppingList.findOne({ ownerEmail });
+  if (!list) list = await ShoppingList.create({ ownerEmail, items: [] });
+
+  list.items.push({ name, checked: false });
+  await list.save();
+
+  return normalizeShoppingList(list);
+}
+
+// -----------------------------
+// Add multiple items at once
+// -----------------------------
+export async function addBulkShoppingListItems(
+  ownerEmail: string,
+  items: string[]
+) {
+  await connectDB();
+  let list = await ShoppingList.findOne({ ownerEmail });
+  if (!list) list = await ShoppingList.create({ ownerEmail, items: [] });
+
+  items.forEach((name) => list!.items.push({ name, checked: false }));
+  await list.save();
+
+  return normalizeShoppingList(list);
+}
+
+// -----------------------------
+// Toggle checked/unchecked on one item
+// -----------------------------
+export async function toggleShoppingListItem(
+  ownerEmail: string,
+  itemId: string
+) {
+  await connectDB();
+  const list = await ShoppingList.findOne({ ownerEmail });
+  if (!list) throw new Error("Shopping list not found");
+
+  // Convert to ObjectId to match subdocument keys
+  const objectId = new mongoose.Types.ObjectId(itemId);
+  const item = list.items.id(objectId);
+  if (!item) throw new Error("Item not found");
+
+  item.checked = !item.checked;
+  await list.save();
+
+  return normalizeShoppingList(list);
+}
+
+// -----------------------------
+// Delete a single item
+// -----------------------------
+export async function deleteShoppingListItem(
+  ownerEmail: string,
+  itemId: string
+) {
+  await connectDB();
+  const list = await ShoppingList.findOne({ ownerEmail });
+  if (!list) throw new Error("Shopping list not found");
+
+  const objectId = new mongoose.Types.ObjectId(itemId);
+  const item = list.items.id(objectId);
+  if (!item) throw new Error("Item not found");
+
+  item.deleteOne();
+  await list.save();
+
+  return normalizeShoppingList(list);
+}
+
+// -----------------------------
+// Clear all items
+// -----------------------------
+export async function clearShoppingList(ownerEmail: string) {
+  await connectDB();
+  const list = await ShoppingList.findOne({ ownerEmail });
+  if (!list) throw new Error("Shopping list not found");
+
+  list.items = [];
+  await list.save();
+
+  return normalizeShoppingList(list);
+}
+

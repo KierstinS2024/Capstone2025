@@ -1,167 +1,70 @@
+// ===========================================
+// PATH: src/app/api/shopping-lists/[id]/route.ts
+// ===========================================
+// Item-level Shopping List API
+// -------------------------------------------
+// - PATCH: toggle a single item's checked status
+// - DELETE: remove a single item from the list
+// - Requires authenticated user (via getUserFromRequest)
+// - Uses await params (Next.js 15+ App Router requirement)
+// ===========================================
+
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import ShoppingListModel, { IShoppingList } from "@/models/ShoppingList";
-import mongoose from "mongoose";
+import { toggleShoppingListItem, deleteShoppingListItem } from "@/lib/db";
+import { getUserFromRequest } from "@/lib/serverAuth";
 
-// Helper: normalize list and items
-function normalizeList(list: IShoppingList) {
-  return {
-    id: list.id.toString(),
-    user: list.user.toString(),
-    items: list.items.map((item) => ({
-      id: item._id?.toString(),
-      name: item.name,
-      checked: item.checked,
-    })),
-    createdAt: list.createdAt,
-    updatedAt: list.updatedAt,
-  };
-}
-
-// GET /api/shopping-lists/[id]?user=<email>
-export async function GET(
+// -----------------------------
+// PATCH /api/shopping-lists/:id
+// -----------------------------
+export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // 👈 params is async in App Router
 ) {
-  const { id } = params;
-  const url = new URL(req.url);
-  const userEmail = url.searchParams.get("user");
+  // Authenticate user
+  const user = getUserFromRequest(req as any);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  if (!userEmail)
-    return NextResponse.json({ error: "User email required" }, { status: 400 });
+  // Await params before using
+  const { id: itemId } = await context.params;
+  if (!itemId) {
+    return NextResponse.json({ error: "Missing item id" }, { status: 400 });
+  }
 
-  await connectDB();
-
-  const list = await ShoppingListModel.findById(id);
-  if (!list) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  return NextResponse.json(normalizeList(list));
+  try {
+    // Toggle the item's checked status
+    const updatedList = await toggleShoppingListItem(user.email, itemId);
+    return NextResponse.json(updatedList);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
 
-// POST /api/shopping-lists/[id]?user=<email>  → add item
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
-  const url = new URL(req.url);
-  const userEmail = url.searchParams.get("user");
-
-  if (!userEmail)
-    return NextResponse.json({ error: "User email required" }, { status: 400 });
-
-  await connectDB();
-
-  const list = await ShoppingListModel.findById(id);
-  if (!list)
-    return NextResponse.json({ error: "List not found" }, { status: 404 });
-
-  const body = await req.json().catch(() => ({}));
-  if (!body.name)
-    return NextResponse.json({ error: "Item name required" }, { status: 400 });
-
-  const newItem = {
-    _id: new mongoose.Types.ObjectId(),
-    name: body.name,
-    checked: false,
-  };
-  list.items.push(newItem);
-  await list.save();
-
-  return NextResponse.json(
-    {
-      id: newItem._id.toString(),
-      name: newItem.name,
-      checked: newItem.checked,
-    },
-    { status: 201 }
-  );
-}
-
-// POST /api/shopping-lists/[id]/toggle?itemId=<itemId>&user=<email>
-export async function POST_TOGGLE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
-  const url = new URL(req.url);
-  const userEmail = url.searchParams.get("user");
-  const itemId = url.searchParams.get("itemId");
-
-  if (!userEmail || !itemId)
-    return NextResponse.json(
-      { error: "User email and itemId required" },
-      { status: 400 }
-    );
-
-  await connectDB();
-
-  const list = await ShoppingListModel.findById(id);
-  if (!list)
-    return NextResponse.json({ error: "List not found" }, { status: 404 });
-
-  const item = list.items.id(itemId);
-  if (!item)
-    return NextResponse.json({ error: "Item not found" }, { status: 404 });
-
-  item.checked = !item.checked;
-  await list.save();
-
-  return NextResponse.json({
-    id: item._id.toString(),
-    name: item.name,
-    checked: item.checked,
-  });
-}
-
-// DELETE /api/shopping-lists/[id]?itemId=<itemId>&user=<email>  → remove item
+// -----------------------------
+// DELETE /api/shopping-lists/:id
+// -----------------------------
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // 👈 must await
 ) {
-  const { id } = params;
-  const url = new URL(req.url);
-  const userEmail = url.searchParams.get("user");
-  const itemId = url.searchParams.get("itemId");
+  // Authenticate user
+  const user = getUserFromRequest(req as any);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  if (!userEmail || !itemId)
-    return NextResponse.json(
-      { error: "User email and itemId required" },
-      { status: 400 }
-    );
+  // Await params before using
+  const { id: itemId } = await context.params;
+  if (!itemId) {
+    return NextResponse.json({ error: "Missing item id" }, { status: 400 });
+  }
 
-  await connectDB();
-
-  const list = await ShoppingListModel.findById(id);
-  if (!list)
-    return NextResponse.json({ error: "List not found" }, { status: 404 });
-
-  list.items.id(itemId)?.remove();
-  await list.save();
-
-  return NextResponse.json({ success: true });
-}
-
-// POST /api/shopping-lists/[id]/clear?user=<email>  → clear all items
-export async function POST_CLEAR(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
-  const url = new URL(req.url);
-  const userEmail = url.searchParams.get("user");
-
-  if (!userEmail)
-    return NextResponse.json({ error: "User email required" }, { status: 400 });
-
-  await connectDB();
-
-  const list = await ShoppingListModel.findById(id);
-  if (!list)
-    return NextResponse.json({ error: "List not found" }, { status: 404 });
-
-  list.items = [];
-  await list.save();
-
-  return NextResponse.json({ success: true });
+  try {
+    // Delete the item from the shopping list
+    const updatedList = await deleteShoppingListItem(user.email, itemId);
+    return NextResponse.json(updatedList);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

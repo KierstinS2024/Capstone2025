@@ -1,7 +1,4 @@
-// ===========================================
 // PATH: src/components/Dashboard.tsx
-// Reusable Dashboard Component
-// ===========================================
 "use client";
 
 import React from "react";
@@ -82,7 +79,7 @@ export default function Dashboard() {
 
       {/* Right Column: Shopping List */}
       <div className={styles.rightColumn}>
-        <ShoppingListPanel hasPlan={hasPlan} />
+        <ShoppingListPanel />
       </div>
     </div>
   );
