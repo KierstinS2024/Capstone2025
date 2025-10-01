@@ -2,6 +2,7 @@
 "use client";
 
 import React from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useMealPlans } from "@/context/MealPlanContext";
 import { useRecipes } from "@/context/RecipeContext";
 import { useRouter } from "next/navigation";
@@ -10,6 +11,7 @@ import ShoppingListPanel from "@/components/ShoppingListPanel";
 import styles from "@/styles/dashboard.module.css";
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const { activePlan, loading } = useMealPlans();
   const { recipes } = useRecipes();
   const router = useRouter();
@@ -38,6 +40,10 @@ export default function Dashboard() {
   // -----------------------------
   return (
     <div className={styles.dashboardContainer}>
+      {/* Welcome message */}
+      <h1 className={styles.welcomeMessage}>
+        Welcome{user?.email ? `,  ${user.email}` : ""}!
+      </h1>{" "}
       {/* Left Column: Meal Plan */}
       <div className={styles.leftColumn}>
         {hasPlan ? (
@@ -76,7 +82,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-
       {/* Right Column: Shopping List */}
       <div className={styles.rightColumn}>
         <ShoppingListPanel />
