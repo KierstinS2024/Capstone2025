@@ -1,6 +1,6 @@
 // ===========================================
 // PATH: src/app/meal-plans/page.tsx
-// MealPlans page: shows create form or editor
+// MealPlans page: shows create form or editor with recipe sidebar
 // ===========================================
 "use client";
 
@@ -14,13 +14,20 @@ import { MealType } from "@/types/mealPlan";
 import styles from "@/styles/mealPlansPage.module.css";
 
 export default function MealPlansPage() {
-  const { activePlan, loading, addMealToPlan, moveMeal } = useMealPlans();
+  const {
+    activePlan,
+    loading,
+    addMealToPlan,
+    deleteMealPlan,
+    moveMeal,
+    saving,
+  } = useMealPlans();
 
-  // Guard for valid meal types
+  // ---------- Guard for valid meal types ----------
   const isMealType = (value: string): value is MealType =>
     ["breakfast", "lunch", "dinner"].includes(value);
 
-  // Handle drag-and-drop logic
+  // ---------- Handle drag-and-drop ----------
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
     if (!destination) return;
@@ -30,9 +37,7 @@ export default function MealPlansPage() {
 
     if (!isMealType(destMealTypeStr)) return;
 
-    // --- Decode recipeId ---
-    // Draggable IDs in editor look like: `${recipeId}_${date}_${mealType}`
-    // From sidebar they are just the recipeId
+    // Decode recipeId
     const recipeId = draggableId.split("_")[0];
 
     // Dragging from sidebar -> add new meal
@@ -41,24 +46,46 @@ export default function MealPlansPage() {
       return;
     }
 
-    // Move within plan
+    // Move meal within existing plan
     if (!isMealType(sourceMealTypeStr)) return;
     await moveMeal(sourceDay, sourceMealTypeStr, destDay, destMealTypeStr);
   };
 
-  // Show loading while fetching
+  // ---------- Loading state ----------
   if (loading) return <p className={styles.loading}>Loading...</p>;
 
-  // Show create form if no plan exists
+  // ---------- Show create form if no active plan ----------
   if (!activePlan) return <CreateMealPlanForm />;
 
-  // Render editor + sidebar
+  // ---------- Render editor + floating delete button + sidebar ----------
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className={styles.grid}>
+        {/* ---------- Editor + Delete Button ---------- */}
         <div className={styles.editorWrapper}>
-          <MealPlanEditor plan={activePlan} />
+          {/* ---------- Floating Delete Meal Plan Button ---------- */}
+          <button
+            className={styles.deletePlanBtn}
+            onClick={() => {
+              if (
+                activePlan &&
+                confirm("Are you sure you want to delete this meal plan?")
+              ) {
+                deleteMealPlan(activePlan.id);
+              }
+            }}
+            disabled={saving} // disables button while saving/deleting
+          >
+            {saving ? "Deleting..." : "Delete Plan"}
+          </button>
+
+          {/* ---------- Editor Container (holds MealPlanEditor) ---------- */}
+          <div className={styles.editorContainer}>
+            <MealPlanEditor plan={activePlan} />
+          </div>
         </div>
+
+        {/* ---------- Recipe Sidebar ---------- */}
         <div className={styles.sidebarWrapper}>
           <RecipeSidebar />
         </div>

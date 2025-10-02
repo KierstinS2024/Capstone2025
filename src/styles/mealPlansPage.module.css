@@ -30,11 +30,12 @@
 
 /* ---------- Editor Wrapper ---------- */
 .editorWrapper {
+  position: relative; /* required for absolutely positioned delete button */
   background-color: var(--color-surface);
   padding: 1rem;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  overflow-x: auto; /* horizontal scroll for many days */
+  overflow-x: auto; /* horizontal scroll for wide date ranges */
 }
 
 /* ---------- Sidebar Wrapper ---------- */
@@ -45,7 +46,7 @@
   overflow-y: auto; /* scroll for long recipe list */
 }
 
-/* ---------- RecipeSidebar Styles ---------- */
+/* ---------- RecipeSidebar Styles (used for fallback if needed) ---------- */
 .sidebar {
   width: 100%;
   max-width: 260px;
@@ -63,6 +64,40 @@
   margin-bottom: 1rem;
   text-align: center;
   color: var(--color-text);
+}
+
+/* ---------- Delete Meal Plan Button ---------- */
+.deletePlanBtn {
+  position: absolute; /* float over editor */
+  top: 1rem;
+  right: 1rem;
+  background-color: var(--color-error, #e53e3e); /* fallback red */
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md, 8px);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  z-index: 10; /* ensure above editor content */
+}
+
+.deletePlanBtn:hover:enabled {
+  background-color: #c53030; /* darker red on hover */
+  transform: translateY(-1px);
+}
+
+.deletePlanBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- Editor Container (holds editor content) ---------- */
+.editorContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* spacing between editor content and other elements if needed */
+  padding-top: 2.5rem; /* add top padding so editor content doesn't overlap delete button */
 }
 
 /* ---------- Responsive: Tablet ---------- */
@@ -84,5 +119,16 @@
     position: relative;
     top: auto;
     max-height: unset;
+  }
+
+  /* Delete button full width on mobile for touch targets */
+  .deletePlanBtn {
+    position: relative; /* remove absolute for mobile */
+    top: auto;
+    right: auto;
+    width: 100%;
+    padding: 0.6rem 0;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
   }
 }

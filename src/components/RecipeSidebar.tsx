@@ -1,4 +1,3 @@
-//src/components/RecipeSidebar.tsx
 "use client";
 
 import React from "react";
@@ -32,7 +31,7 @@ export default function RecipeSidebar() {
                         ? `${styles.recipeCard} ${styles.dragging}`
                         : styles.recipeCard
                     }
-                    title={recipe.title} //tool for clarity
+                    title={recipe.title}
                   >
                     {recipe.title}
                   </div>

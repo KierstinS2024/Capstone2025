@@ -1,4 +1,3 @@
-// src/components/MealPlanEditor.tsx
 "use client";
 
 import React from "react";
@@ -76,7 +75,6 @@ export default function MealPlanEditor({ plan }: MealPlanEditorProps) {
                       } ${!recipeId ? styles.emptySlot : ""}`}
                     >
                       {recipeId ? (
-                        // **FIXED:** Unique draggableId per slot
                         <Draggable
                           draggableId={`${recipeId}_${date}_${mealType}`}
                           index={0}
