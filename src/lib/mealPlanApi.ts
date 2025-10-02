@@ -1,22 +1,30 @@
 // ===========================================
 // PATH: src/lib/mealPlanApi.ts
 // API helper functions for MealPlans
-// Fully typed, supports dynamic plans
+// Uses only CRUD routes that exist
 // ===========================================
 
-import { MealPlan, MealType } from "@/types/mealPlan";
+import { MealPlan, MealType, DayMeals } from "@/types";
 
 /**
- * Fetch the active meal plan for a user
+ * Fetch all meal plans for a user
+ */
+export async function getAllMealPlans(userEmail: string): Promise<MealPlan[]> {
+  const res = await fetch(
+    `/api/meal-plans?userEmail=${encodeURIComponent(userEmail)}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch meal plans");
+  return res.json();
+}
+
+/**
+ * Fetch the first (active) meal plan for a user
  */
 export async function getUserMealPlan(
   userEmail: string
 ): Promise<MealPlan | null> {
-  const res = await fetch(
-    `/api/meal-plans?userEmail=${encodeURIComponent(userEmail)}`
-  );
-  if (!res.ok) return null;
-  return res.json();
+  const plans = await getAllMealPlans(userEmail);
+  return plans.length > 0 ? plans[0] : null;
 }
 
 /**
@@ -24,7 +32,7 @@ export async function getUserMealPlan(
  */
 export async function createMealPlan(
   userEmail: string,
-  meals: Record<string, Record<MealType, string>>,
+  meals: Record<string, DayMeals>,
   startDate: string,
   endDate: string
 ): Promise<MealPlan> {
@@ -41,36 +49,13 @@ export async function createMealPlan(
 }
 
 /**
- * Add a recipe to a specific day & meal type
- */
-export async function addMealToPlan(
-  planId: string,
-  date: string,
-  mealType: MealType,
-  recipeId: string,
-  userEmail: string
-) {
-  const res = await fetch(
-    `/api/meal-plans/${planId}/addMeal?userEmail=${encodeURIComponent(
-      userEmail
-    )}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, mealType, recipeId }),
-    }
-  );
-  if (!res.ok) throw new Error("Failed to add meal");
-}
-
-/**
  * Update the full meal plan
  */
 export async function updateMealPlan(
   planId: string,
-  meals: Record<string, Record<MealType, string>>,
+  meals: Record<string, DayMeals>,
   userEmail: string
-) {
+): Promise<MealPlan> {
   const res = await fetch(
     `/api/meal-plans/${planId}?userEmail=${encodeURIComponent(userEmail)}`,
     {
@@ -81,4 +66,18 @@ export async function updateMealPlan(
   );
   if (!res.ok) throw new Error("Failed to update meal plan");
   return res.json();
+}
+
+/**
+ * Delete a meal plan
+ */
+export async function deleteMealPlan(
+  planId: string,
+  userEmail: string
+): Promise<void> {
+  const res = await fetch(
+    `/api/meal-plans/${planId}?userEmail=${encodeURIComponent(userEmail)}`,
+    { method: "DELETE" }
+  );
+  if (!res.ok) throw new Error("Failed to delete meal plan");
 }
