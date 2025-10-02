@@ -1,7 +1,3 @@
-// ===========================================
-// PATH: src/components/MealPlanEditor.tsx
-// Drag-and-drop editor for an existing meal plan
-// ===========================================
 "use client";
 
 import React from "react";
@@ -23,77 +19,83 @@ export default function MealPlanEditor({ plan }: MealPlanEditorProps) {
   const { removeMealFromPlan } = useMealPlans();
 
   const meals = plan.meals || {};
-  const sortedDates = Object.keys(meals).sort(
-    (a, b) => new Date(a).getTime() - new Date(b).getTime()
-  );
+  // Ensure at least one date column exists for new plans
+  const sortedDates =
+    Object.keys(meals).length > 0
+      ? Object.keys(meals).sort(
+          (a, b) => new Date(a).getTime() - new Date(b).getTime()
+        )
+      : [plan.startDate || new Date().toISOString().split("T")[0]];
 
   const getRecipeTitle = (id: string) =>
     recipes.find((r) => r.id === id)?.title || id;
 
-  // Show placeholder if plan empty
-  if (!sortedDates.length)
-    return (
-      <p className={styles.noMeals}>
-        No meals yet. Add recipes from the sidebar.
-      </p>
-    );
-
   return (
     <div className={styles.mealPlanEditor}>
-      {sortedDates.map((date) => (
-        <div key={date} className={styles.dayColumn}>
-          <h3 className={styles.dayHeader}>{date}</h3>
+      {sortedDates.map((date) => {
+        // Ensure each day has breakfast, lunch, dinner keys
+        const dayMeals = meals[date] || {
+          breakfast: "",
+          lunch: "",
+          dinner: "",
+        };
 
-          {mealTypes.map((mealType) => {
-            const recipeId = meals[date]?.[mealType] || "";
+        return (
+          <div key={date} className={styles.dayColumn}>
+            <h3 className={styles.dayHeader}>{date}</h3>
 
-            return (
-              <Droppable droppableId={`${date}_${mealType}`} key={mealType}>
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className={`${styles.mealSlot} ${
-                      snapshot.isDraggingOver ? styles.dragOver : ""
-                    } ${!recipeId ? styles.emptySlot : ""}`}
-                  >
-                    {recipeId ? (
-                      <Draggable draggableId={recipeId} index={0}>
-                        {(providedDraggable, snapshotDraggable) => (
-                          <div
-                            ref={providedDraggable.innerRef}
-                            {...providedDraggable.draggableProps}
-                            {...providedDraggable.dragHandleProps}
-                            className={`${styles.recipeCard} ${
-                              snapshotDraggable.isDragging
-                                ? styles.dragging
-                                : ""
-                            }`}
-                          >
-                            {getRecipeTitle(recipeId)}
-                            <button
-                              className={styles.removeBtn}
-                              onClick={() => removeMealFromPlan(date, mealType)}
+            {mealTypes.map((mealType) => {
+              const recipeId = dayMeals[mealType] || "";
+
+              return (
+                <Droppable droppableId={`${date}_${mealType}`} key={mealType}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`${styles.mealSlot} ${
+                        snapshot.isDraggingOver ? styles.dragOver : ""
+                      } ${!recipeId ? styles.emptySlot : ""}`}
+                    >
+                      {recipeId ? (
+                        <Draggable draggableId={recipeId} index={0}>
+                          {(providedDraggable, snapshotDraggable) => (
+                            <div
+                              ref={providedDraggable.innerRef}
+                              {...providedDraggable.draggableProps}
+                              {...providedDraggable.dragHandleProps}
+                              className={`${styles.recipeCard} ${
+                                snapshotDraggable.isDragging
+                                  ? styles.dragging
+                                  : ""
+                              }`}
                             >
-                              ✕
-                            </button>
-                          </div>
-                        )}
-                      </Draggable>
-                    ) : (
-                      <span className={styles.placeholderText}>
-                        Drop recipe here
-                      </span>
-                    )}
-
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            );
-          })}
-        </div>
-      ))}
+                              {getRecipeTitle(recipeId)}
+                              <button
+                                className={styles.removeBtn}
+                                onClick={() =>
+                                  removeMealFromPlan(date, mealType)
+                                }
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </Draggable>
+                      ) : (
+                        <span className={styles.placeholderText}>
+                          Drop recipe here
+                        </span>
+                      )}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }

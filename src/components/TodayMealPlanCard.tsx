@@ -12,23 +12,27 @@ export interface TodayMealPlanCardProps {
   plan: MealPlan;
   date: string;
   onRemoveMeal: (mealType: MealType) => Promise<void>;
+  onOpenMeal?: (recipeId: string) => void; // optional for Dashboard modal
 }
 
 /**
  * TodayMealPlanCard
- * - Displays breakfast, lunch, dinner
- * - Handles modal opening for recipes
- * - Clicking empty slots navigates to /meal-plans
- * - Shows recipe images correctly
+ * - Shows breakfast, lunch, dinner for a day
+ * - Opens modal on click if recipe exists
+ * - Navigates to /meal-plans on empty slot
+ * - Displays recipe images
  */
 export default function TodayMealPlanCard({
   plan,
   date,
   onRemoveMeal,
+  onOpenMeal,
 }: TodayMealPlanCardProps) {
   const { recipes: allRecipes } = useRecipes();
   const router = useRouter();
-  const dayMeals = plan.meals[date] || {
+
+  // Ensure the day has meal slots
+  const dayMeals = (plan.meals || {})[date] || {
     breakfast: "",
     lunch: "",
     dinner: "",
@@ -53,7 +57,11 @@ export default function TodayMealPlanCard({
               onRemove={recipe ? () => onRemoveMeal(mealType) : undefined}
               onClick={() => {
                 if (recipe) {
-                  setSelectedRecipe(recipe); // open modal
+                  if (onOpenMeal) {
+                    onOpenMeal(recipe.id); // Dashboard modal
+                  } else {
+                    setSelectedRecipe(recipe); // internal modal fallback
+                  }
                 } else {
                   router.push("/meal-plans"); // navigate if empty
                 }
@@ -63,7 +71,7 @@ export default function TodayMealPlanCard({
         })}
       </div>
 
-      {/* Recipe Modal */}
+      {/* Internal Recipe Modal */}
       {selectedRecipe && (
         <RecipeModal
           recipe={selectedRecipe}
