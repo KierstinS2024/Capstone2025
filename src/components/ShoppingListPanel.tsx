@@ -119,29 +119,31 @@ export default function ShoppingListPanel({ list: propList }: ShoppingListPanelP
           onChange={(e) => setNewItemName(e.target.value)}
           className={styles.input}
         />
-        <button
-          type="submit"
-          className={styles.addBtn}
-          disabled={!newItemName.trim()}
-        >
-          Add
-        </button>
-        <button
-          type="button"
-          className={styles.clearBtn}
-          onClick={async () => {
-            setError(null);
-            try {
-              await clear();
-            } catch (err: any) {
-              console.error("Failed to clear list:", err);
-              setError("Failed to clear list. Please try again.");
-            }
-          }}
-          disabled={isEmpty}
-        >
-          Clear All
-        </button>
+        <div className={styles.buttonRow}>
+          <button
+            type="submit"
+            className={styles.addBtn}
+            disabled={!newItemName.trim()}
+          >
+            Add
+          </button>
+          <button
+            type="button"
+            className={styles.clearBtn}
+            onClick={async () => {
+              setError(null);
+              try {
+                await clear();
+              } catch (err: any) {
+                console.error("Failed to clear list:", err);
+                setError("Failed to clear list. Please try again.");
+              }
+            }}
+            disabled={isEmpty}
+          >
+            Clear All
+          </button>
+        </div>
       </form>
     </div>
   );

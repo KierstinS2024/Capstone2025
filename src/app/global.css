@@ -64,57 +64,82 @@ body {
 
 /* Navbar */
 .navbar {
-  height: 72px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  background: #ffffff;
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: #fff;
   box-shadow: var(--shadow-soft);
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 100;
+  flex-wrap: wrap;
 }
 
 .logo {
+  font-size: 1.5rem;
   font-weight: bold;
-  font-size: 1.25rem;
-  color: var(--text);
+  color: #fff;
+  cursor: pointer;
 }
 
+/* Main nav links */
 .nav-links {
   display: flex;
-  gap: 16px;
   align-items: center;
+  gap: 1rem;
 }
 
-.link {
-  color: var(--text);
+.nav-links a,
+.nav-links button {
+  color: #fff;
   text-decoration: none;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-weight: 500;
   transition: background 0.2s ease;
 }
 
-.link:hover {
-  background: var(--primary);
-  color: #fff;
+.nav-links a:hover,
+.nav-links button:hover {
+  background-color: var(--primary-hover);
 }
 
-/* Layout helpers */
-.grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 20px;
+/* Hamburger menu (mobile) */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 0.25rem;
+  cursor: pointer;
 }
 
-@media (max-width: 900px) {
-  .grid-2 { grid-template-columns: 1fr; }
+.hamburger div {
+  width: 25px;
+  height: 3px;
+  background-color: #fff;
+  border-radius: 2px;
+  transition: transform 0.3s ease;
 }
 
-/* Small helpers */
-.muted { color: var(--muted); }
-.small { font-size: 0.9rem; }
-.center { text-align: center; }
-.space-y-4 > * + * { margin-top: 1rem; }
+/* Show menu on mobile */
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+  }
+
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    background: var(--primary);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+  }
+
+  .nav-links.active {
+    display: flex;
+  }
+}

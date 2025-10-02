@@ -1,19 +1,28 @@
-// src/components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <nav className="navbar">
       <div className="logo">MealMate</div>
 
-      {/* Main links */}
-      <div className="nav-links">
+      {/* Hamburger menu for mobile */}
+      <div
+        className={`hamburger ${menuOpen ? "active" : ""}`}
+        onClick={() => setMenuOpen((prev) => !prev)}
+      >
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+
+      <div className={`nav-links ${menuOpen ? "active" : ""}`}>
         <Link href="/dashboard" className="link">
           Dashboard
         </Link>
@@ -26,10 +35,7 @@ export default function Navbar() {
         <Link href="/shopping-list" className="link">
           Shopping List
         </Link>
-      </div>
 
-      {/* Auth action */}
-      <div className="nav-links">
         {user ? (
           <button className="button-muted" onClick={logout}>
             Logout

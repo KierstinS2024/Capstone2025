@@ -1,35 +1,142 @@
-/* =========================================== */
-/* PATH: src/styles/todayMealPlanCard.module.css */
-/* =========================================== */
+/* ===========================================
+   TodayMealPlanCard Styles
+   =========================================== */
 
-/* Container for today’s meal plan */
-.todayCard {
-  border: 1px solid #e0e0e0;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  background-color: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+/* Outer container */
+.todayMealPlanContainer {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap; /* allow meal cards to wrap on small screens */
+  justify-content: space-between;
   margin-bottom: 1rem;
 }
 
-/* Date header */
+/* Individual meal cards */
+.mealCard {
+  flex: 1 1 30%; /* grow, shrink, base 30% width */
+  min-width: 180px; /* prevent too small */
+  max-width: 100%; /* never overflow container */
+}
+
+/* Date header (if any) */
 .dateHeader {
   font-size: 1rem;
   font-weight: 600;
+  margin-bottom: 0.5rem;
   color: #333;
-  margin-bottom: 0.75rem;
 }
 
-/* Row of meal cards (desktop) */
-.mealRow {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-/* Mobile: stack vertically */
+/* Mobile stack */
 @media (max-width: 640px) {
-  .mealRow {
+  .todayMealPlanContainer {
     flex-direction: column;
+    gap: 0.5rem;
   }
+}
+
+/* ===========================================
+   ShoppingListPanel Styles
+   =========================================== */
+
+.panel {
+  background-color: #fff;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 80vh; /* prevents buttons being cut off */
+  overflow-y: auto; /* scroll if content is tall */
+}
+
+.header {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+  flex-wrap: wrap; /* ensure buttons wrap on small screens */
+}
+
+.checked {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  font-weight: bold;
+  color: #ff4d4d;
+  cursor: pointer;
+  flex-shrink: 0; /* prevent shrinking */
+}
+
+.addForm {
+  display: flex;
+  flex-wrap: wrap; /* wrap buttons and input on small screens */
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.input {
+  flex: 1 1 180px; /* grow/shrink, min 180px */
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #ddd;
+}
+
+.addBtn,
+.clearBtn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  flex-shrink: 0; /* never shrink */
+  white-space: nowrap; /* keep text on one line */
+}
+
+.addBtn {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.addBtn:hover {
+  background-color: #218838;
+}
+
+.clearBtn {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.clearBtn:hover {
+  background-color: #c82333;
+}
+
+.error {
+  color: #dc3545;
+  margin-bottom: 0.5rem;
+}
+
+.emptyState {
+  color: #777;
+  font-style: italic;
 }
