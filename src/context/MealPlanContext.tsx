@@ -61,23 +61,41 @@ export const MealPlanProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Create new plan
-  const createMealPlan = async (startDate: string, endDate: string) => {
-    if (!user?.email) return;
-    setSaving(true);
-    try {
-      const newPlan = await api.createMealPlan(
-        user.email,
-        {},
-        startDate,
-        endDate
-      );
-      setActivePlan(newPlan);
-    } catch (err) {
-      console.error("Failed to create meal plan:", err);
-    } finally {
-      setSaving(false);
+const createMealPlan = async (startDate: string, endDate?: string) => {
+  if (!user?.email) return;
+  setSaving(true);
+
+  try {
+    // If no endDate, default to a 7-day plan
+    const finalEndDate =
+      endDate && endDate.trim()
+        ? endDate
+        : new Date(
+            new Date(startDate).setDate(new Date(startDate).getDate() + 6)
+          )
+            .toISOString()
+            .split("T")[0];
+
+    // Safety check: ensure finalEndDate is not before startDate
+    if (new Date(finalEndDate) < new Date(startDate)) {
+      throw new Error("End date cannot be before start date.");
     }
-  };
+
+    const newPlan = await api.createMealPlan(
+      user.email,
+      {},
+      startDate,
+      finalEndDate
+    );
+
+    setActivePlan(newPlan);
+  } catch (err) {
+    console.error("Failed to create meal plan:", err);
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   // Add meal (patch entire plan)
   const addMealToPlan = async (

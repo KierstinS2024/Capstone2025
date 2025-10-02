@@ -1,4 +1,4 @@
-//src/components/CreateMealPlan.tsx
+// src/components/CreateMealPlan.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -16,18 +16,26 @@ export default function CreateMealPlan() {
     e.preventDefault();
     setError("");
 
-    if (!startDate || !endDate) {
-      setError("Please select both start and end dates.");
-      return;
-    }
-
-    if (new Date(endDate) < new Date(startDate)) {
-      setError("End date cannot be before start date.");
+    if (!startDate) {
+      setError("Please select a start date.");
       return;
     }
 
     try {
-      await createMealPlan(startDate, endDate);
+      // Default to a 7-day plan if no endDate chosen
+      const finalEndDate =
+        endDate ||
+        new Date(new Date(startDate).setDate(new Date(startDate).getDate() + 6))
+          .toISOString()
+          .split("T")[0];
+
+      // Safety: check ordering
+      if (new Date(finalEndDate) < new Date(startDate)) {
+        setError("End date cannot be before start date.");
+        return;
+      }
+
+      await createMealPlan(startDate, finalEndDate);
     } catch (err: any) {
       setError(err.message || "Failed to create meal plan.");
     }
@@ -43,15 +51,17 @@ export default function CreateMealPlan() {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
+            required
           />
         </label>
 
         <label>
-          End Date
+          End Date (optional)
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
+            min={startDate}
           />
         </label>
 

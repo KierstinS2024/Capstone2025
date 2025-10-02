@@ -41,8 +41,8 @@ const mealPlanSchema = new mongoose.Schema(
   {
     author: { type: String, required: true }, // user email
     meals: { type: mongoose.Schema.Types.Mixed, default: {} },
-    weekStartDate: { type: String, required: true },
-    weekEndDate: { type: String, required: true },
+    startDate: { type: String, required: true },
+    endDate: { type: String, required: true },
   },
   { timestamps: true }
 );

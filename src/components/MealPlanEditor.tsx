@@ -1,3 +1,4 @@
+//src/components/MealPlanEditor.tsx
 "use client";
 
 import React from "react";
@@ -19,12 +20,23 @@ export default function MealPlanEditor({ plan }: MealPlanEditorProps) {
   const { removeMealFromPlan } = useMealPlans();
 
   const meals = plan.meals || {};
-  // Ensure at least one date column exists for new plans
+  // Build date range between start and end
+  const buildDateRange = (start: string, end: string) => {
+    const dates: string[] = [];
+    const current = new Date(start);
+    const last = new Date(end);
+
+    while (current <= last) {
+      dates.push(current.toISOString().split("T")[0]);
+      current.setDate(current.getDate() + 1);
+    }
+
+    return dates;
+  };
+
   const sortedDates =
-    Object.keys(meals).length > 0
-      ? Object.keys(meals).sort(
-          (a, b) => new Date(a).getTime() - new Date(b).getTime()
-        )
+    plan.startDate && plan.endDate
+      ? buildDateRange(plan.startDate, plan.endDate)
       : [plan.startDate || new Date().toISOString().split("T")[0]];
 
   const getRecipeTitle = (id: string) =>

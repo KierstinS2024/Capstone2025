@@ -67,8 +67,13 @@ export default function Dashboard() {
               <div className={styles.panelHeader}>
                 <h2>Your Meal Plan</h2>
                 <p>
-                  {activePlan.startDate || "Start"} →{" "}
-                  {activePlan.endDate || "End"}
+                  {activePlan.startDate && activePlan.endDate
+                    ? `${new Date(
+                        activePlan.startDate
+                      ).toDateString()} → ${new Date(
+                        activePlan.endDate
+                      ).toDateString()}`
+                    : "Start → End"}
                 </p>
               </div>
 

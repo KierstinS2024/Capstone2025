@@ -24,12 +24,19 @@ export default function CreateMealPlanForm() {
     }
 
     try {
-      const finalEndDate = endDate || startDate; // fallback to startDate
+      // Default to a 7-day plan if no endDate chosen
+      const finalEndDate =
+        endDate ||
+        new Date(new Date(startDate).setDate(new Date(startDate).getDate() + 6))
+          .toISOString()
+          .split("T")[0];
+
       await createMealPlan(startDate, finalEndDate);
     } catch (err: any) {
       setError(err.message || "Failed to create meal plan.");
     }
   };
+
 
   return (
     <form className={styles.formContainer} onSubmit={handleSubmit}>
