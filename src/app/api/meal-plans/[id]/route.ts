@@ -13,9 +13,9 @@ import {
 // GET → Fetch a single meal plan by ID
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // 👈 mark as Promise
 ) {
-  const { id } = params;
+  const { id } = await params; // 👈 await it
   const { searchParams } = new URL(req.url);
   const userEmail = searchParams.get("userEmail");
   if (!userEmail)
@@ -31,9 +31,9 @@ export async function GET(
 // PATCH → Update a meal plan
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
   const { searchParams } = new URL(req.url);
   const userEmail = searchParams.get("userEmail");
   if (!userEmail)
@@ -51,9 +51,9 @@ export async function PATCH(
 // DELETE → Delete a meal plan
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
   const { searchParams } = new URL(req.url);
   const userEmail = searchParams.get("userEmail");
   if (!userEmail)
