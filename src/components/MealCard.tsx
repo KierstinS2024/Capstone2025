@@ -1,24 +1,23 @@
-// ===========================================
-// PATH: src/components/MealCard.tsx
-// ===========================================
 "use client";
 
 import React from "react";
-import { Recipe } from "@/types/recipe";
+import { Recipe } from "@/types";
 import styles from "@/styles/mealCard.module.css";
 
 interface Props {
   mealType: "breakfast" | "lunch" | "dinner";
   recipe?: Recipe;
-  onClick: () => void; // Open modal or editor
-  onRemove?: () => void;
+  onClick: () => void; // Open recipe modal
+  onRemove?: () => void; // Remove recipe from plan
 }
 
 /**
  * MealCard
- * - Represents a single meal slot
- * - Shows recipe info if assigned
- * - Shows "+ Add meal" if empty
+ * - Shows a meal slot (breakfast/lunch/dinner)
+ * - Displays recipe image as background
+ * - Overlay gradient for readability
+ * - Shows recipe title or "+ Add meal"
+ * - Small "×" button if removable
  */
 export default function MealCard({
   mealType,
@@ -26,19 +25,25 @@ export default function MealCard({
   onClick,
   onRemove,
 }: Props) {
-  // Use placeholder if recipe has no image
-  const image = recipe?.image || "/placeholder.png";
-
   return (
-    <div className={styles.mealCard} onClick={onClick}>
-      {/* Header: meal type + optional remove button */}
+    <div
+      className={styles.mealCard}
+      onClick={onClick}
+      style={{
+        backgroundImage: recipe?.image ? `url(${recipe.image})` : undefined,
+      }}
+    >
+      {/* Overlay gradient */}
+      <div className={styles.overlay} />
+
+      {/* Header: meal type + optional remove */}
       <div className={styles.header}>
         <h3 className={styles.mealType}>{mealType.toUpperCase()}</h3>
         {recipe && onRemove && (
           <button
             className={styles.removeButton}
             onClick={(e) => {
-              e.stopPropagation(); // prevent opening modal
+              e.stopPropagation();
               onRemove();
             }}
           >
@@ -47,17 +52,14 @@ export default function MealCard({
         )}
       </div>
 
-      {/* Body: recipe info or "Add meal" */}
-      {recipe ? (
-        <>
-          {image && (
-            <img src={image} alt={recipe.title} className={styles.mealImage} />
-          )}
+      {/* Body: recipe title or add prompt */}
+      <div className={styles.body}>
+        {recipe ? (
           <p className={styles.recipeTitle}>{recipe.title}</p>
-        </>
-      ) : (
-        <p className={styles.addPrompt}>+ Add meal</p>
-      )}
+        ) : (
+          <p className={styles.addPrompt}>+ Add meal</p>
+        )}
+      </div>
     </div>
   );
 }

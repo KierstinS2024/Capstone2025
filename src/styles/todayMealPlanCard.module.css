@@ -1,0 +1,35 @@
+/* =========================================== */
+/* PATH: src/styles/todayMealPlanCard.module.css */
+/* =========================================== */
+
+/* Container for today’s meal plan */
+.todayCard {
+  border: 1px solid #e0e0e0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1rem;
+}
+
+/* Date header */
+.dateHeader {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.75rem;
+}
+
+/* Row of meal cards (desktop) */
+.mealRow {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Mobile: stack vertically */
+@media (max-width: 640px) {
+  .mealRow {
+    flex-direction: column;
+  }
+}

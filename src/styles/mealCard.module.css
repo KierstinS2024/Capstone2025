@@ -1,78 +1,103 @@
 /* =========================================== */
-/* PATH: src/styles/mealCard.module.css */
+/* MealCard styles — polished, responsive cards for meals */
 /* =========================================== */
 
-/* Main container for each meal card */
 .mealCard {
-  flex: 1 1 30%; /* Grow to fit, minimum 30% width */
-  border: 1px solid #ddd;
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-  background-color: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  position: relative;
+  border-radius: 1rem;
+  height: 160px;
+  margin-bottom: 1rem;
+  background-color: #f7f7f7;       /* fallback */
+  background-size: cover;           /* image covers card */
+  background-position: center;      /* centered */
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  transition: transform 0.2s, box-shadow 0.2s;
+  justify-content: space-between;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Hover effect */
 .mealCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
-/* Header: meal type and optional remove button */
+/* Overlay gradient to improve text readability */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
+  border-radius: 1rem;
+  pointer-events: none; /* allows clicks to pass through */
+}
+
+/* Header with meal label and remove button */
 .header {
-  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  z-index: 2;
 }
 
 .mealType {
+  color: #fff;
   font-weight: bold;
-  font-size: 0.9rem;
-  color: #333;
+  font-size: 0.95rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  text-transform: uppercase;
 }
 
-/* Remove button (cross) */
 .removeButton {
-  background: none;
+  background: rgba(255,255,255,0.85);
   border: none;
-  font-size: 1rem;
-  color: #e74c3c;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  z-index: 2;
 }
 
-.removeButton:hover {
-  color: #c0392b;
-}
-
-/* Recipe image */
-.mealImage {
-  width: 100%;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-/* Recipe title */
-.recipeTitle {
-  font-size: 0.9rem;
-  font-weight: 500;
+/* Body: recipe title or "+ Add meal" */
+.body {
+  padding: 0.5rem;
+  z-index: 2;
   text-align: center;
-  color: #333;
-  margin-bottom: 0.25rem;
 }
 
-/* Empty slot prompt */
-.addPrompt {
-  font-size: 0.85rem;
-  color: #777;
-  text-align: center;
-  margin-top: 1rem;
+.recipeTitle, .addPrompt {
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  overflow-wrap: break-word;
+}
+
+/* Hover effect for recipe title */
+.mealCard:hover .recipeTitle {
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (min-width: 640px) {
+  .mealCard {
+    height: 180px;
+  }
+  .recipeTitle, .addPrompt {
+    font-size: 1.1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mealCard {
+    height: 200px;
+  }
+  .recipeTitle, .addPrompt {
+    font-size: 1.2rem;
+  }
 }

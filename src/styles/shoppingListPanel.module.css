@@ -1,204 +1,92 @@
 /* =========================================== */
-/* PATH: src/styles/shoppingListPanel.module.css */
+/* ShoppingListPanel Styles */
 /* =========================================== */
 
-/* ----------------------------- */
-/* Main panel container */
-/* ----------------------------- */
 .panel {
   background-color: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
 }
 
-/* Header title */
 .header {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 0.5rem;
 }
 
-/* ----------------------------- */
-/* Empty state message */
-/* ----------------------------- */
-.emptyState {
-  font-size: 0.95rem;
-  color: #777;
-  padding: 12px 0;
-}
-
-/* ----------------------------- */
-/* Error messages */
-/* ----------------------------- */
-.error {
-  color: #d32f2f;
-  font-size: 0.9rem;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-/* ----------------------------- */
-/* Shopping list items */
-/* ----------------------------- */
 .list {
   list-style: none;
   padding: 0;
-  margin: 0 0 16px 0;
+  margin: 0;
 }
 
 .listItem {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid #eee;
-  font-size: 0.95rem;
-  border-radius: 6px;
-  transition: background 0.3s ease, color 0.3s ease; /* smooth transition */
-}
-
-/* Hover highlight for list item */
-.listItem:hover {
-  background-color: #f9f9f9;
-}
-
-/* Checked state background */
-.listItem.checked {
-  background-color: #f0f0f0;
-}
-
-/* Label containing checkbox and item name */
-.listItem label {
-  display: flex;
   align-items: center;
-  cursor: pointer;
-  transition: color 0.2s ease;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
 }
 
-/* Checked state for item */
 .checked {
   text-decoration: line-through;
-  color: #aaa;
-  background-color: #f0f0f0; /* optional subtle background for checked items */
+  color: #999;
 }
 
-/* ----------------------------- */
-/* Scoped checkbox styles */
-/* ----------------------------- */
-.listItem input[type="checkbox"] {
-  margin-right: 8px;
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: #4caf50; /* Green checkmark */
-  transition: transform 0.2s ease;
-}
-
-/* Bump animation on check */
-.listItem input[type="checkbox"]:checked {
-  animation: checkboxBump 0.2s ease forwards;
-}
-
-/* Smooth hover effect */
-.listItem input[type="checkbox"]:hover {
-  transform: scale(1.2);
-}
-
-/* ----------------------------- */
-/* Remove button (✕) */
-/* ----------------------------- */
 .removeBtn {
   background: none;
   border: none;
+  font-weight: bold;
+  color: #ff4d4d;
   cursor: pointer;
-  color: #ff4d4f;
-  font-size: 1rem;
-  padding: 0 4px;
-  transition: color 0.2s, transform 0.2s;
 }
 
-.removeBtn:hover {
-  color: #d9363e;
-  transform: scale(1.2);
-}
-
-/* ----------------------------- */
-/* Add new item form */
-/* ----------------------------- */
 .addForm {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  margin-top: 1rem;
+  gap: 0.5rem;
 }
 
 .input {
   flex: 1;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 0.95rem;
-  transition: border-color 0.2s;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #ddd;
 }
 
-.input:focus {
-  outline: none;
-  border-color: #4caf50;
-}
-
-/* Add & Clear buttons */
-.addBtn,
-.clearBtn {
-  padding: 8px 12px;
-  border-radius: 6px;
+.addBtn, .clearBtn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
   border: none;
+  font-weight: bold;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.2s, transform 0.2s;
 }
 
-/* Add button styling */
 .addBtn {
-  background-color: #4caf50;
+  background-color: #28a745;
   color: #fff;
 }
 
-.addBtn:hover:enabled {
-  background-color: #43a047;
-  transform: scale(1.05);
+.addBtn:hover {
+  background-color: #218838;
 }
 
-/* Clear all button styling */
 .clearBtn {
-  background-color: #f44336;
+  background-color: #dc3545;
   color: #fff;
 }
 
-.clearBtn:hover:enabled {
-  background-color: #d32f2f;
-  transform: scale(1.05);
+.clearBtn:hover {
+  background-color: #c82333;
 }
 
-/* Disabled state */
-.addBtn:disabled,
-.clearBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.error {
+  color: #dc3545;
+  margin-bottom: 0.5rem;
 }
 
-/* ----------------------------- */
-/* Checkbox bump animation */
-/* ----------------------------- */
-@keyframes checkboxBump {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.3);
-  }
-  100% {
-    transform: scale(1);
-  }
+.emptyState {
+  color: #777;
+  font-style: italic;
 }

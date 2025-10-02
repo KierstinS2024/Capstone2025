@@ -1,30 +1,35 @@
 // ===========================================
 // PATH: src/components/RecipeModal.tsx
-// RecipeModal component — displays full recipe
-// Fully responsive and polished for mobile + desktop
+// RecipeModal component — displays full recipe details
+// Fully responsive for mobile and desktop
 // ===========================================
+
 "use client";
 
 import React from "react";
-import { Recipe } from "@/types/recipe";
-import { useAuth } from "@/context/AuthContext"; // get current user
-import { parseInstructions } from "@/utils/parseInstructions";
+import { Recipe } from "@/types";
+import { useAuth } from "@/context/AuthContext"; // Get current user
+import { parseInstructions } from "@/utils/parseInstructions"; // Converts instructions HTML to React nodes
 import styles from "@/styles/recipeModal.module.css";
 
+// Props interface
 interface Props {
-  recipe: Recipe;
-  onClose: () => void;
+  recipe: Recipe; // Recipe to display
+  onClose: () => void; // Callback to close modal
 }
 
+/**
+ * RecipeModal
+ * - Shows recipe image, ingredients, instructions
+ * - Optionally allows saving recipe if logged in
+ */
 export default function RecipeModal({ recipe, onClose }: Props) {
-  const { user } = useAuth(); // logged-in user
+  const { user } = useAuth();
 
   return (
     <div className={styles.modalBackdrop}>
       <div className={styles.modalContent}>
-        {/* --------------------
-            Header with title + close
-        -------------------- */}
+        {/* Header with title and close button */}
         <div className={styles.modalHeader}>
           <h2>{recipe.title}</h2>
           <button className={styles.closeButton} onClick={onClose}>
@@ -32,9 +37,7 @@ export default function RecipeModal({ recipe, onClose }: Props) {
           </button>
         </div>
 
-        {/* --------------------
-            Recipe Image
-        -------------------- */}
+        {/* Recipe image */}
         {recipe.image && (
           <img
             src={recipe.image}
@@ -43,9 +46,7 @@ export default function RecipeModal({ recipe, onClose }: Props) {
           />
         )}
 
-        {/* --------------------
-            Ingredients Section
-        -------------------- */}
+        {/* Ingredients list */}
         <div className={styles.section}>
           <h3>Ingredients</h3>
           <ul>
@@ -55,26 +56,22 @@ export default function RecipeModal({ recipe, onClose }: Props) {
           </ul>
         </div>
 
-        {/* --------------------
-            Instructions Section
-        -------------------- */}
+        {/* Instructions */}
         <div className={styles.section}>
           <h3>Instructions</h3>
           <div>{parseInstructions(recipe.instructions)}</div>
         </div>
 
-        {/* --------------------
-            Footer Actions
-        -------------------- */}
+        {/* Footer: save button if applicable */}
         <div className={styles.modalFooter}>
-          {user && recipe.source !== "user" && (
+          {/* {user && recipe.source !== "user" && (
             <button
               className={styles.saveButton}
               onClick={() => alert("Saved to your recipes!")}
             >
               Save Recipe
             </button>
-          )}
+          )} */}
         </div>
       </div>
     </div>

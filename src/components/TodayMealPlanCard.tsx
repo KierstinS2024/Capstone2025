@@ -1,47 +1,75 @@
-// ===========================================
-// PATH: src/components/TodayMealPlanPanel.tsx
-// ===========================================
 "use client";
 
-import React from "react";
-import { useMealPlans } from "@/context/MealPlanContext";
+import React, { useState } from "react";
+import { MealPlan, MealType, Recipe } from "@/types";
+import MealCard from "./MealCard";
+import RecipeModal from "./RecipeModal";
 import { useRecipes } from "@/context/RecipeContext";
 import { useRouter } from "next/navigation";
-import TodayMealPlanCard from "./TodayMealPlanCard";
-import styles from "@/styles/dashboard.module.css";
+import styles from "@/styles/mealPlanCard.module.css";
 
-export default function TodayMealPlanPanel() {
-  const { activePlan, loading } = useMealPlans();
-  const { recipes } = useRecipes();
+export interface TodayMealPlanCardProps {
+  plan: MealPlan;
+  date: string;
+  onRemoveMeal: (mealType: MealType) => Promise<void>;
+}
+
+/**
+ * TodayMealPlanCard
+ * - Displays breakfast, lunch, dinner
+ * - Handles modal opening for recipes
+ * - Clicking empty slots navigates to /meal-plans
+ * - Shows recipe images correctly
+ */
+export default function TodayMealPlanCard({
+  plan,
+  date,
+  onRemoveMeal,
+}: TodayMealPlanCardProps) {
+  const { recipes: allRecipes } = useRecipes();
   const router = useRouter();
+  const dayMeals = plan.meals[date] || {
+    breakfast: "",
+    lunch: "",
+    dinner: "",
+  };
 
-  if (loading || !recipes) return <p className={styles.loading}>Loading...</p>;
-
-  const today = new Date().toISOString().split("T")[0];
-  const hasPlan = !!activePlan;
-
-  const handleEdit = () => router.push("/meal-plans");
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   return (
-    <div className={styles.panel}>
-      {hasPlan && activePlan ? (
-        <TodayMealPlanCard
-          plan={activePlan}
-          day={today}
-          recipes={recipes}
-          onEdit={handleEdit}
+    <>
+      <div className={styles.todayMealPlanContainer}>
+        {(["breakfast", "lunch", "dinner"] as MealType[]).map((mealType) => {
+          const recipeId = dayMeals[mealType];
+          const recipe: Recipe | undefined = recipeId
+            ? allRecipes.find((r) => r.id === recipeId)
+            : undefined;
+
+          return (
+            <MealCard
+              key={mealType}
+              mealType={mealType}
+              recipe={recipe}
+              onRemove={recipe ? () => onRemoveMeal(mealType) : undefined}
+              onClick={() => {
+                if (recipe) {
+                  setSelectedRecipe(recipe); // open modal
+                } else {
+                  router.push("/meal-plans"); // navigate if empty
+                }
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Recipe Modal */}
+      {selectedRecipe && (
+        <RecipeModal
+          recipe={selectedRecipe}
+          onClose={() => setSelectedRecipe(null)}
         />
-      ) : (
-        <div className={styles.emptyState}>
-          <p>No meal plan yet. Create one to get started.</p>
-          <button
-            className={styles.btnPrimary}
-            onClick={() => router.push("/meal-plans")}
-          >
-            Create Meal Plan
-          </button>
-        </div>
       )}
-    </div>
+    </>
   );
 }

@@ -1,124 +1,75 @@
-/* PATH: src/styles/dashboard.module.css */
+/* Dashboard page styles — main layout, responsive columns */
 
-/* ---------------- Dashboard Container ---------------- */
 .dashboardContainer {
-  display: flex;
-  gap: 24px;
-  padding: 20px;
-  background-color: #f9f9f9;
-  min-height: 100vh;
-  box-sizing: border-box;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-/* ---------------- Columns ---------------- */
-.leftColumn {
-  flex: 2;
+.welcomeMessage {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.mainColumns {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1.5rem;
+}
+
+.leftColumn {
+  flex: 2;
 }
 
 .rightColumn {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
 }
 
-/* ---------------- Panel ---------------- */
+/* Panel styling for sections like meal plan and shopping list */
 .panel {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
 }
 
-/* Panel Header */
 .panelHeader {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 12px;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
-.panelHeader h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: #333;
-}
-
-.panelHeader p {
-  font-size: 0.9rem;
-  color: #555;
-}
-
-/* ---------------- Buttons ---------------- */
 .btnPrimary {
-  background-color: #4caf50;
-  color: white;
+  background-color: #ff7f50;
+  color: #fff;
   border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
   cursor: pointer;
-  font-size: 0.95rem;
-  transition: background-color 0.2s ease;
 }
 
 .btnPrimary:hover {
-  background-color: #45a049;
+  background-color: #ff6333;
 }
 
-/* ---------------- Loading Text ---------------- */
 .loading {
-  font-size: 1rem;
-  color: #777;
   text-align: center;
-  margin-top: 50px;
+  font-size: 1.2rem;
+  padding: 2rem;
 }
 
-/* ---------------- Empty State ---------------- */
-.emptyState {
-  font-size: 0.95rem;
-  color: #555;
-  text-align: center;
-}
-
-/* ---------------- WeeklyMealPlan Styling (optional overrides) ---------------- */
-.weeklyMealPlan {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.dayCard {
-  background-color: #fafafa;
-  border: 1px solid #eee;
-  border-radius: 6px;
-  padding: 12px;
-}
-
-.date {
-  font-weight: bold;
-  margin-bottom: 6px;
-}
-
-.mealList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.mealItem {
-  margin-bottom: 4px;
-}
-
-/* ---------------- Responsive ---------------- */
-@media (max-width: 900px) {
-  .dashboardContainer {
-    flex-direction: column;
+/* Responsive layout for larger screens */
+@media (min-width: 768px) {
+  .mainColumns {
+    flex-direction: row;
+    gap: 2rem;
   }
-  .leftColumn, .rightColumn {
-    flex: 1;
+}
+
+@media (min-width: 1024px) {
+  .welcomeMessage {
+    font-size: 2rem;
   }
 }

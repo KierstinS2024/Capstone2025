@@ -1,34 +1,49 @@
 // ===========================================
 // PATH: src/components/ShoppingListPanel.tsx
-// ===========================================
-// - Editable shopping list for the current user
-// - Add, toggle, remove, or clear items
-// - Uses ShoppingListContext
-// - Optimistic UI updates for fast feedback
-// - Displays error messages for failed operations
+// Editable shopping list panel
+// Accepts optional `list` prop or uses context
+// Optimistic UI updates with error handling
 // ===========================================
 
 "use client";
 
 import React, { useState } from "react";
 import { useShoppingList } from "@/context/ShoppingListContext";
-import styles from "@/styles/shoppingListPanel.module.css"; // CSS module
+import { ShoppingList } from "@/types";
+import styles from "@/styles/shoppingListPanel.module.css";
 
-export default function ShoppingListPanel() {
-  const { list, loading, add, toggle, remove, clear } = useShoppingList();
+// Props interface
+interface ShoppingListPanelProps {
+  list?: ShoppingList | null; // Optional list, defaults to context
+}
+
+/**
+ * ShoppingListPanel
+ * - Add, remove, toggle, or clear items
+ * - Shows empty state and errors
+ */
+export default function ShoppingListPanel({ list: propList }: ShoppingListPanelProps) {
+  const {
+    list: contextList,
+    loading,
+    add,
+    toggle,
+    remove,
+    clear,
+  } = useShoppingList();
+  const list = propList ?? contextList; // Prefer prop if provided
+
   const [newItemName, setNewItemName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // -----------------------------
-  // Handle form submit to add item
-  // -----------------------------
+  // Add new item
   const handleAddItem = async (event: React.FormEvent) => {
     event.preventDefault();
-    const trimmedName = newItemName.trim();
-    if (!trimmedName) return;
+    const trimmed = newItemName.trim();
+    if (!trimmed) return;
 
     try {
-      await add(trimmedName);
+      await add(trimmed);
       setNewItemName("");
       setError(null);
     } catch (err: any) {
@@ -37,16 +52,13 @@ export default function ShoppingListPanel() {
     }
   };
 
-  // -----------------------------
-  // Loading fallback
-  // -----------------------------
   if (loading) return <p>Loading shopping list...</p>;
 
   const isEmpty = !list || list.items.length === 0;
 
   return (
     <div className={styles.panel}>
-      <h1 className={styles.header}>My Shopping List</h1>
+      <h2 className={styles.header}>Shopping List</h2>
 
       {error && <p className={styles.error}>{error}</p>}
 
@@ -56,7 +68,7 @@ export default function ShoppingListPanel() {
         <ul className={styles.list}>
           {list.items.map((item) => (
             <li
-              key={item.id || Math.random().toString()}
+              key={item.id}
               className={`${styles.listItem} ${
                 item.checked ? styles.checked : ""
               }`}
@@ -66,7 +78,6 @@ export default function ShoppingListPanel() {
                   type="checkbox"
                   checked={item.checked}
                   onChange={async () => {
-                    if (!item.id) return;
                     setError(null);
                     try {
                       await toggle(item.id);
@@ -81,8 +92,8 @@ export default function ShoppingListPanel() {
 
               <button
                 className={styles.removeBtn}
+                title="Remove item"
                 onClick={async () => {
-                  if (!item.id) return;
                   setError(null);
                   try {
                     await remove(item.id);
@@ -91,7 +102,6 @@ export default function ShoppingListPanel() {
                     setError("Failed to remove item. Please try again.");
                   }
                 }}
-                title="Remove item"
               >
                 ✕
               </button>
@@ -100,12 +110,13 @@ export default function ShoppingListPanel() {
         </ul>
       )}
 
+      {/* Form to add new item */}
       <form onSubmit={handleAddItem} className={styles.addForm}>
         <input
           type="text"
+          placeholder="Add new item"
           value={newItemName}
           onChange={(e) => setNewItemName(e.target.value)}
-          placeholder="Add new item"
           className={styles.input}
         />
         <button
