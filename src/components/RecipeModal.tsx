@@ -67,14 +67,7 @@ export default function RecipeModal({ recipe, onClose }: Props) {
             Footer Actions
         -------------------- */}
         <div className={styles.modalFooter}>
-          {user && recipe.source !== "user" && (
-            <button
-              className={styles.saveButton}
-              onClick={() => alert("Saved to your recipes!")}
-            >
-              Save Recipe
-            </button>
-          )}
+
         </div>
       </div>
     </div>

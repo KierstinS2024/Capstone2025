@@ -10,7 +10,7 @@ import TodayMealPlanCard from "./TodayMealPlanCard";
 import ShoppingListPanel from "./ShoppingListPanel";
 import RecipeModal from "./RecipeModal";
 import styles from "@/styles/dashboard.module.css";
-import { MealPlan, MealType, Recipe } from "@/types";
+import { MealType, Recipe } from "@/types";
 
 /**
  * Dashboard
@@ -19,13 +19,12 @@ import { MealPlan, MealType, Recipe } from "@/types";
  * - Fully responsive
  */
 export default function Dashboard() {
-  const { user } = useAuth(); // Authenticated user
-  const { activePlan, loading, removeMealFromPlan } = useMealPlans(); // Meal plan context
-  const { recipes } = useRecipes(); // All recipes context
-  const { list } = useShoppingList(); // Shopping list context
+  const { user } = useAuth();
+  const { activePlan, loading, removeMealFromPlan } = useMealPlans();
+  const { recipes } = useRecipes();
+  const { list } = useShoppingList();
   const router = useRouter();
 
-  // State to control the recipe modal
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   if (loading || !recipes) {
@@ -44,19 +43,18 @@ export default function Dashboard() {
   };
 
   const handleOpenMeal = (recipe: Recipe) => {
-    setSelectedRecipe(recipe); // Open modal
+    if (recipe) {
+      setSelectedRecipe(recipe); // Open modal with full recipe
+    }
   };
 
-  const handleCloseModal = () => {
-    setSelectedRecipe(null);
-  };
+  const handleCloseModal = () => setSelectedRecipe(null);
 
   // -----------------------------
   // Render
   // -----------------------------
   return (
     <div className={styles.dashboardContainer}>
-      {/* Welcome message */}
       <h1 className={styles.welcomeMessage}>
         Welcome{user?.email ? `, ${user.email}` : ""}!
       </h1>
@@ -66,7 +64,6 @@ export default function Dashboard() {
         <div className={styles.leftColumn}>
           {hasPlan ? (
             <>
-              {/* Panel header showing plan dates */}
               <div className={styles.panelHeader}>
                 <h2>Your Meal Plan</h2>
                 <p>
@@ -75,12 +72,11 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              {/* Today's meals */}
               <TodayMealPlanCard
                 plan={activePlan}
                 date={today}
                 onRemoveMeal={handleRemoveMeal}
-                onOpenMeal={handleOpenMeal}
+                onOpenMeal={handleOpenMeal} // pass handler
               />
             </>
           ) : (

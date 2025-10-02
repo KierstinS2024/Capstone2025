@@ -12,7 +12,7 @@ export interface TodayMealPlanCardProps {
   plan: MealPlan;
   date: string;
   onRemoveMeal: (mealType: MealType) => Promise<void>;
-  onOpenMeal?: (recipeId: string) => void; // optional for Dashboard modal
+  onOpenMeal?: (recipe: Recipe) => void; // ✅ now expects Recipe
 }
 
 /**
@@ -58,9 +58,9 @@ export default function TodayMealPlanCard({
               onClick={() => {
                 if (recipe) {
                   if (onOpenMeal) {
-                    onOpenMeal(recipe.id); // Dashboard modal
+                    onOpenMeal(recipe); // ✅ pass full recipe object
                   } else {
-                    setSelectedRecipe(recipe); // internal modal fallback
+                    setSelectedRecipe(recipe); // fallback internal modal
                   }
                 } else {
                   router.push("/meal-plans"); // navigate if empty
