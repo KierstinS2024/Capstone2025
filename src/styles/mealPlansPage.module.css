@@ -1,9 +1,6 @@
 /* ===========================================
    PATH: src/styles/mealPlansPage.module.css
-   Styles for MealPlansPage:
-   - MealPlanEditor grid
-   - RecipeSidebar placement
-   - Responsive design (desktop, tablet, mobile)
+   MealPlans page layout: grid + sidebar
    =========================================== */
 
 /* ---------- Page Container ---------- */
@@ -14,110 +11,64 @@
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  font-family: sans-serif;
+  font-family: var(--font-primary);
 }
 
 /* ---------- Loading state ---------- */
 .loading {
   text-align: center;
   font-size: 1.2rem;
-  color: #555;
+  color: var(--color-text-muted);
 }
 
 /* ---------- Grid Layout ---------- */
 .grid {
   display: grid;
-  grid-template-columns: 2fr 1fr; /* Editor:Sidebar ratio */
-  gap: 1.5rem;
+  grid-template-columns: 3fr 1fr; /* Editor : Sidebar ratio */
+  gap: 2rem;
 }
 
-/* Wrapper for editor to allow scrolling if needed */
+/* ---------- Editor Wrapper ---------- */
 .editorWrapper {
-  background-color: #f9f9f9;
+  background-color: var(--color-surface);
   padding: 1rem;
-  border-radius: 12px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   overflow-x: auto; /* horizontal scroll for many days */
 }
 
-/* Wrapper for sidebar */
+/* ---------- Sidebar Wrapper ---------- */
 .sidebarWrapper {
-  position: sticky; /* stay visible when scrolling */
+  position: sticky;
   top: 2rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto; /* scroll for long recipe list */
 }
 
-/* ---------- MealPlanEditor Styles (override for page layout) ---------- */
-.mealPlanEditor {
-  display: flex;
-  gap: 1rem;
+/* ---------- RecipeSidebar Styles ---------- */
+.sidebar {
+  width: 100%;
+  max-width: 260px;
+  background-color: var(--color-surface);
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  box-sizing: border-box;
+  font-family: var(--font-primary);
 }
 
-/* Day Column in editor */
-.dayColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-width: 120px; /* ensures small columns still readable */
-}
-
-/* Day Header */
-.dayHeader {
-  text-align: center;
+.sidebar .heading3 {
+  font-size: 1.25rem;
   font-weight: 600;
-  font-size: 0.95rem;
-  color: #333;
-  margin-bottom: 0.5rem;
-}
-
-/* Individual meal slot */
-.mealSlot {
-  min-height: 60px;
-  background-color: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 0.4rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.15s ease;
-}
-
-/* Highlight when dragging over */
-.dragOver {
-  background-color: #fff3e0;
-  border-color: #ffb74d;
-}
-
-/* Recipe card inside editor */
-.recipeCard {
-  background-color: #fff8e1;
-  border: 1px solid #ffd54f;
-  border-radius: 8px;
-  padding: 0.5rem 0.6rem;
-  font-size: 0.85rem;
-  font-weight: 500;
+  margin-bottom: 1rem;
   text-align: center;
-  cursor: grab;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  color: var(--color-text);
 }
 
-/* Dragging state for card */
-.dragging {
-  background-color: #fff3e0;
-  border-color: #ffa726;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-  cursor: grabbing;
-}
-
-/* ---------- Responsive: Tablets ---------- */
+/* ---------- Responsive: Tablet ---------- */
 @media (max-width: 1024px) {
   .grid {
-    grid-template-columns: 1.5fr 1fr;
-  }
-
-  .dayColumn {
-    min-width: 100px;
+    grid-template-columns: 2fr 1fr;
   }
 }
 
@@ -126,13 +77,12 @@
   .grid {
     grid-template-columns: 1fr;
   }
-
   .editorWrapper {
-    overflow-x: scroll; /* horizontal scroll for days */
+    overflow-x: scroll;
   }
-
   .sidebarWrapper {
     position: relative;
     top: auto;
+    max-height: unset;
   }
 }

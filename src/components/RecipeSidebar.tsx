@@ -32,6 +32,7 @@ export default function RecipeSidebar() {
                         ? `${styles.recipeCard} ${styles.dragging}`
                         : styles.recipeCard
                     }
+                    title={recipe.title} //tool for clarity
                   >
                     {recipe.title}
                   </div>

@@ -1,4 +1,4 @@
-//src/components/MealPlanEditor.tsx
+// src/components/MealPlanEditor.tsx
 "use client";
 
 import React from "react";
@@ -12,25 +12,21 @@ interface MealPlanEditorProps {
   plan: MealPlan;
 }
 
-// All meal types
 const mealTypes: MealType[] = ["breakfast", "lunch", "dinner"];
 
 export default function MealPlanEditor({ plan }: MealPlanEditorProps) {
   const { recipes } = useRecipes();
   const { removeMealFromPlan } = useMealPlans();
-
   const meals = plan.meals || {};
-  // Build date range between start and end
+
   const buildDateRange = (start: string, end: string) => {
     const dates: string[] = [];
     const current = new Date(start);
     const last = new Date(end);
-
     while (current <= last) {
       dates.push(current.toISOString().split("T")[0]);
       current.setDate(current.getDate() + 1);
     }
-
     return dates;
   };
 
@@ -43,9 +39,19 @@ export default function MealPlanEditor({ plan }: MealPlanEditorProps) {
     recipes.find((r) => r.id === id)?.title || id;
 
   return (
-    <div className={styles.mealPlanEditor}>
+    <div className={styles.calendarGrid}>
+      {/* Header row: empty corner + meal types */}
+      <div className={styles.headerRow}>
+        <div className={styles.dayLabel}></div>
+        {mealTypes.map((meal) => (
+          <div key={meal} className={styles.mealTypeHeader}>
+            {meal.charAt(0).toUpperCase() + meal.slice(1)}
+          </div>
+        ))}
+      </div>
+
+      {/* Day rows */}
       {sortedDates.map((date) => {
-        // Ensure each day has breakfast, lunch, dinner keys
         const dayMeals = meals[date] || {
           breakfast: "",
           lunch: "",
@@ -53,8 +59,8 @@ export default function MealPlanEditor({ plan }: MealPlanEditorProps) {
         };
 
         return (
-          <div key={date} className={styles.dayColumn}>
-            <h3 className={styles.dayHeader}>{date}</h3>
+          <div key={date} className={styles.dayRow}>
+            <div className={styles.dayLabel}>{date}</div>
 
             {mealTypes.map((mealType) => {
               const recipeId = dayMeals[mealType] || "";
@@ -70,7 +76,11 @@ export default function MealPlanEditor({ plan }: MealPlanEditorProps) {
                       } ${!recipeId ? styles.emptySlot : ""}`}
                     >
                       {recipeId ? (
-                        <Draggable draggableId={recipeId} index={0}>
+                        // **FIXED:** Unique draggableId per slot
+                        <Draggable
+                          draggableId={`${recipeId}_${date}_${mealType}`}
+                          index={0}
+                        >
                           {(providedDraggable, snapshotDraggable) => (
                             <div
                               ref={providedDraggable.innerRef}

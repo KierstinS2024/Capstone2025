@@ -30,20 +30,20 @@ export default function MealPlansPage() {
 
     if (!isMealType(destMealTypeStr)) return;
 
-    // Dragging from sidebar to plan
+    // --- Decode recipeId ---
+    // Draggable IDs in editor look like: `${recipeId}_${date}_${mealType}`
+    // From sidebar they are just the recipeId
+    const recipeId = draggableId.split("_")[0];
+
+    // Dragging from sidebar -> add new meal
     if (source.droppableId === "recipes") {
-      await addMealToPlan(destDay, destMealTypeStr as MealType, draggableId);
+      await addMealToPlan(destDay, destMealTypeStr, recipeId);
       return;
     }
 
     // Move within plan
     if (!isMealType(sourceMealTypeStr)) return;
-    await moveMeal(
-      sourceDay,
-      sourceMealTypeStr as MealType,
-      destDay,
-      destMealTypeStr as MealType
-    );
+    await moveMeal(sourceDay, sourceMealTypeStr, destDay, destMealTypeStr);
   };
 
   // Show loading while fetching
