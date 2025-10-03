@@ -1,3 +1,4 @@
+//src/components/RecipeCard.tsx
 "use client";
 
 import React, { ReactNode, useState } from "react";
@@ -13,7 +14,11 @@ interface RecipeCardProps {
   children?: ReactNode; // Optional extra buttons
 }
 
-export default function RecipeCard({ recipe, onDelete, children }: RecipeCardProps) {
+export default function RecipeCard({
+  recipe,
+  onDelete,
+  children,
+}: RecipeCardProps) {
   const { user } = useAuth();
   const { saveRecipeFromSearch } = useRecipes();
 

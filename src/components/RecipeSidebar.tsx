@@ -1,3 +1,4 @@
+//src/components/RecipeSidebar.tsx
 "use client";
 
 import React from "react";
