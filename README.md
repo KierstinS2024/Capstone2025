@@ -2,6 +2,11 @@
 ================================================
 
 A full-stack application designed to help users simplify meal planning, manage grocery lists, and track nutrition through personalized recipes and intuitive weekly planners.
+* * * * *
+
+
+## 📄 Original Project Proposal
+[View the original proposal](./docs/InitialProjectProposal.md)
 
 * * * * *
 
@@ -178,7 +183,8 @@ To help users plan healthy meals efficiently while:
 🧬 Database Schema (Mongoose / MongoDB)
 ---------------------------------------
 
-![MongoDB_ERD](https://github.com/KierstinS2024/Capstone2025/blob/main/MongoDB_ERD.png)
+<img width="3819" height="3405" alt="Database ER diagram (crow's foot)" src="https://github.com/user-attachments/assets/32570508-83f4-4c00-91da-58fe4c4db35d" />
+
 
 This application leverages MongoDB with Mongoose to ensure flexible, document-based storage while maintaining references between collections.
 
@@ -319,7 +325,9 @@ The app follows a logical, intuitive flow:
 
     -   Adjust profile/settings
 
-**User Flow Diagram:** [View Full Diagram](https://github.com/KierstinS2024/Capstone2025/blob/main/UserFlowDiagram.md)
+**User Flow Diagram:** 
+
+<img width="2056" height="947" alt="MealMate_UserFlow" src="https://github.com/user-attachments/assets/a225fe0e-338e-4139-9545-94e1e0a594ec" />
 
 * * * * *
 
