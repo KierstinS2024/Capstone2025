@@ -1,5 +1,6 @@
 🧭 **User Flow Diagram**
 ------------------------
+<img width="2056" height="947" alt="MealMate_UserFlow" src="https://github.com/user-attachments/assets/813d5182-34f8-4791-a639-cba0deb49b5c" />
 
 ### [1] Landing Page
 
