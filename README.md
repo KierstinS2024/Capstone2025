@@ -92,14 +92,14 @@ This project requires a few environment variables to function properly. **Do not
 
 ### Example `.env.example`:
 
-`# MongoDB connection string
+MongoDB connection string
 MONGODB_URI=mongodb+srv://your_username:your_password@cluster0.example.mongodb.net/your_database
 
-# JWT secret for signing tokens
+ JWT secret for signing tokens
 JWT_SECRET=your_jwt_secret_here
 
-# Spoonacular API key
-NEXT_PUBLIC_SPOONACULAR_API_KEY=your_spoonacular_api_key_here`
+ Spoonacular API key
+NEXT_PUBLIC_SPOONACULAR_API_KEY=your_spoonacular_api_key_here
 
 * * * * *
 
