@@ -1,4 +1,9 @@
-// src/components/CreateMealPlan.tsx
+// ===========================================
+// PATH: src/components/CreateMealPlan.tsx
+// Wrapper for meal plan creation
+// - Passes plain strings to context (no Date objects)
+// - Context handles normalization internally
+// ===========================================
 "use client";
 
 import React, { useState } from "react";
@@ -21,21 +26,14 @@ export default function CreateMealPlan() {
       return;
     }
 
+    // Simple local check — these are still just strings
+    if (endDate && endDate < startDate) {
+      setError("End date cannot be before start date.");
+      return;
+    }
+
     try {
-      // Default to a 7-day plan if no endDate chosen
-      const finalEndDate =
-        endDate ||
-        new Date(new Date(startDate).setDate(new Date(startDate).getDate() + 6))
-          .toISOString()
-          .split("T")[0];
-
-      // Safety: check ordering
-      if (new Date(finalEndDate) < new Date(startDate)) {
-        setError("End date cannot be before start date.");
-        return;
-      }
-
-      await createMealPlan(startDate, finalEndDate);
+      await createMealPlan(startDate, endDate);
     } catch (err: any) {
       setError(err.message || "Failed to create meal plan.");
     }

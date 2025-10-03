@@ -2,6 +2,7 @@
 // PATH: src/lib/helpers.ts
 // Shared utility functions for dates and formatting
 // Fully TypeScript-safe: no functions return null
+// Handles local dates correctly (no UTC shift)
 // ===========================================
 
 /**
@@ -9,24 +10,22 @@
  * Example: "Sep 15 – Sep 21"
  * If start or end is invalid, returns a safe placeholder "—".
  *
- * @param start ISO string for start date
- * @param end ISO string for end date
+ * @param start ISO string or Date for start date
+ * @param end ISO string or Date for end date
  * @returns Formatted string like "Sep 15 – Sep 21" or "—"
  */
 export function formatDateRange(
-  start: string | undefined,
-  end: string | undefined
+  start?: string | Date,
+  end?: string | Date
 ): string {
-  const s = start ? new Date(start) : null;
-  const e = end ? new Date(end) : null;
+  const s = start instanceof Date ? start : start ? new Date(start) : null;
+  const e = end instanceof Date ? end : end ? new Date(end) : null;
 
-  // Validate that both dates are valid
   if (!s || isNaN(s.getTime()) || !e || isNaN(e.getTime())) {
     console.warn("Invalid date passed to formatDateRange:", start, end);
-    return "—"; // safe fallback
+    return "—";
   }
 
-  // Return short month/day format
   return `${s.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -34,26 +33,55 @@ export function formatDateRange(
 }
 
 /**
+ * Convert YYYY-MM-DD string into a local Date at midnight
+ * Avoids UTC shift
+ *
+ * @param dateStr string "YYYY-MM-DD"
+ * @returns Date object at local midnight
+ */
+export function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+/**
+ * Format a Date object as YYYY-MM-DD
+ * Keeps it local (no UTC conversion)
+ *
+ * @param date Date object
+ * @returns string "YYYY-MM-DD"
+ */
+export function formatLocalDate(date: Date): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
  * Get today's date in ISO format YYYY-MM-DD
+ * Local version (no UTC shift)
  *
  * @returns string YYYY-MM-DD
  */
 export function todayISO(): string {
-  return new Date().toISOString().split("T")[0];
+  return formatLocalDate(new Date());
 }
 
 /**
- * Generate an array of ISO date strings from start → end (inclusive)
- * Used for rendering meal plans week by week.
- * If dates are invalid, returns an empty array.
+ * Generate an array of YYYY-MM-DD strings from start → end (inclusive)
+ * Handles local dates correctly
  *
- * @param start ISO string start date
- * @param end ISO string end date
- * @returns array of strings ["YYYY-MM-DD", ...]
+ * @param start ISO string or Date
+ * @param end ISO string or Date
+ * @returns array ["YYYY-MM-DD", ...]
  */
-export function getWeekDates(start: string, end: string): string[] {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+export function getWeekDates(
+  start: string | Date,
+  end: string | Date
+): string[] {
+  const startDate = start instanceof Date ? start : new Date(start);
+  const endDate = end instanceof Date ? end : new Date(end);
 
   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
     console.warn("Invalid date(s) passed to getWeekDates:", start, end);
@@ -61,38 +89,26 @@ export function getWeekDates(start: string, end: string): string[] {
   }
 
   const days: string[] = [];
-  let current = new Date(startDate);
+  const current = new Date(startDate);
 
   while (current <= endDate) {
-    days.push(current.toISOString().split("T")[0]);
-    current.setDate(current.getDate() + 1); // increment by 1 day
+    days.push(formatLocalDate(current));
+    current.setDate(current.getDate() + 1);
   }
 
   return days;
 }
 
 /**
- * Add N days to a date string (YYYY-MM-DD).
- * Fully type-safe: never returns null.
- * If the input date is invalid, returns today's date as fallback.
+ * Add N days to a YYYY-MM-DD string
+ * Returns new local YYYY-MM-DD string
  *
- * @param dateStr ISO string "YYYY-MM-DD"
- * @param days Number of days to add
- * @returns new ISO string "YYYY-MM-DD"
+ * @param dateStr string "YYYY-MM-DD"
+ * @param days number of days to add
+ * @returns string "YYYY-MM-DD"
  */
 export function addDays(dateStr: string, days: number): string {
-  const date = new Date(dateStr);
-
-  if (isNaN(date.getTime())) {
-    console.warn(
-      "Invalid date passed to addDays, using today instead:",
-      dateStr
-    );
-    const fallback = new Date();
-    fallback.setDate(fallback.getDate() + days);
-    return fallback.toISOString().split("T")[0];
-  }
-
+  const date = parseLocalDate(dateStr);
   date.setDate(date.getDate() + days);
-  return date.toISOString().split("T")[0];
+  return formatLocalDate(date);
 }

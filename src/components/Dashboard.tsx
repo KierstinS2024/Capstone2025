@@ -32,7 +32,8 @@ export default function Dashboard() {
   }
 
   const hasPlan = !!activePlan;
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  // Use local time so "today" matches DB meal keys even in the evening
+  const today = new Date().toLocaleDateString("en-CA"); // ✅ e.g. "2025-10-02"
 
   // -----------------------------
   // Handlers

@@ -1,6 +1,8 @@
 // ===========================================
 // PATH: src/components/CreateMealPlanForm.tsx
 // Form for creating a new meal plan
+// - Passes plain strings to context
+// - Context handles date normalization
 // ===========================================
 "use client";
 
@@ -23,20 +25,17 @@ export default function CreateMealPlanForm() {
       return;
     }
 
-    try {
-      // Default to a 7-day plan if no endDate chosen
-      const finalEndDate =
-        endDate ||
-        new Date(new Date(startDate).setDate(new Date(startDate).getDate() + 6))
-          .toISOString()
-          .split("T")[0];
+    if (endDate && endDate < startDate) {
+      setError("End date cannot be before start date.");
+      return;
+    }
 
-      await createMealPlan(startDate, finalEndDate);
+    try {
+      await createMealPlan(startDate, endDate);
     } catch (err: any) {
       setError(err.message || "Failed to create meal plan.");
     }
   };
-
 
   return (
     <form className={styles.formContainer} onSubmit={handleSubmit}>
