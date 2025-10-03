@@ -333,9 +333,6 @@ The app follows a logical, intuitive flow:
 
 📖 Story-Driven UX
 ------------------
-
-Example: Sarah signs up, creates her weekly meal plan, generates a shopping list, logs her meals, and monitors nutrition. This walkthrough illustrates each major feature and its value.
-
 [See Full Story Walkthrough](https://github.com/KierstinS2024/Capstone2025/blob/dev-mvp/UserFlowDiagram.md)
 
 * * * * *
