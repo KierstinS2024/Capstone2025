@@ -6,7 +6,7 @@ A full-stack application designed to help users simplify meal planning, manage g
 
 
 ## 📄 Original Project Proposal
-[View the original proposal](./docs/InitialProjectProposal.md)
+[View the original proposal](https://github.com/KierstinS2024/Capstone2025/blob/dev-mvp/InitialProjectProposal.md)
 
 * * * * *
 
