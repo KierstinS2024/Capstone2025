@@ -1,155 +1,131 @@
-User Flow Diagram
+🧭 **User Flow Diagram**
+------------------------
 
-[1] Landing Page
+### [1] Landing Page
 
-Sign Up
+**Sign Up / Log In**
 
-Enter email, password, dietary preferences
+-   User can **create an account** with email and password.
 
-Optional: Sign up with Google
+-   On successful signup, the user is **automatically logged in**.
 
-Receive confirmation email → Verify → Login
+-   Existing users can log in with their credentials.
 
-Log In
+-   No Google sign-in or email verification.
 
-Enter email & password → Redirect to Dashboard
+-   After logging in, the user is redirected to the **Dashboard**.
 
-Optional: Log in with Google
+-   Auth-protected routes: unauthenticated users are redirected to the landing page.
 
-[2] User Dashboard (after login)
+* * * * *
 
-Overview Panel
+### [2] Dashboard (after login)
 
-Quick preview of current week's meal plan
-(3 meal cards per day: Breakfast, Lunch, Dinner)
+**Overview Panel**
 
-Pending shopping list items
+-   If a **meal plan exists for the current date range**, it's displayed at a glance.
 
-Notifications for upcoming meals or grocery reminders
+-   If **no active meal plan** exists, the user sees a message and a **button linking to the Meal Plan page** to create one.
 
-Meal Plan Actions
+**Quick Actions**
 
-View existing meal plans
+-   Navigate to create or view the current meal plan.
 
-Edit, delete, or clone saved plans
+-   Navigate to Recipes (search or saved).
 
-Generate shopping list from today or full week
+-   Navigate to the Shopping List.
 
-Shopping List Panel
+* * * * *
 
-Manual add of ingredients
+### [3] Recipes
 
-Bulk-add ingredients from:
+**Search (Spoonacular)**
 
-Individual recipe
+-   Users can search recipes by any Spoonacular-supported parameters (e.g., keyword, ingredient, cuisine, etc.).
 
-Entire meal plan (today or week)
+-   Results are displayed as recipe cards.
 
-Check items off
+**Save Recipes**
 
-Delete or clear all items
+-   From search results, users can **save recipes** to their personal collection for future use.
 
-Recipe Search & Browse
+**Custom Recipes**
 
-Filter by ingredient, dietary preference, cuisine, or keyword
+-   Users can **create their own recipes**, entering title, ingredients, and instructions manually.
 
-View recipe cards → Click for details
+**Manage Recipes**
 
-Add to meal plan or shopping list
+-   Saved or custom recipes can be **viewed, edited, or deleted**.
 
-Saved Recipes
+-   Recipes can be added to **meal plans** and **shopping lists** individually (not in bulk).
 
-View and manage all saved favorites
+* * * * *
 
-Add custom recipes (title, ingredients, instructions)
+### [4] Meal Plan Page
 
-Saved recipes can be used in meal plans
+**Create & Edit Plans**
 
-Settings
+-   Users can **create a new meal plan** for a specific date range (e.g., a week).
 
-Change password
+-   There is only **one active meal plan per user**.
 
-Update dietary preferences
+-   The meal plan is displayed in a **calendar grid** with **Breakfast, Lunch, Dinner** slots for each day.
 
-Log Out
+-   Recipes from the user's collection or search can be **dragged and dropped** into meal slots.
 
-[3] Recipe Details Page
+-   Users can **edit the plan** by dragging recipes to different slots or removing them.
 
-Ingredients list
+-   Users can **delete the entire meal plan**.
 
-Step-by-step instructions
+**View by Date Range**
 
-Save as favorite
+-   When navigating to different date ranges, the app fetches the plan for that range if it exists.
 
-Add to meal plan
+* * * * *
 
-Add ingredients to shopping list (single or all at once)
+### [5] Shopping List
 
-[4] Meal Plan Page
+**Manual List Management**
 
-Weekly calendar view (Mon–Sun)
+-   Users can **manually add items** to their shopping list.
 
-Each day shows:
+-   Users can add ingredients from **individual recipes**.
 
-Breakfast, Lunch, Dinner slots
+-   Items can be **checked off** as purchased.
 
-Option to add/edit/remove recipes
+-   Items can be **deleted individually** or the list can be **cleared entirely**.
 
-Bulk-add all ingredients to shopping list
+**Note:**
 
-Save plan → updates active meal plan
+-   There is **no bulk "generate shopping list"** from a whole plan yet.
 
-[5] Generate Shopping List
+-   Items are **not automatically added** to the list when creating meal plans.
 
-Pulls ingredients from:
+* * * * *
 
-Selected meal plan (today or full week)
+### [6] Logout
 
-Individual recipes
+-   Users can **log out**, which returns them to the landing page and clears their session.
 
-Ingredients grouped by category (Produce, Dairy, Pantry, etc.)
+* * * * *
 
-Editable quantities
+📖 **Story-Driven Walkthrough**
+-------------------------------
 
-Mark items as purchased
+**Chapter 1: Signing Up**\
+Alex signs up with an email and password. They're immediately logged in and redirected to the Dashboard.
 
-Clear or reset list
+**Chapter 2: Exploring Recipes**\
+Alex searches Spoonacular for "chicken pasta," saves a few results, and adds their own "Family Chili" recipe.
 
-📖 Story-Driven Walkthrough
-Chapter 1: Getting Started – Landing Page
+**Chapter 3: Planning Meals**\
+They open the Meal Plan page, set a date range for next week, and drag recipes into each day's breakfast, lunch, and dinner slots. They tweak a few meals by dragging to different days and save the plan.
 
-Sarah signs up with her email and sets dietary preferences like “vegetarian” and “gluten-free.” Once verified, she logs in and is directed to her personalized dashboard.
+**Chapter 4: Grocery Prep**\
+Alex goes to the Shopping List, manually adds a few staples, and then adds ingredients from individual recipes they want to shop for. They check items off as they shop.
 
-Chapter 2: Dashboard Overview
+**Chapter 5: Returning Later**\
+When Alex logs in next time, the Dashboard shows their current plan at a glance. If no plan exists for that range, a button prompts them to create one.
 
-On the dashboard, Sarah sees this week’s meal plan and a shopping list panel. Breakfast for today is empty, so she clicks + Add meal and selects a recipe from her saved list. The ingredients automatically populate the shopping list.
-
-Chapter 3: Building the Weekly Plan
-
-Sarah opens the Meal Plan page. She fills in breakfast, lunch, and dinner for each day of the week. She can also clone previous plans for faster setup. Once done, she saves the plan — the dashboard updates automatically.
-
-Chapter 4: Shopping Made Simple
-
-Sarah generates the shopping list for the week. Ingredients are grouped by category and can be edited. She checks off items as she shops. She can also remove items she already has at home.
-
-Chapter 5: Exploring and Adding Recipes
-
-Sarah uses the Recipe Search page to find new ideas using filters like “high protein” and “Italian.” She also adds a family recipe by filling out the form. The recipe is now available for future meal plans.
-
-Chapter 6: Cooking and Using Recipes
-
-Sarah clicks on a recipe to view ingredients and instructions. She can mark it as a favorite or add all ingredients to her shopping list.
-
-Chapter 7: Managing Meal Plans and Recipes
-
-Over time, Sarah builds a collection of favorite recipes and weekly meal plans. She can clone, edit, or delete them. This helps her stay consistent while exploring new meals.
-
-Chapter 8: Customizing Preferences
-
-In Settings, Sarah updates dietary preferences and can change her password. This ensures recipe suggestions and meal plans stay aligned with her needs.
-
-Chapter 9: Full Integration
-
-The app centralizes meal planning, recipe management, and shopping list generation. Sarah has a seamless experience from creating plans to grocery shopping, all within a single dashboard.
-
-End of Story
+**Chapter 6: Managing Content**\
+Over time, Alex builds up saved recipes, edits a few custom ones, deletes some they don't use anymore, and occasionally replaces their active meal plan with a new date range.
