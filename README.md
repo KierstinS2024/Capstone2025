@@ -177,8 +177,9 @@ To help users plan healthy meals efficiently while:
 
 🧬 Database Schema (Mongoose / MongoDB)
 ---------------------------------------
+<img width="1536" height="1024" alt="Mongodb_ERD" src="https://github.com/user-attachments/assets/d377e219-1d93-4163-a93d-104a43906a0e" />
 
-![MongoDB_ERD](https://github.com/KierstinS2024/Capstone2025/blob/main/MongoDB_ERD.png)
+
 
 This application leverages MongoDB with Mongoose to ensure flexible, document-based storage while maintaining references between collections.
 
@@ -319,7 +320,9 @@ The app follows a logical, intuitive flow:
 
     -   Adjust profile/settings
 
-**User Flow Diagram:** [View Full Diagram](https://github.com/KierstinS2024/Capstone2025/blob/main/UserFlowDiagram.md)
+**User Flow Diagram:** 
+
+<img width="2056" height="947" alt="MealMate_UserFlow" src="https://github.com/user-attachments/assets/a225fe0e-338e-4139-9545-94e1e0a594ec" />
 
 * * * * *
 
