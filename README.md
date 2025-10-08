@@ -6,7 +6,7 @@ A full-stack application designed to help users simplify meal planning, manage g
 
 
 ## 📄 Original Project Proposal
-[View the original proposal](https://github.com/KierstinS2024/Capstone2025/blob/dev-mvp/InitialProjectProposal.md)
+[View the original proposal](https://github.com/KierstinS2024/Capstone2025/blob/main/InitialProjectProposal.md)
 
 * * * * *
 
@@ -333,7 +333,7 @@ The app follows a logical, intuitive flow:
 
 📖 Story-Driven UX
 ------------------
-[See Full Story Walkthrough](https://github.com/KierstinS2024/Capstone2025/blob/dev-mvp/UserFlowDiagram.md)
+[See Full Story Walkthrough](https://github.com/KierstinS2024/Capstone2025/blob/main/UserFlowDiagram.md)
 
 * * * * *
 
