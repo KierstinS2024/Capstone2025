@@ -1,0 +1,103 @@
+/* =========================================== */
+/* MealCard styles — polished, responsive cards for meals */
+/* =========================================== */
+
+.mealCard {
+  position: relative;
+  border-radius: 1rem;
+  height: 160px;
+  margin-bottom: 1rem;
+  background-color: #f7f7f7;       /* fallback */
+  background-size: cover;           /* image covers card */
+  background-position: center;      /* centered */
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mealCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Overlay gradient to improve text readability */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
+  border-radius: 1rem;
+  pointer-events: none; /* allows clicks to pass through */
+}
+
+/* Header with meal label and remove button */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  z-index: 2;
+}
+
+.mealType {
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.95rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  text-transform: uppercase;
+}
+
+.removeButton {
+  background: rgba(255,255,255,0.85);
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  z-index: 2;
+}
+
+/* Body: recipe title or "+ Add meal" */
+.body {
+  padding: 0.5rem;
+  z-index: 2;
+  text-align: center;
+}
+
+.recipeTitle, .addPrompt {
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  overflow-wrap: break-word;
+}
+
+/* Hover effect for recipe title */
+.mealCard:hover .recipeTitle {
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (min-width: 640px) {
+  .mealCard {
+    height: 180px;
+  }
+  .recipeTitle, .addPrompt {
+    font-size: 1.1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mealCard {
+    height: 200px;
+  }
+  .recipeTitle, .addPrompt {
+    font-size: 1.2rem;
+  }
+}

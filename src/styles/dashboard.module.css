@@ -1,0 +1,104 @@
+/* =========================================== */
+/* Dashboard Styles — Modern & Clean */
+/* =========================================== */
+
+.dashboardContainer {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.welcomeMessage {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #333;
+}
+
+.mainColumns {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Left and Right panels */
+.leftColumn,
+.rightColumn {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Flex allocation */
+.leftColumn {
+  flex: 2;
+  min-width: 300px;
+}
+
+.rightColumn {
+  flex: 1;
+  min-width: 250px;
+}
+
+/* Panel header spacing */
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* Primary button */
+.btnPrimary {
+  background-color: #ff7f50;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.btnPrimary:hover {
+  background-color: #ff6333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+
+.loading {
+  text-align: center;
+  font-size: 1.2rem;
+  padding: 2rem;
+  color: #555;
+}
+
+/* Responsive layout */
+@media (min-width: 768px) {
+  .mainColumns {
+    flex-direction: row;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .welcomeMessage {
+    font-size: 2rem;
+  }
+
+  .leftColumn,
+  .rightColumn {
+    padding: 1.5rem;
+  }
+}
+
+/* Optional: subtle hover effect for panels */
+.leftColumn:hover,
+.rightColumn:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
+}

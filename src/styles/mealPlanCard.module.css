@@ -1,0 +1,22 @@
+/* TodayMealPlanCard — grid layout for breakfast/lunch/dinner cards */
+
+.todayMealPlanContainer {
+  display: grid;
+  grid-template-columns: 1fr; /* stacked on mobile */
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Tablet: two columns */
+@media (min-width: 640px) {
+  .todayMealPlanContainer {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop: three columns */
+@media (min-width: 1024px) {
+  .todayMealPlanContainer {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

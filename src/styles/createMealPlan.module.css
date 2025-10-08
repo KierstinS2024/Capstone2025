@@ -1,0 +1,122 @@
+/* ===========================================
+   PATH: src/styles/createMealPlan.module.css
+   Form styles for CreateMealPlan component
+   Fully scoped for CSS Modules
+   =========================================== */
+
+/* ---------- Container for the form ---------- */
+.formContainer {
+  max-width: 400px;
+  margin: 2rem auto;
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  font-family: sans-serif;
+  box-sizing: border-box;
+}
+
+/* ---------- Heading ---------- */
+.formContainer h2 {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: #222;
+}
+
+/* ---------- Form element ---------- */
+.formContainer .form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ---------- Labels ---------- */
+.formContainer label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  color: #333;
+}
+
+/* ---------- Date Inputs ---------- */
+.formContainer input[type="date"] {
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+/* ---------- Buttons ---------- */
+.formContainer button {
+  padding: 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: #ffd54f;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.formContainer button:hover {
+  background-color: #ffca28;
+}
+
+.formContainer button:disabled {
+  background-color: #ffe082;
+  cursor: not-allowed;
+}
+
+/* ---------- Error messages ---------- */
+.formContainer .error {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* ---------- Responsive: Tablets ---------- */
+@media (max-width: 768px) {
+  .formContainer {
+    max-width: 300px;
+    padding: 1rem;
+  }
+
+  .formContainer h2 {
+    font-size: 1.3rem;
+  }
+
+  .formContainer input[type="date"] {
+    font-size: 0.95rem;
+    padding: 0.45rem;
+  }
+
+  .formContainer button {
+    font-size: 0.95rem;
+    padding: 0.5rem;
+  }
+}
+
+/* ---------- Responsive: Mobile ---------- */
+@media (max-width: 480px) {
+  .formContainer {
+    max-width: 100%;
+    padding: 0.75rem;
+    margin: 1rem auto;
+  }
+
+  .formContainer h2 {
+    font-size: 1.2rem;
+  }
+
+  .formContainer input[type="date"] {
+    font-size: 0.9rem;
+    padding: 0.4rem;
+  }
+
+  .formContainer button {
+    font-size: 0.9rem;
+    padding: 0.45rem;
+  }
+}

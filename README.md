@@ -1,390 +1,551 @@
-# 🍽️ Recipe & Meal Planner App (Capstone Project)
+🍽️ Recipe & Meal Planner App (Capstone Project)
+================================================
 
 A full-stack application designed to help users simplify meal planning, manage grocery lists, and track nutrition through personalized recipes and intuitive weekly planners.
+* * * * *
 
----
 
-## ✅ Project Overview
+## 📄 Original Project Proposal
+[View the original proposal](https://github.com/KierstinS2024/Capstone2025/blob/dev-mvp/InitialProjectProposal.md)
+
+* * * * *
+
+✅ Project Overview
+------------------
 
 This web application allows users to:
-- Discover recipes based on dietary needs or available ingredients
-- Create, customize, and save weekly meal plans
-- Automatically generate categorized shopping lists
-- Track nutrition by logging daily food intake
-- Receive smart suggestions and motivational nudges via the dashboard
 
----
+-   Discover recipes based on dietary needs or available ingredients
 
-## 🧰 Tech Stack
+-   Create, customize, and save **one weekly meal plan per user**
+
+-   Automatically generate categorized shopping lists
+
+-   Track nutrition by logging daily food intake
+
+-   Receive smart suggestions via the dashboard
+
+* * * * *
+
+🧰 Tech Stack
+-------------
 
 **Frontend**
-- React.js with Vite
-- React Router
-- Custom CSS with dark mode toggle
-- Axios for API communication
+
+-   React.js with Next.js App Router
+
+-   React Context API for state management
+
+-   CSS Modules for styling
+
+-   Axios for API communication
+
+-   Drag-and-drop via `@hello-pangea/dnd`
 
 **Backend**
-- Node.js + Express
-- PostgreSQL (for relational data storage)
+
+-   Node.js + Next.js API routes
+
+-   MongoDB with Mongoose for data modeling
 
 **Authentication**
-- JWT (JSON Web Tokens)
-- bcrypt (for password hashing)
+
+-   JWT (JSON Web Tokens)
+
+-   bcrypt (for password hashing)
 
 **External APIs**
-- [Spoonacular](https://spoonacular.com/food-api)
-- [Edamam](https://developer.edamam.com/)
-- [Open Food Facts](https://world.openfoodfacts.org/data)
 
-> ⚠️ *External API risks include usage limits, incomplete data, and restrictions on commercial use. A fallback strategy includes using static datasets or creating a custom API.*
+-   Spoonacular (<https://spoonacular.com/food-api>)
+
+> ⚠️ External API risks include usage limits, incomplete data, and restrictions on commercial use. A fallback strategy includes using static datasets or creating a custom API.
 
 **Deployment**
-- Frontend + Backend: Render
-- Version Control: GitHub
 
----
+-   Frontend + Backend: Render
 
-## 🌐 Platform
+-   Version Control: GitHub
 
-This will be a **responsive web application**, optimized for both desktop and mobile browsers. No native app is planned at this stage.
+* * * * *
 
----
+⚙️ Environment Variables
+------------------------
 
-## 🎯 Project Goals
+This project requires a few environment variables to function properly. **Do not commit your actual `.env.local`**---instead, use the provided `.env.example` as a template.
+
+### Setup
+
+1.  Copy `.env.example` to `.env.local`:
+
+`cp .env.example .env.local`
+
+1.  Replace the placeholders with your own credentials:
+
+| Variable | Description | Example / Placeholder |
+| --- | --- | --- |
+| MONGODB_URI | MongoDB connection string | mongodb+srv://your_username:your_password@cluster0.example.mongodb.net/your_database |
+| JWT_SECRET | Secret key for signing JWTs | your_jwt_secret_here |
+| NEXT_PUBLIC_SPOONACULAR_API_KEY | Spoonacular API key for recipe data | your_spoonacular_api_key_here |
+
+> You can get a Spoonacular API key by signing up at [Spoonacular API](https://spoonacular.com/food-api).\
+> Use strong, random values for `JWT_SECRET`. `.env.local` is ignored by Git (`.gitignore`) to keep secrets private.
+
+### Example `.env.example`:
+
+MongoDB connection string
+MONGODB_URI=mongodb+srv://your_username:your_password@cluster0.example.mongodb.net/your_database
+
+ JWT secret for signing tokens
+JWT_SECRET=your_jwt_secret_here
+
+ Spoonacular API key
+NEXT_PUBLIC_SPOONACULAR_API_KEY=your_spoonacular_api_key_here
+
+* * * * *
+
+🌐 Platform
+-----------
+
+This is a **responsive web application**, optimized for both desktop and mobile browsers. No native app is planned at this stage.
+
+* * * * *
+
+🎯 Project Goals
+----------------
 
 To help users plan healthy meals efficiently while:
-- Accommodating dietary restrictions
-- Minimizing food waste
-- Saving time on shopping and prep
-- Tracking nutrition goals (macros, calories, etc.)
 
----
+-   Accommodating dietary restrictions
 
-## 👥 Target Users
+-   Minimizing food waste
 
-- Busy professionals and parents
-- Health-conscious individuals
-- People with dietary restrictions (e.g., gluten-free, keto)
-- Fitness enthusiasts tracking macros
-- Beginners in meal prep
+-   Saving time on shopping and prep
 
----
+-   Tracking nutrition goals (macros, calories, etc.)
 
-## 📆 Key Features
+* * * * *
+
+👥 Target Users
+---------------
+
+-   Busy professionals and parents
+
+-   Health-conscious individuals
+
+-   People with dietary restrictions (e.g., gluten-free, keto)
+
+-   Fitness enthusiasts tracking macros
+
+-   Beginners in meal prep
+
+* * * * *
+
+📆 Key Features
+---------------
 
 ### Core
-- 🔍 Recipe search & filtering by diet, ingredient, cuisine
-- 🧠 Personalized suggestions based on preferences
-- 🗓️ Drag-and-drop meal planner by day/meal
-- 🛒 Auto-generated shopping lists, grouped by category
-- 🥑 Pantry-aware recommendations
-- 📊 Nutrition tracking by meal and day
-- 👤 User profile, dietary settings, dark mode
+
+-   🔍 Recipe search & filtering by diet, ingredient, cuisine
+
+-   🧠 Personalized suggestions based on preferences
+
+-   🗓️ Drag-and-drop meal planner by day/meal (only one plan per user)
+
+-   🛒 Auto-generated shopping lists, grouped by category
+
+-   📊 Nutrition tracking by meal and day
+
+-   👤 User profile, dietary settings
 
 ### Stretch Goals
-- 🗞 Export lists (PDF/CSV)
-- 🔁 Recurring meal planning & calendar sync
-- 🔔 Notifications & reminders
-- 🧪 Quizzes or guided onboarding
-- 🌍 Multi-language support
 
----
+-   🗞 Export lists (PDF/CSV)
 
-## 🔐 Security & Data Handling
+-   🔁 Recurring meal planning & calendar sync
 
-- User passwords hashed using bcrypt
-- JWTs for session security
-- Secure user-only access to saved data
-- No sensitive financial or medical data stored
+-   🔔 Notifications & reminders
 
----
+* * * * *
 
-## 🧬 Database Schema (Detailed)
+🔐 Security & Data Handling
+---------------------------
 
-![Revised_CrowFoot_ERD](https://github.com/user-attachments/assets/366bb82c-5a73-4133-b378-f8c16baeff87)
+-   User passwords hashed using bcrypt
+
+-   JWTs for session security
+
+-   Secure user-only access to saved data
+
+-   No sensitive financial or medical data stored
+
+* * * * *
+
+🧬 Database Schema (Mongoose / MongoDB)
+---------------------------------------
+
+<img width="3819" height="3405" alt="Database ER diagram (crow's foot)" src="https://github.com/user-attachments/assets/32570508-83f4-4c00-91da-58fe4c4db35d" />
 
 
-This application leverages a relational database (PostgreSQL) to ensure data integrity, consistency, and efficient querying of complex relationships.
+This application leverages MongoDB with Mongoose to ensure flexible, document-based storage while maintaining references between collections.
 
-### User
-- `id` (Primary Key, e.g., UUID or Integer)
-- `email` (String, unique, required)
-- `password_hash` (String, required)
-- `preferences` (JSONB, for flexible dietary/calorie targets)
-- `avatar_url` (String)
+**User**
 
-### Recipe
-- `id` (Primary Key)
-- `name` (String, required)
-- `description` (String)
-- `instructions` (TEXT[], array of strings or JSONB for ordered steps)
-- `nutrition_info` (JSONB, containing calories, protein, fat, carbs)
-- `cuisine` (String)
-- `user_submitted` (Boolean, default: false)
-- `created_by_user_id` (Foreign Key to User.id, optional)
+-   _id (ObjectId)
 
-### Ingredient
-- `id` (Primary Key)
-- `name` (String, required)
-- `unit` (String, e.g., 'grams', 'ml', 'pcs')
-- `default_quantity` (Numeric)
-- `nutrition_info` (JSONB, containing calories, protein, fat, carbs per unit)
+-   email (String, unique, required)
 
-### RecipeIngredient (Join Table for Many-to-Many: Recipe ↔ Ingredient)
-- `recipe_id` (Foreign Key to Recipe.id)
-- `ingredient_id` (Foreign Key to Ingredient.id)
-- `quantity` (Numeric, amount of this ingredient in this recipe)
-- `unit` (String, unit for this specific ingredient in this recipe)
-- Primary Key: (`recipe_id`, `ingredient_id`)
+-   passwordHash (String, required)
 
-### MealPlan
-- `id` (Primary Key)
-- `user_id` (Foreign Key to User.id, required)
-- `week_start_date` (Date, e.g., Monday of the week)
-- `notes` (String)
+-   preferences (JSON, for dietary/calorie targets)
 
-### MealPlanEntry (Join Table for Many-to-Many: MealPlan ↔ Recipe)
-- `id` (Primary Key)
-- `meal_plan_id` (Foreign Key to MealPlan.id)
-- `recipe_id` (Foreign Key to Recipe.id)
-- `day_of_week` (String, e.g., 'monday', 'tuesday')
-- `meal_type` (String, e.g., 'breakfast', 'lunch', 'dinner', 'snack')
-- `servings` (Numeric, number of servings of the recipe in this meal slot)
-- Primary Key: (`id`)
+-   createdAt, updatedAt (Date)
 
-### ShoppingList
-- `id` (Primary Key)
-- `user_id` (Foreign Key to User.id, required)
-- `meal_plan_id` (Foreign Key to MealPlan.id, optional, if generated from a specific plan)
-- `created_at` (Timestamp)
+**Recipe**
 
-### ShoppingListItem (One-to-Many: ShoppingList ↔ Item)
-- `id` (Primary Key)
-- `shopping_list_id` (Foreign Key to ShoppingList.id)
-- `ingredient_id` (Foreign Key to Ingredient.id)
-- `quantity` (Numeric)
-- `unit` (String)
-- `purchased` (Boolean, default: false)
-- Primary Key: (`id`)
+-   _id (ObjectId)
 
-### FoodIntake
-- `id` (Primary Key)
-- `user_id` (Foreign Key to User.id, required)
-- `recipe_id` (Foreign Key to Recipe.id, optional, if logging a recipe)
-- `ingredient_id` (Foreign Key to Ingredient.id, optional, if logging a single ingredient)
-- `date` (Date, or Timestamp)
-- `quantity` (Numeric, amount consumed)
-- `unit` (String, unit of quantity consumed)
-- `nutrition_snapshot` (JSONB, actual nutrition for the consumed portion)
+-   name (String, required)
 
-### Optional: PantryItem (Stretch Feature)
-- `id` (Primary Key)
-- `user_id` (Foreign Key to User.id, required)
-- `ingredient_id` (Foreign Key to Ingredient.id, required)
-- `quantity` (Numeric)
-- `unit` (String)
-- `expiration_date` (Date)
-- Primary Key: (`id`)
+-   description (String)
 
----
+-   instructions (Array of strings or JSON)
 
-## 🔄 User Flow
+-   nutritionInfo (JSON: calories, protein, fat, carbs)
+
+-   cuisine (String)
+
+-   userSubmitted (Boolean, default: false)
+
+-   createdBy (ObjectId reference to User, optional)
+
+-   createdAt, updatedAt (Date)
+
+**Ingredient**
+
+-   _id (ObjectId)
+
+-   name (String, required)
+
+-   unit (String, e.g., 'grams', 'ml', 'pcs')
+
+-   defaultQuantity (Number)
+
+-   nutritionInfo (JSON: calories, protein, fat, carbs per unit)
+
+**RecipeIngredient (Embedded in Recipe or as Sub-collection)**
+
+-   ingredientId (ObjectId reference to Ingredient)
+
+-   quantity (Number)
+
+-   unit (String)
+
+**MealPlan**
+
+-   _id (ObjectId)
+
+-   userId (ObjectId reference to User, required)
+
+-   weekStartDate (Date, Monday of the week)
+
+-   notes (String)
+
+-   Only one meal plan per user
+
+**MealPlanEntry (Embedded in MealPlan)**
+
+-   recipeId (ObjectId reference to Recipe)
+
+-   dayOfWeek (String: 'monday', 'tuesday', etc.)
+
+-   mealType (String: 'breakfast', 'lunch', 'dinner', 'snack')
+
+-   servings (Number)
+
+**ShoppingList**
+
+-   _id (ObjectId)
+
+-   userId (ObjectId reference to User)
+
+-   mealPlanId (ObjectId reference to MealPlan, optional)
+
+-   createdAt (Date)
+
+-   items (Array of embedded ShoppingListItem)
+
+**ShoppingListItem**
+
+-   ingredientId (ObjectId reference to Ingredient)
+
+-   quantity (Number)
+
+-   unit (String)
+
+-   purchased (Boolean, default: false)
+
+**FoodIntake**
+
+-   _id (ObjectId)
+
+-   userId (ObjectId reference to User)
+
+-   recipeId (ObjectId reference to Recipe, optional)
+
+-   ingredientId (ObjectId reference to Ingredient, optional)
+
+-   date (Date)
+
+-   quantity (Number)
+
+-   unit (String)
+
+-   nutritionSnapshot (JSON: actual nutrition consumed)
+
+* * * * *
+
+🔄 User Flow
+------------
 
 The app follows a logical, intuitive flow:
-- Guests can browse recipes before signing up
-- After signup/login, users land on the **dashboard**
-- From the dashboard, they can:
-  - Plan meals (via wizard)
-  - View existing plans
-  - Generate a shopping list
-  - Search recipes or add custom ones
-  - Track meals and nutrition
-  - Adjust profile/settings
-- Users log food and monitor goals via the **nutrition tracker**
 
-📍 **User Flow Diagram**  
-[View Full Diagram](https://github.com/KierstinS2024/Capstone2025/blob/main/UserFlowDiagram.md)
+-   Users sign up/login and land on the **dashboard**
 
----
+-   From the dashboard, they can:
 
-## 📖 Story-Driven UX
+    -   Plan meals for the week
 
-I found it more engaging to pretend someone was using the app: Sarah signs up, plans meals, shops, logs nutrition, and personalizes her experience, illustrating each major feature and its value.
+    -   View the existing meal plan
 
-> [📖 See Full Story Walkthrough](https://github.com/KierstinS2024/Capstone2025/blob/main/UserFlowDiagram.md)
+    -   Generate a shopping list
 
----
+    -   Search recipes or add custom recipes
 
-## 🔨 Tasks Breakdown
+    -   Log meals and track nutrition
 
-| Task               | Description                                     |
-|--------------------|-------------------------------------------------|
-| Database Design    | Define schema for users, recipes, meals, logs   |
-| API Integration    | Connect to Spoonacular or Edamam                |
-| Frontend Setup     | Scaffold Vite + React + Router                  |
-| Backend Setup      | Create Express API with routes                  |
-| Auth System        | JWT + bcrypt login/signup                     |
-| Core Features      | Dashboard, planner, tracker, search             |
-| Nutrition Engine   | Calculate macro totals per meal/day             |
-| Stretch Features   | Reminders, recipe sharing, pantry, dark mode    |
+    -   Adjust profile/settings
 
-API Specification (tentative) -- Recipe & Meal Planner App
+**User Flow Diagram:** 
 
-Planned RESTful API endpoints for the backend service. These routes represent how the frontend communicates with the backend of this application.
+<img width="2056" height="947" alt="MealMate_UserFlow" src="https://github.com/user-attachments/assets/a225fe0e-338e-4139-9545-94e1e0a594ec" />
 
 * * * * *
 
-Authentication
-
--   POST  /auth/register → Registers a new user. (No authentication required)
-
--   POST  /auth/login → Logs in a user and returns a JWT token. (No authentication required)
-
--   GET  /me → Gets current user profile/details. (Requires token)
-
--   PUT  /me → Updates user profile/preferences. (Requires token)
+📖 Story-Driven UX
+------------------
+[See Full Story Walkthrough](https://github.com/KierstinS2024/Capstone2025/blob/dev-mvp/UserFlowDiagram.md)
 
 * * * * *
 
-Recipes
+🔨 Tasks Breakdown
+------------------
 
--   GET  /recipes → Browse/search recipes (supports filtering with query parameters). (No authentication required)
-
--   GET  /recipes/:id → Retrieve a single recipe by ID. (No authentication required)
-
--   POST  /recipes → Create/submit a new recipe. (Requires token)
-
--   PUT  /recipes/:id → Update a recipe created by the user. (Requires token)
-
--   DELETE  /recipes/:id → Delete a recipe created by the user. (Requires token)
-
-* * * * *
-
-Meal Planning
-
--   POST  /meal-plans → Create a new weekly meal plan. (Requires token)
-
--   GET  /meal-plans → List meal plans created by the current user. (Requires token)
-
--   GET  /meal-plans/:id → Retrieve a specific meal plan by ID. (Requires token)
-
--   POST  /meal-plans/:id/entries → Add a recipe to a day/meal slot in a plan. (Requires token)
-
--   PUT  /meal-plans/entries/:entryId → Update a plan entry (servings, day, etc.). (Requires token)
-
--   DELETE  /meal-plans/entries/:entryId → Remove a recipe from a plan. (Requires token)
+| Task | Description |
+| --- | --- |
+| Database Design | Define Mongoose schemas for users, recipes, meals, logs |
+| API Helpers | Create API helper functions for Axios requests |
+| Frontend Setup | Scaffold Next.js App Router + React + Context API |
+| Backend Setup | Create Next.js API routes (src/app/api/**/route.ts) |
+| Auth System | JWT + bcrypt login/signup |
+| Core Features | Dashboard, planner, nutrition tracker, recipe search |
+| Nutrition Engine | Calculate macro totals per meal/day |
+| Stretch Features | Drag-and-drop, notifications, pantry management |
 
 * * * * *
 
-Shopping Lists
+🔌 API Specification
+--------------------
 
--   POST  /shopping-lists → Generate a list from a meal plan or create one manually. (Requires token)
+All endpoints are implemented as **Next.js API routes** under `src/app/api/**/route.ts`.
 
--   GET  /shopping-lists → List shopping lists for the user. (Requires token)
+**Authentication**
 
--   GET  /shopping-lists/:id → Retrieve a single shopping list by ID. (Requires token)
+-   POST `/api/auth/signup` → Registers a new user
 
--   POST  /shopping-lists/:id/items → Manually add an item to a list. (Requires token)
+-   POST `/api/auth/login` → Logs in a user, returns JWT
 
--   PATCH  /shopping-lists/items/:itemId → Update quantity or mark item as purchased. (Requires token)
+-   GET `/api/auth/me` → Current user profile (requires token)
 
--   DELETE  /shopping-lists/items/:itemId → Remove an item from the list. (Requires token)
+-   PUT `/api/auth/me` → Update user profile/preferences (requires token)
 
-* * * * *
+**Recipes**
 
-Nutrition / Food Intake
+-   GET `/api/recipes` → Browse/search recipes
 
--   POST  /food-intake → Log a consumed recipe/ingredient for a date. (Requires token)
+-   GET `/api/recipes/:id` → Retrieve a single recipe
 
--   GET  /food-intake → Retrieve logged food intake (supports query by date). (Requires token)
+-   POST `/api/recipes` → Create a recipe (requires token)
 
--   DELETE  /food-intake/:id → Remove a logged intake entry. (Requires token)
+-   PUT `/api/recipes/:id` → Update a recipe (requires token)
 
-* * * * *
+-   DELETE `/api/recipes/:id` → Delete a recipe (requires token)
 
-General / Misc
+**Meal Planning**
 
--   GET  /health → Health check endpoint -- returns "OK".
+-   POST `/api/meal-plans` → Create weekly meal plan (requires token)
 
--   GET  / → Optional landing or welcome route.
+-   GET `/api/meal-plans` → Get current user's meal plan (requires token)
 
-* * * * *
+-   GET `/api/meal-plans/:id` → Retrieve meal plan by ID (requires token)
 
-Example Requests & Responses
+-   POST `/api/meal-plans/:id/entries` → Add recipe to day/meal slot (requires token)
 
-Register User\
-(POST /auth/register)
+-   PUT `/api/meal-plans/entries/:entryId` → Update plan entry (requires token)
 
-Request\
-{ "email": "sarah@example.com", "password": "myStrongPassword" }
+-   DELETE `/api/meal-plans/entries/:entryId` → Remove recipe from plan (requires token)
 
-Success Response (201)\
-{ "message": "User registered successfully" }
+**Shopping Lists**
 
-Error Response (400)\
-{ "error": "Email is already in use" }
+-   POST `/api/shopping-lists` → Generate list from meal plan (requires token)
 
-* * * * *
+-   GET `/api/shopping-lists` → List user's shopping lists (requires token)
 
-Login User\
-(POST /auth/login)
+-   GET `/api/shopping-lists/:id` → Retrieve shopping list by ID (requires token)
 
-Request\
-{ "email": "sarah@example.com", "password": "myStrongPassword" }
+-   POST `/api/shopping-lists/:id/items` → Add item manually (requires token)
 
-Success (200)\
-{ "token": "eyJhbGci..." }
+-   PATCH `/api/shopping-lists/items/:itemId` → Update quantity/purchased (requires token)
 
-Error (400)\
-{ "error": "Invalid login credentials" }
+-   DELETE `/api/shopping-lists/items/:itemId` → Remove item (requires token)
 
-* * * * *
+**Food Intake**
 
-Create Recipe\
-(POST /recipes)
+-   POST `/api/food-intake` → Log consumed recipe/ingredient (requires token)
 
-Request\
-Authorization: Bearer <JWT>\
-{ "name": "Chicken Stir Fry", "description": "Quick dinner", "cuisine": "Asian", "ingredients":[{ "id":1,"quantity":200,"unit":"grams" }] }
+-   GET `/api/food-intake` → Retrieve logs (query by date) (requires token)
 
-Success (201)\
-{ "message":"Recipe created", "recipeId":42 }
+-   DELETE `/api/food-intake/:id` → Remove log entry (requires token)
+
+**Misc**
+
+-   GET `/api/health` → Returns "OK"
+
+-   GET `/` → Optional landing/welcome route
 
 * * * * *
 
-Create Meal Plan\
-(POST /meal-plans)
+📦 Example Requests & Responses
+-------------------------------
 
-Request\
-{ "week_start_date":"2025-03-03", "notes":"Meal prep week" }
+### Register User
 
-Success (201)\
-{ "mealPlanId": 23, "message": "Meal plan created" }
+POST `/api/auth/signup`
 
-* * * * *
+Request:
 
-Generate Shopping List\
-(POST /shopping-lists)
+`{ "email": "sarah@example.com", "password": "myStrongPassword" }`
 
-Request\
-{ "meal_plan_id": 23 }
+Success (201):
 
-Success (201)\
-{ "listId":14, "message":"Shopping list generated" }
+`{ "message": "User registered successfully" }`
 
-* * * * *
+Error (400):
 
-Log Food Intake\
-(POST /food-intake)
-
-Request\
-Authorization: Bearer <JWT>\
-{ "recipe_id":42,"date":"2025-03-04","quantity":1,"unit":"serving" }
-
-Success (201)\
-{ "message":"Intake logged" }
+`{ "error": "Email is already in use" }`
 
 * * * * *
 
-Note: Any route marked "Requires token" expects a header formatted as:\
-Authorization: Bearer <your-JWT-token-here>
+### Login User
+
+POST `/api/auth/login`
+
+Request:
+
+`{ "email": "sarah@example.com", "password": "myStrongPassword" }`
+
+Success (200):
+
+`{ "token": "eyJhbGci..." }`
+
+Error (400):
+
+`{ "error": "Invalid login credentials" }`
+
+* * * * *
+
+### Create Recipe
+
+POST `/api/recipes` (Authorization: Bearer `<JWT>`)
+
+Request:
+
+`{
+  "name": "Chicken Stir Fry",
+  "description": "Quick dinner",
+  "cuisine": "Asian",
+  "ingredients":[
+    { "id":"64f9b3...", "quantity":200, "unit":"grams" }
+  ]
+}`
+
+Success (201):
+
+`{ "message":"Recipe created", "recipeId":"64fa1c..." }`
+
+* * * * *
+
+### Create Meal Plan
+
+POST `/api/meal-plans`
+
+Request:
+
+`{ "weekStartDate":"2025-03-03", "notes":"Meal prep week" }`
+
+Success (201):
+
+`{ "mealPlanId":"64fa2b...", "message": "Meal plan created" }`
+
+* * * * *
+
+### Generate Shopping List
+
+POST `/api/shopping-lists`
+
+Request:
+
+`{ "mealPlanId": "64fa2b..." }`
+
+Success (201):
+
+`{ "listId":"64fa3d...", "message":"Shopping list generated" }`
+
+* * * * *
+
+### Log Food Intake
+
+POST `/api/food-intake` (Authorization: Bearer `<JWT>`)
+
+Request:
+
+`{ "recipeId":"64fa1c...", "date":"2025-03-04","quantity":1,"unit":"serving" }`
+
+Success (201):
+
+`{ "message":"Intake logged" }`
+
+> Note: Any route marked "Requires token" expects a header formatted as:\
+> `Authorization: Bearer <your-JWT-token-here>`
+
+* * * * *
+
+✅ Rubric Alignment
+------------------
+
+This project was developed following the Capstone rubric requirements. Below is a breakdown of how each requirement was addressed:
+
+| Requirement | Implementation in This Project |
+| --- | --- |
+| Project structure & folder organization | Next.js App Router structure (`src/app`) with clearly defined directories for API routes, pages, components, contexts, hooks, lib helpers, models, styles, and types. |
+| CRUD operations for MongoDB | Implemented using Mongoose models (`User`, `Recipe`, `MealPlan`, `ShoppingList`) with RESTful API routes. |
+| Data handling | RESTful API routes in Next.js. |
+| Authentication & Authorization | Custom email/password system, bcrypt password hashing, JWTs, middleware protecting authenticated routes. |
+| UI Components & Layout | React components with forms, cards, modals, sidebars, drag-and-drop meal plan editors. |
+| Backend integration | UI components interact via Axios helpers in `/lib` and shared state via React Contexts. |
+| State Management | React Context API and custom hooks manage authentication, recipes, meal plans, shopping lists. |
+| Styling | CSS Modules and plain CSS. |
+| Testing | Functionality verified manually. |
+| Debugging & Fixes | Iterative development, resolving issues with types, models, API routes, contexts, UI. |
+| Deployment | Ready for Vercel or Render. Environment variables configured. |
+| Documentation | Fully updated README, clear User Flow Diagram, clean code structure. |
+| Submission / PR | Can submit via Pull Request from `dev` into `main`. |

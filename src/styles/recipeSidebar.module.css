@@ -1,0 +1,94 @@
+/* ===========================================
+   PATH: src/styles/recipeSidebar.module.css
+   RecipeSidebar styling — mobile-first, polished,
+   draggable recipe cards
+   =========================================== */
+
+/* ---------- Sidebar Container ---------- */
+.sidebar {
+  width: 100%;
+  max-width: 250px;
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  font-family: sans-serif;
+  box-sizing: border-box;
+}
+
+/* ---------- Heading ---------- */
+.heading3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #222;
+  text-align: center;
+}
+
+/* ---------- Individual Recipe Card ---------- */
+.recipeCard {
+  background-color: #fff8e1;
+  border: 1px solid #ffd54f;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  font-weight: 500;
+  cursor: grab;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Hover effect for card */
+.recipeCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Dragging state */
+.dragging {
+  background-color: #fff3e0;
+  border-color: #ffa726;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  cursor: grabbing;
+}
+
+/* ---------- Placeholder spacing (from Droppable) ---------- */
+.sidebar > div:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Responsive: Tablets ---------- */
+@media (max-width: 768px) {
+  .sidebar {
+    max-width: 200px;
+    padding: 0.75rem;
+  }
+
+  .heading3 {
+    font-size: 1.1rem;
+  }
+
+  .recipeCard {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.6rem;
+  }
+}
+
+/* ---------- Responsive: Mobile ---------- */
+@media (max-width: 480px) {
+  .sidebar {
+    max-width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .heading3 {
+    font-size: 1rem;
+  }
+
+  .recipeCard {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.5rem;
+  }
+}

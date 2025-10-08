@@ -1,0 +1,70 @@
+/* ===========================================
+PATH: src/styles/typography.css
+Typography scaling for headings and body text
+=========================================== */
+
+body {
+  font-size: 16px; /* base on mobile */
+  line-height: 1.6;
+  font-family: system-ui, sans-serif;
+  color: #212129;
+}
+
+/* Headings */
+h1,
+.h1 {
+  font-size: 1.6rem;
+  font-weight: bold;
+}
+h2,
+.h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+h3,
+.h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* =========================
+   RESPONSIVE BREAKPOINTS
+   ========================= */
+
+/* Tablet (≥768px) */
+@media (min-width: 768px) {
+  body {
+    font-size: 17px;
+  }
+  h1,
+  .h1 {
+    font-size: 2rem;
+  }
+  h2,
+  .h2 {
+    font-size: 1.5rem;
+  }
+  h3,
+  .h3 {
+    font-size: 1.2rem;
+  }
+}
+
+/* Desktop (≥1280px) */
+@media (min-width: 1280px) {
+  body {
+    font-size: 18px;
+  }
+  h1,
+  .h1 {
+    font-size: 2.4rem;
+  }
+  h2,
+  .h2 {
+    font-size: 1.8rem;
+  }
+  h3,
+  .h3 {
+    font-size: 1.3rem;
+  }
+}

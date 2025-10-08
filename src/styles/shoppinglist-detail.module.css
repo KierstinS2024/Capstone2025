@@ -1,0 +1,25 @@
+/* src/styles/shoppinglist-detail.css */
+.shoppinglist-detail-container {
+  padding: 1rem;
+}
+
+.add-item-form {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.shoppinglist-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.shoppinglist-item-card {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
