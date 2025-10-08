@@ -549,3 +549,12 @@ This project was developed following the Capstone rubric requirements. Below is 
 | Deployment | Ready for Vercel or Render. Environment variables configured. |
 | Documentation | Fully updated README, clear User Flow Diagram, clean code structure. |
 | Submission / PR | Can submit via Pull Request from `dev` into `main`. |
+
+Project screenshots
+<img width="1918" height="1017" alt="Screenshot_Landing page" src="https://github.com/user-attachments/assets/d44401bb-2d46-45e1-891f-2fdb5424bbc6" />
+<img width="1898" height="926" alt="Screenshot_mealplan" src="https://github.com/user-attachments/assets/ea6085d3-5a6a-4143-b701-a0bc3de4fa90" />
+<img width="1897" height="1023" alt="Screenshot_mealdropped" src="https://github.com/user-attachments/assets/bd0ced5d-a627-4ea8-822c-2192c63db662" />
+<img width="1902" height="1012" alt="Screenshot_Loaded dashboard" src="https://github.com/user-attachments/assets/a0ec7edf-f967-4bdd-b2b5-8f486b215882" />
+<img width="1918" height="1017" alt="Screenshot_RecipeDash" src="https://github.com/user-attachments/assets/98930bf2-fad6-4646-952e-4fd5e1e35c51" />
+<img width="1918" height="1016" alt="Screenshot_UserRecipe" src="https://github.com/user-attachments/assets/08e9fa78-c65c-4e42-8c1b-85539cafd768" />
+<img width="1918" height="1012" alt="Screenshot_RecipePage" src="https://github.com/user-attachments/assets/e8783e0f-ca08-4b8e-84df-c473345e0954" />
